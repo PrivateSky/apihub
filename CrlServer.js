@@ -6,14 +6,26 @@ const path = require('path');
 const fs = require('fs');
 
 
-function CrlServer(listeningPort) {
-    const server = new Server().listen(listeningPort || 8080);
-    const baseChannelsFolder = "channels";
+function CrlServer(listeningPort, rootFolder) {
+    const port = listeningPort || 8080;
+    const server = new Server().listen(port);
+    console.log("Listening on port:", port);
+    const baseChannelsFolder = path.resolve(path.join(rootFolder || "", "channels"));
     const cachedFolderMQ = new CachedFolderMQ();
 
-    if (!fs.existsSync(baseChannelsFolder)) {
-        fs.mkdirSync(baseChannelsFolder);
+    function ensureFolder(folderPath){
+        const os = require("os");
+        const child_process = require('child_process');
+        if (!fs.existsSync(folderPath)) {
+            var isWin = (os.platform() === 'win32');
+            var cmd = isWin ? "mkdir " : "mkdir -p ";
+            child_process.execSync(cmd + folderPath);
+            console.log("Folder created", folderPath);
+        }
     }
+
+    ensureFolder(baseChannelsFolder);
+    console.log("Using as root folder", baseChannelsFolder);
 
     this.close = function (callback) {
         server.close(callback);
