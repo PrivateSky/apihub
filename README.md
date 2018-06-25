@@ -5,4 +5,4 @@ privatesky module that enables comunication (files transfer, notifications) betw
 
 	git clone repo into PrivateSky module folder  
 
-	run bin/startPubSubNode.js
+	run bin/startNode.js
