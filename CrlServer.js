@@ -1,7 +1,7 @@
 require('../../engine/core');
 const Server = require('./libs/http-wrapper/src/index').Server;
 const httpUtils = require('./libs/http-wrapper/src/index').httpUtils;
-const folderMQ = require('../../engine/pubSub/core/folderMQ');
+const folderMQ = $$.requireModule('soundpubsub').folderMQ;
 const path = require('path');
 const fs = require('fs');
 
@@ -42,17 +42,17 @@ function CrlServer(listeningPort, rootFolder) {
             }
 
             const channelPath = path.join(baseChannelsFolder, channelId);
-            cachedFolderMQ.getInstance(channelPath, (err, folder) => {
-                if (err) {
-                    response.statusCode = 500;
-                    response.end();
-                    return;
-                }
+        cachedFolderMQ.getInstance(channelPath, (err, folder) => {
+            if (err) {
+                response.statusCode = 500;
+                response.end();
+                return;
+            }
 
-                response.statusCode = 201;
-                response.end(channelId);
-            });
-        });
+            response.statusCode = 201;
+        response.end(channelId);
+    });
+    });
     });
 
     server.post('/channels/:uid', function (request, response) {
@@ -65,31 +65,31 @@ function CrlServer(listeningPort, rootFolder) {
 
             const channelPath = path.join(baseChannelsFolder, request.params.uid);
 
-            const folderMQInstance = cachedFolderMQ.getInstance(channelPath, (err, folderPath) => {
-                if (err) {
-                    response.statusCode = 500;
-                    response.end();
-                }
-            });
+        const folderMQInstance = cachedFolderMQ.getInstance(channelPath, (err, folderPath) => {
+            if (err) {
+                response.statusCode = 500;
+                response.end();
+            }
+        });
 
-            if (!folderMQInstance) {
+        if (!folderMQInstance) {
+            response.statusCode = 500;
+            response.end();
+            return;
+        }
+        const messagePath = path.join(channelPath, messageId);
+
+        folderMQInstance.writeMessage(messagePath, request.body, (err) => {
+            if (err) {
                 response.statusCode = 500;
                 response.end();
                 return;
             }
-            const messagePath = path.join(channelPath, messageId);
 
-            folderMQInstance.writeMessage(messagePath, request.body, (err) => {
-                if (err) {
-                    response.statusCode = 500;
-                    response.end();
-                    return;
-                }
-
-                response.statusCode = 201;
-                response.end();
-            });
-        });
+            response.statusCode = 201;
+        response.end();
+    });
+    });
     });
 
     server.get('/channels/:uid/msg', function (request, response) {
@@ -113,8 +113,8 @@ function CrlServer(listeningPort, rootFolder) {
 
         folderMQInstance.registerConsumer((messageContent, messageId) => {
             gotAnswer = true;
-            response.end(JSON.stringify({id: messageId, content: messageContent}));
-        }, () => gotAnswer = true, false, shouldWaitForMore);
+        response.end(JSON.stringify({id: messageId, content: messageContent}));
+    }, () => gotAnswer = true, false, shouldWaitForMore);
 
     });
 
@@ -142,8 +142,8 @@ function CrlServer(listeningPort, rootFolder) {
             }
 
             response.statusCode = 204;
-            response.end();
-        });
+        response.end();
+    });
 
     });
 
@@ -158,32 +158,35 @@ function CrlServer(listeningPort, rootFolder) {
             }
 
             const filePath = path.join(baseChannelsFolder, req.params.channelId, fileId);
-            const fileStream = fs.createWriteStream(filePath);
+        const fileStream = fs.createWriteStream(filePath);
 
 
-            if (req.headers['content-type'] !== 'application/octet-stream') {
-                req.pipe(fileStream);
+        if (req.headers['content-type'] !== 'application/octet-stream') {
+            req.pipe(fileStream);
 
-                fileStream.on('finish', () => {
-                    res.end(fileId);
-                });
-            } else {
-
-                req.on('data', (dataChunk) => {
-                    fileStream.write(dataChunk);
-                });
-
-                req.on('end', () => {
-                    res.statusCode = 201;
-                    res.end(fileId);
-                });
-
-                req.on('error', () => {
-                    res.statusCode = 500;
-                    res.end();
-                });
-            }
+            fileStream.on('finish', () => {
+                res.end(fileId);
+            fileStream.close();
         });
+        } else {
+
+            req.on('data', (dataChunk) => {
+                fileStream.write(dataChunk);
+        });
+
+            req.on('end', () => {
+                res.statusCode = 201;
+            res.end(fileId);
+            fileStream.close();
+        });
+
+            req.on('error', () => {
+                res.statusCode = 500;
+            res.end();
+            fileStream.close();
+        });
+        }
+    });
     });
 
     server.get('/file/:channelId/:fileId', function (req, res) {
@@ -200,7 +203,7 @@ function CrlServer(listeningPort, rootFolder) {
                 res.end(err)
             }
             res.end();
-        });
+    });
     });
 
     server.use(function (req, res) {

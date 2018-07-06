@@ -1,7 +1,7 @@
 require('../../../engine/core').enableTesting();
 const CrlServer = require('../CrlServer');
 const Client = require('../libs/http-wrapper').Client;
-const doubleCheck = require('double-check');
+const doubleCheck = $$.requireModule('double-check');
 const assert = doubleCheck.assert;
 const fs = require('fs');
 const crypto = require('crypto');
