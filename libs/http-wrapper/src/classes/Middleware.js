@@ -53,34 +53,44 @@ function Middleware() {
     }
 
     this.use = function (...params) {
+        var args = [undefined, undefined, undefined];
+
         switch (params.length) {
+            case 0:
+				throw Error('Use method needs at least one argument.');
+				
             case 1:
                 if (typeof params[0] !== 'function') {
                     throw Error('If only one argument is provided it must be a function');
                 }
 
-                use(undefined, undefined, params[0]);
+                args[2] = params[0];
+
                 break;
             case 2:
                 if (typeof params[0] !== 'string' || typeof params[1] !== 'function') {
                     throw Error('If two arguments are provided the first one must be a string (url) and the second a function');
                 }
 
-                use(undefined, params[0], params[1]);
+                args[1]=params[0];
+                args[2]=params[1];
+
                 break;
             default:
                 if (typeof params[0] !== 'string' || typeof params[1] !== 'string' || typeof params[2] !== 'function') {
                     throw Error('If three or more arguments are provided the first one must be a string (HTTP verb), the second a string (url) and the third a function');
                 }
 
-
                 if (!(['get', 'post', 'put', 'delete', 'patch', 'head', 'connect', 'options', 'trace'].includes(params[0].toLowerCase()))) {
                     throw new Error('If three or more arguments are provided the first one must be a HTTP verb but none could be matched');
                 }
 
-                use(...params);
+                args = params;
+
                 break;
         }
+
+        use.apply(this, args);
     };
 
 
@@ -102,16 +112,23 @@ function Middleware() {
      */
     function execute(index, method, url, ...params) {
         if (!registeredMiddlewareFunctions[index]) {
+            if(index===0){
+                console.error("No handlers registered yet!");
+            }
             return;
         }
 
-        if (!methodMatch(registeredMiddlewareFunctions[index].method, method)) {
+        var registeredMethod = registeredMiddlewareFunctions[index].method;
+		var registeredUrl = registeredMiddlewareFunctions[index].url;
+		var fn = registeredMiddlewareFunctions[index].fn;
+
+        if (!methodMatch(registeredMethod, method)) {
             execute(++index, method, url, ...params);
             return;
         }
 
-        if (isTruthy(registeredMiddlewareFunctions[index].url)) {
-            const urlMatch = matchUrl(registeredMiddlewareFunctions[index].url, url);
+        if (isTruthy(registeredUrl)) {
+            const urlMatch = matchUrl(registeredUrl, url);
 
             if (!urlMatch.match) {
                 execute(++index, method, url, ...params);
@@ -125,7 +142,7 @@ function Middleware() {
 
         let counter = 0;
 
-        registeredMiddlewareFunctions[index].fn(...params, (err) => {
+        fn(...params, (err) => {
             counter++;
             if (counter > 1) {
                 console.warn('You called next multiple time, only the first one will be executed');
@@ -137,7 +154,7 @@ function Middleware() {
                 return;
             }
 
-            execute(++index, method, url, ...params)
+            execute(++index, method, url, ...params);
         });
     }
 }
