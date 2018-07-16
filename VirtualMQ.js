@@ -6,47 +6,54 @@ function VirtualMQ(listeningPort, rootFolder) {
 	const server = new Server().listen(port);
 	console.log("Listening on port:", port);
 
+	this.close = server.close;
+
 	$$.flow.create("CSBmanager").init(rootFolder, function(err, result){
 		if(err){
 			throw err;
 		}else{
 			console.log("CSBmanager is using folder", result);
+			registerEndpoints();
 		}
 	});
 
-	server.post('/CSB/:fileId', function (req, res) {
-		if (req.headers['content-type'] !== 'application/octet-stream') {
+	function registerEndpoints() {
+		server.post('/CSB/:fileId', function (req, res) {
+			if (req.headers['content-type'] !== 'application/octet-stream') {
 
-			$$.flow.create("CSBmanager").write(req.params.fileId, req, function(err, result){
+				$$.flow.create("CSBmanager").write(req.params.fileId, req, function(err, result){
+					if(err){
+						console.log(err);
+						res.statusCode = 500;
+						res.end();
+					}else{
+						res.statusCode = 201;
+						res.end();
+					}
+				});
+			}
+		});
+
+		server.get('/CSB/:fileId', function (req, res) {
+			$$.flow.create("CSBmanager").read(req.params.fileId, res, function(err, result){
 				if(err){
 					console.log(err);
-					res.statusCode = 500;
+					res.statusCode = 404;
 					res.end();
 				}else{
 					res.statusCode = 201;
 					res.end();
 				}
 			});
-		}
-	});
-
-	server.get('/CSB/:fileId', function (req, res) {
-		$$.flow.create("CSBmanager").read(req.params.fileId, res, function(err, result){
-			if(err){
-				console.log(err);
-				res.statusCode = 404;
-				res.end();
-			}else{
-				res.statusCode = 201;
-				res.end();
-			}
 		});
-	});
 
-	server.use(function (req, res) {
-		res.statusCode = 404;
-		res.end();
-	});
+		server.use(function (req, res) {
+			res.statusCode = 404;
+			res.end();
+		});
+	}
+
+
 }
 
 module.exports.createVirtualMQ = function(port, folder){
