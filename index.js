@@ -1,3 +1,3 @@
-const Server = require('CrlServer');
+const Server = require('./VirtualMQ.js');
 
 module.exports = Server;

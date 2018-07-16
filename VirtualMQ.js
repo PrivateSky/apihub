@@ -1,7 +1,7 @@
 require("./flows/CSBmanager");
 const Server = require('./libs/http-wrapper/src/index').Server;
 
-function VirtualMQ(listeningPort, rootFolder) {
+function VirtualMQ(listeningPort, rootFolder, callback) {
 	const port = listeningPort || 8080;
 	const server = new Server().listen(port);
 	console.log("Listening on port:", port);
@@ -14,6 +14,9 @@ function VirtualMQ(listeningPort, rootFolder) {
 		}else{
 			console.log("CSBmanager is using folder", result);
 			registerEndpoints();
+			if(callback){
+				callback();
+		}
 		}
 	});
 
@@ -41,7 +44,7 @@ function VirtualMQ(listeningPort, rootFolder) {
 					res.statusCode = 404;
 					res.end();
 				}else{
-					res.statusCode = 201;
+				res.statusCode = 200;
 					res.end();
 				}
 			});
@@ -53,9 +56,6 @@ function VirtualMQ(listeningPort, rootFolder) {
 		});
 	}
 
-
-}
-
-module.exports.createVirtualMQ = function(port, folder){
-	return new VirtualMQ(port, folder);
+module.exports.createVirtualMQ = function(port, folder, callback){
+	return new VirtualMQ(port, folder, callback);
 }
