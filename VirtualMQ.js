@@ -8,45 +8,55 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
 	this.close = server.close;
 
-	$$.flow.create("CSBmanager").init(rootFolder, function(err, result){
-		if(err){
+	$$.flow.create("CSBmanager").init(rootFolder, function (err, result) {
+		if (err) {
 			throw err;
-		}else{
+		} else {
 			console.log("CSBmanager is using folder", result);
 			registerEndpoints();
-			if(callback){
+			if (callback) {
 				callback();
-		}
+			}
 		}
 	});
 
 	function registerEndpoints() {
+
+		server.post('/:channelId', function (req, res) {
+				/*
+								$$.flow.create("CSBmanager").write(req.params.fileId, req, function (err, result) {
+									res.statusCode = 201;
+									if (err) {
+										console.log(err);
+										res.statusCode = 500;
+									}
+									res.end();
+								});
+				*/
+		});
+
 		server.post('/CSB/:fileId', function (req, res) {
 			if (req.headers['content-type'] !== 'application/octet-stream') {
 
-				$$.flow.create("CSBmanager").write(req.params.fileId, req, function(err, result){
-					if(err){
+				$$.flow.create("CSBmanager").write(req.params.fileId, req, function (err, result) {
+					res.statusCode = 201;
+					if (err) {
 						console.log(err);
 						res.statusCode = 500;
-						res.end();
-					}else{
-						res.statusCode = 201;
-						res.end();
 					}
+					res.end();
 				});
 			}
 		});
 
 		server.get('/CSB/:fileId', function (req, res) {
-			$$.flow.create("CSBmanager").read(req.params.fileId, res, function(err, result){
-				if(err){
+			$$.flow.create("CSBmanager").read(req.params.fileId, res, function (err, result) {
+				res.statusCode = 200;
+				if (err) {
 					console.log(err);
 					res.statusCode = 404;
-					res.end();
-				}else{
-				res.statusCode = 200;
-					res.end();
 				}
+				res.end();
 			});
 		});
 
@@ -55,6 +65,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 			res.end();
 		});
 	}
+}
 
 module.exports.createVirtualMQ = function(port, folder, callback){
 	return new VirtualMQ(port, folder, callback);
