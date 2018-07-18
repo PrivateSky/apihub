@@ -8,6 +8,22 @@ const channels = {
 
 };
 
+function storeChannel(id, channel, consumer){
+	var storedChannel = {
+		channel: channel,
+		handler: channel.getHandler(),
+		consumers:[]
+	};
+
+	if(!channels[id]){
+		channels[id] = storedChannel;
+	}
+
+	if(consumer){
+		channels[id].consumers.push(consumer);
+	}
+}
+
 $$.flow.describe("RemoteSwarming", {
 	init: function(rootFolder, callback){
 		if(!rootFolder){
@@ -26,15 +42,16 @@ $$.flow.describe("RemoteSwarming", {
 			let channelFolder = path.join(rootfolder, channelId);
 			 channel = folderMQ.getFolderQueue(channelFolder, (err, result) => {
 				if(err){
+					//we delete the channel in order to try again next time
+					channels[channelId] = null;
 					callback(new Error("Channel initialization failed"));
 					return;
 				}
-
-				channel.getHandler().addStream(readSwarmStream, callback);
+				 channels[channelId].handler.addStream(readSwarmStream, callback);
 			});
-			channels[channelId] = channel;
+			storeChannel(channelId, channel);
 		}else{
-			channel.getHandler().addStream(readSwarmStream, callback);
+			channel.handler.addStream(readSwarmStream, callback);
 		}
 	},
 	waitForSwarm: function(channelId, writeSwarmStream, callback){
@@ -43,15 +60,17 @@ $$.flow.describe("RemoteSwarming", {
 			let channelFolder = path.join(rootfolder, channelId);
 			channel = folderMQ.getFolderQueue(channelFolder, (err, result) => {
 				if(err){
+					//we delete the channel in order to try again next time
+					channels[channelId] = null;
 					callback(new Error("Channel initialization failed"));
 					return;
 				}
-
-				channel.getHandler().registerConsumer(callback);
+				channel.registerConsumer(callback);
 			});
-			channels[channelId] = channel;
+			storeChannel(channelId, channel, callback);
+
 		}else{
-			channel.getHandler().addStream(readSwarmStream, callback);
+			channel.channel.registerConsumer(callback);
 		}
 	}
 });
