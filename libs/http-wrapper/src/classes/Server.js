@@ -40,6 +40,11 @@ function Server() {
     this.delete = function deleteReq(reqUrl, reqResolver) {
         middleware.use("DELETE", reqUrl, reqResolver)
     };
+
+    this.options = function optionsReq(reqUrl, reqResolver) {
+        middleware.use("OPTIONS", reqUrl, reqResolver)
+    };
+
 }
 
 module.exports = Server;

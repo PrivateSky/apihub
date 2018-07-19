@@ -78,6 +78,19 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 			});
 		});
 
+		server.options('/*', function (req, res) {
+			var headers = {};
+			// IE8 does not allow domains to be specified, just the *
+			// headers["Access-Control-Allow-Origin"] = req.headers.origin;
+			headers["Access-Control-Allow-Origin"] = "*";
+			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
+			headers["Access-Control-Allow-Credentials"] = true;
+			headers["Access-Control-Max-Age"] = '400'; // 24 hours
+			headers["Access-Control-Allow-Headers"] = "Access-Control-Allow-Headers, Origin,Accept,Access-Control-Allow-Origin, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers";
+			res.writeHead(200, headers);
+			res.end();
+		});
+
 		server.use(function (req, res) {
 			res.statusCode = 404;
 			res.end();
