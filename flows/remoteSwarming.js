@@ -8,10 +8,11 @@ const channels = {
 
 };
 
-function storeChannel(id, channel, consumer){
+function storeChannel(id, channel, clientConsumer){
 	var storedChannel = {
 		channel: channel,
 		handler: channel.getHandler(),
+		mqConsumer: null,
 		consumers:[]
 	};
 
@@ -19,9 +20,56 @@ function storeChannel(id, channel, consumer){
 		channels[id] = storedChannel;
 	}
 
-	if(consumer){
-		channels[id].consumers.push(consumer);
+	if(clientConsumer){
+		channels[id].consumers.push(clientConsumer);
 	}
+}
+
+function removeConsumer(id, consumer){
+	let storedChannel = channels[id];
+	if(storedChannel){
+		let index = storedChannel.indexOf(consumer);
+		if(index !== -1){
+			storedChannel.consumers.splice(index, 1);
+			return true;
+		}
+	}
+	return false;
+}
+
+function registerConsumer(id, consumer){
+	let storedChannel = channels[id];
+	if(storedChannel){
+		storedChannel.consumers.push(consumer);
+		return true;
+	}
+	return false;
+}
+
+function registerMainConsumer(id){
+	let storedChannel = channels[id];
+	if(storedChannel && !storedChannel.mqConsumer){
+		storedChannel.mqConsumer = (err, result, confirmationId) => {
+			channels[id] = null;
+			while(storedChannel.consumers.length>0){
+				//we iterate through the consumers list in case that we have a ref. of a request that time-outed meanwhile
+				//and in this case we expect to have more then one consumer...
+				let consumer = storedChannel.consumers.pop();
+				try{
+					consumer(err, result, confirmationId);
+				}catch(error){
+					//just some small error ignored
+					console.log("Error catched", error);
+				}
+			}
+		};
+
+		storedChannel.channel.registerConsumer(storedChannel.mqConsumer, false, () => {
+			return !!channels[id];
+		});
+		return true;
+	}
+	return false;
 }
 
 $$.flow.describe("RemoteSwarming", {
@@ -54,6 +102,24 @@ $$.flow.describe("RemoteSwarming", {
 			channel.handler.addStream(readSwarmStream, callback);
 		}
 	},
+	confirmSwarm: function(channelId, confirmationId, callback){
+		let storedChannel = channels[channelId];
+		if(!storedChannel){
+			let channelFolder = path.join(rootfolder, channelId);
+			let channel = folderMQ.getFolderQueue(channelFolder, (err, result) => {
+				if(err){
+					//we delete the channel in order to try again next time
+					channels[channelId] = null;
+					callback(new Error("Channel initialization failed"));
+					return;
+				}
+				channel.unlinkContent(confirmationId, callback);
+			});
+			storeChannel(channelId, channel);
+		}else{
+			storedChannel.channel.unlinkContent(confirmationId, callback);
+		}
+	},
 	waitForSwarm: function(channelId, writeSwarmStream, callback){
 		let channel = channels[channelId];
 		if(!channel){
@@ -65,12 +131,14 @@ $$.flow.describe("RemoteSwarming", {
 					callback(new Error("Channel initialization failed"));
 					return;
 				}
-				channel.registerConsumer(callback);
+				registerConsumer(channelId, callback);
+				registerMainConsumer(channelId);
 			});
-			storeChannel(channelId, channel, callback);
-
+			storeChannel(channelId, channel);
 		}else{
-			channel.channel.registerConsumer(callback);
+			//channel.channel.registerConsumer(callback);
+			registerConsumer(channelId, callback);
+			registerMainConsumer(channelId);
 		}
 	}
 });

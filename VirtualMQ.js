@@ -44,7 +44,18 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
 		server.get('/:channelId', function (req, res) {
 
-			$$.flow.create("RemoteSwarming").waitForSwarm(req.params.channelId, res, function (err, result) {
+			$$.flow.create("RemoteSwarming").waitForSwarm(req.params.channelId, res, function (err, result, confirmationId) {
+				if (err) {
+					console.log(err);
+					res.statusCode = 500;
+				}
+				res.write(JSON.stringify({result: result, confirmationId: confirmationId}));
+				res.end();
+			});
+		});
+
+		server.delete("/:channelId/:confirmationId", function(req, res){
+			$$.flow.create("RemoteSwarming").confirmSwarm(req.params.channelId, req.params.confirmationId, function (err, result) {
 				if (err) {
 					console.log(err);
 					res.statusCode = 500;
