@@ -1,11 +1,21 @@
-function matchUrl(pattern, url) {
-    let patternTokens = pattern.split('/');
-    let urlTokens = url.split('/');
+const querystring = require('querystring');
 
-    let result = {
-        match: true,
-        params: {}
-    };
+function matchUrl(pattern, url) {
+	const result = {
+		match: true,
+		params: {},
+		query: {}
+	};
+
+	const queryParametersStartIndex = url.indexOf('?');
+	if(queryParametersStartIndex !== -1) {
+		const urlQueryString = url.substr(queryParametersStartIndex + 1); // + 1 to ignore the '?'
+		result.query = querystring.parse(urlQueryString);
+		url = url.substr(0, queryParametersStartIndex);
+	}
+
+    const patternTokens = pattern.split('/');
+    const urlTokens = url.split('/');
 
     if(urlTokens[urlTokens.length - 1] === '') {
         urlTokens.pop();
@@ -53,9 +63,9 @@ function Middleware() {
     }
 
     this.use = function (...params) {
-        var args = [undefined, undefined, undefined];
+	    let args = [undefined, undefined, undefined];
 
-        switch (params.length) {
+	    switch (params.length) {
             case 0:
 				throw Error('Use method needs at least one argument.');
 				
@@ -118,11 +128,11 @@ function Middleware() {
             return;
         }
 
-        var registeredMethod = registeredMiddlewareFunctions[index].method;
-		var registeredUrl = registeredMiddlewareFunctions[index].url;
-		var fn = registeredMiddlewareFunctions[index].fn;
+	    const registeredMethod = registeredMiddlewareFunctions[index].method;
+	    const registeredUrl = registeredMiddlewareFunctions[index].url;
+	    const fn = registeredMiddlewareFunctions[index].fn;
 
-        if (!methodMatch(registeredMethod, method)) {
+	    if (!methodMatch(registeredMethod, method)) {
             execute(++index, method, url, ...params);
             return;
         }
@@ -137,6 +147,7 @@ function Middleware() {
 
             if (params[0]) {
                 params[0].params = urlMatch.params;
+                params[0].query  = urlMatch.query;
             }
         }
 
