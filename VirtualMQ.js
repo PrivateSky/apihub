@@ -30,6 +30,14 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
 	function registerEndpoints() {
 
+		server.use(function (req, res, next) {
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+			res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Origin');
+			res.setHeader('Access-Control-Allow-Credentials', true);
+			next();
+		});
+
 		server.post('/:channelId', function (req, res) {
 
 			$$.flow.create("RemoteSwarming").startSwarm(req.params.channelId, req, function (err, result) {
@@ -43,15 +51,28 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 		});
 
 		server.get('/:channelId', function (req, res) {
-
 			$$.flow.create("RemoteSwarming").waitForSwarm(req.params.channelId, res, function (err, result, confirmationId) {
 				if (err) {
 					console.log(err);
 					res.statusCode = 500;
 				}
-				res.write(JSON.stringify({result: result, confirmationId: confirmationId}));
+
+				let responseMessage = result;
+
+				if((req.query.waitConfirmation || 'false')  === 'false') {
+					res.on('finish', () => {
+						$$.flow.create('RemoteSwarming').confirmSwarm(req.params.channelId, confirmationId, (err) => {});
+					});
+				} else {
+					responseMessage = {result, confirmationId};
+				}
+
+				res.write(JSON.stringify(responseMessage));
 				res.end();
 			});
+
+
+
 		});
 
 		server.delete("/:channelId/:confirmationId", function(req, res){
@@ -96,8 +117,8 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 			headers["Access-Control-Allow-Origin"] = "*";
 			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
 			headers["Access-Control-Allow-Credentials"] = true;
-			headers["Access-Control-Max-Age"] = '400'; // 24 hours
-			headers["Access-Control-Allow-Headers"] = "Access-Control-Allow-Headers, Origin,Accept,Access-Control-Allow-Origin, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers";
+			headers["Access-Control-Max-Age"] = '3600'; //one hour
+			headers["Access-Control-Allow-Headers"] = "Content-Type, Access-Control-Allow-Origin";
 			res.writeHead(200, headers);
 			res.end();
 		});
@@ -111,4 +132,4 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
 module.exports.createVirtualMQ = function(port, folder, callback){
 	return new VirtualMQ(port, folder, callback);
-}
+};

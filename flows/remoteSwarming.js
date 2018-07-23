@@ -25,17 +25,6 @@ function storeChannel(id, channel, clientConsumer){
 	}
 }
 
-function removeConsumer(id, consumer){
-	let storedChannel = channels[id];
-	if(storedChannel){
-		let index = storedChannel.indexOf(consumer);
-		if(index !== -1){
-			storedChannel.consumers.splice(index, 1);
-			return true;
-		}
-	}
-	return false;
-}
 
 function registerConsumer(id, consumer){
 	let storedChannel = channels[id];
@@ -115,7 +104,6 @@ $$.flow.describe("RemoteSwarming", {
 				}
 				channel.unlinkContent(confirmationId, callback);
 			});
-			storeChannel(channelId, channel);
 		}else{
 			storedChannel.channel.unlinkContent(confirmationId, callback);
 		}
