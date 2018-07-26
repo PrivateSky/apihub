@@ -84,6 +84,7 @@ $$.flow.describe("RemoteSwarming", {
 					callback(new Error("Channel initialization failed"));
 					return;
 				}
+				// sometimes it an error appear here: "TypeError: Cannot read property 'handler' of null
 				 channels[channelId].handler.addStream(readSwarmStream, callback);
 			});
 			storeChannel(channelId, channel);
