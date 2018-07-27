@@ -23,6 +23,8 @@ function storeChannel(id, channel, clientConsumer){
 	if(clientConsumer){
 		channels[id].consumers.push(clientConsumer);
 	}
+
+	return storedChannel;
 }
 
 
@@ -73,22 +75,24 @@ $$.flow.describe("RemoteSwarming", {
 			callback(err, rootFolder);
 		});
 	},
-	startSwarm: function(channelId, readSwarmStream, callback){
+	startSwarm: function (channelId, readSwarmStream, callback) {
 		let channel = channels[channelId];
-		if(!channel){
+		if (!channel) {
 			let channelFolder = path.join(rootfolder, channelId);
-			 channel = folderMQ.getFolderQueue(channelFolder, (err, result) => {
-				if(err){
+			let storedChannel;
+			channel = folderMQ.getFolderQueue(channelFolder, (err, result) => {
+				if (err) {
 					//we delete the channel in order to try again next time
 					channels[channelId] = null;
 					callback(new Error("Channel initialization failed"));
 					return;
 				}
-				// sometimes it an error appear here: "TypeError: Cannot read property 'handler' of null
-				 channels[channelId].handler.addStream(readSwarmStream, callback);
+
+				storedChannel.handler.addStream(readSwarmStream, callback);
+				
 			});
-			storeChannel(channelId, channel);
-		}else{
+			storedChannel = storeChannel(channelId, channel);
+		} else {
 			channel.handler.addStream(readSwarmStream, callback);
 		}
 	},
