@@ -21,6 +21,7 @@ function storeChannel(id, channel, clientConsumer){
 	}
 
 	if(clientConsumer){
+		storedChannel = channels[id];
 		channels[id].consumers.push(clientConsumer);
 	}
 
