@@ -1,7 +1,7 @@
 require("../../../engine/core");
 const path = require("path");
 const fs = require("fs");
-const folderMQ = $$.requireModule("soundpubsub").folderMQ;
+const folderMQ = require("soundpubsub").folderMQ;
 
 let rootfolder;
 const channels = {

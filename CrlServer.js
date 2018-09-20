@@ -1,7 +1,7 @@
 require('../../engine/core');
 const Server = require('./libs/http-wrapper/src/index').Server;
 const httpUtils = require('./libs/http-wrapper/src/index').httpUtils;
-const folderMQ = $$.requireModule('soundpubsub').folderMQ;
+const folderMQ = require('soundpubsub').folderMQ;
 const path = require('path');
 const fs = require('fs');
 
