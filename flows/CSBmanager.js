@@ -1,92 +1,151 @@
-require("../../../engine/core");
+require('../../../engine/core');
 const path = require("path");
 const fs = require("fs");
 
 const folderNameSize = process.env.FOLDER_NAME_SIZE || 5;
-var rootfolder;
-
+let rootfolder;
 
 $$.flow.describe("CSBmanager", {
-	init: function(rootFolder, callback){
-		if(!rootFolder){
-			callback(new Error("No root folder specified!"));
-			return;
-		}
-		rootFolder = path.resolve(rootFolder);
-		this.__ensureFolderStructure(rootFolder, function(err, path){
-			rootfolder = rootFolder;
-			callback(err, rootFolder);
-		});
-	},
-	write: function(fileName, readFileStream, callback){
-		if(!this.__verifyFileName(fileName, callback)){
-			return;
-		}
+    init: function(rootFolder, callback){
+        if(!rootFolder){
+            callback(new Error("No root folder specified!"));
+            return;
+        }
+        rootFolder = path.resolve(rootFolder);
+        this.__ensureFolderStructure(rootFolder, function(err, path){
+            rootfolder = rootFolder;
+            callback(err, rootFolder);
+        });
+    },
+    write: function(fileName, readFileStream, callback){
+        if(!this.__verifyFileName(fileName, callback)){
+            return;
+        }
 
-		if(!readFileStream || !readFileStream.pipe || typeof readFileStream.pipe !== "function"){
-			callback(new Error("Something wrong happened"));
-			return;
-		}
+        if(!readFileStream || !readFileStream.pipe || typeof readFileStream.pipe !== "function"){
+            callback(new Error("Something wrong happened"));
+            return;
+        }
 
-		var folderName = path.join(rootfolder, fileName.substr(0, folderNameSize));
+        const folderName = path.join(rootfolder, fileName.substr(0, folderNameSize), fileName);
 
-		var serialExecution = this.serial(callback);
-		serialExecution.__ensureFolderStructure(folderName, serialExecution.__progress);
-		serialExecution.__writeFile(readFileStream, path.join(folderName, fileName), serialExecution.__progress);
-	},
-	read: function(fileName, writeFileStream, callback){
-		if(!this.__verifyFileName(fileName, callback)){
-			return;
-		}
+        const serialExecution = this.serial(callback);
+        serialExecution.__ensureFolderStructure(folderName, serialExecution.__progress);
+        serialExecution.__writeFile(readFileStream, folderName, fileName, (err, res) =>{
+            serialExecution.__progress(err, res);
+            callback(err, res);
+        });
+    },
+    read: function(fileName, writeFileStream, callback){
+        if(!this.__verifyFileName(fileName, callback)){
+            return;
+        }
 
-		var folderName = path.join(rootfolder, fileName.substr(0, folderNameSize));
-		var filePath = path.join(folderName, fileName);
-		this.__verifyFileExistence(filePath, (err, result) => {
-			if(!err){
-				this.__readFile(writeFileStream, filePath, callback);
-			}else{
-				callback(new Error("No file found."));
-			}
-		});
-	},
-	__verifyFileName: function(fileName, callback){
-		if(!fileName || typeof fileName != "string"){
-			callback(new Error("No fileId specified."));
-			return;
-		}
+        const folderPath = path.join(rootfolder, fileName.substr(0, folderNameSize));
+        const filePath = path.join(folderPath, fileName);
+        this.__verifyFileExistence(filePath, (err, result) => {
+            if(!err){
+                this.__getLatestVersionNameOfFile(filePath, (err, fileVersion) => {
+                    if(err) {
+                        return callback(err);
+                    }
+                    this.__readFile(writeFileStream, path.join(filePath, fileVersion.toString()), callback);
+                });
+            }else{
+                callback(new Error("No file found."));
+            }
+        });
+    },
+    readVersion: function(fileName, fileVersion, writeFileStream, callback) {
+        if(!this.__verifyFileName(fileName, callback)){
+            return;
+        }
 
-		if(fileName.length < folderNameSize){
-			callback(new Error("FileId to small."));
-			return;
-		}
+        const folderPath = path.join(rootfolder, fileName.substr(0, folderNameSize));
+        const filePath = path.join(folderPath, fileName, fileVersion);
+        this.__verifyFileExistence(filePath, (err, result) => {
+            if(!err){
+                this.__readFile(writeFileStream, path.join(filePath), callback);
+            }else{
+                callback(new Error("No file found."));
+            }
+        });
+    },
+    __verifyFileName: function(fileName, callback){
+        if(!fileName || typeof fileName != "string"){
+            callback(new Error("No fileId specified."));
+            return;
+        }
 
-		return true;
-	},
-	__ensureFolderStructure: function(folder, callback){
-		$$.ensureFolderExists(folder, callback);
-	},
-	__writeFile: function(readStream, filePath, callback){
-		var writeStream = fs.createWriteStream(filePath);
+        if(fileName.length < folderNameSize){
+            callback(new Error("FileId to small. "+fileName));
+            return;
+        }
 
-		writeStream.on("finish", callback);
-		writeStream.on("error", callback);
+        return true;
+    },
+    __ensureFolderStructure: function(folder, callback){
+        $$.ensureFolderExists(folder, callback);
+    },
+    __writeFile: function(readStream, folderPath, fileName, callback){
+        this.__getNextVersionFileName(folderPath, fileName, (err, nextVersionFileName) => {
+            if(err) {
+                console.error(err);
+                return callback(err);
+            }
+            const writeStream = fs.createWriteStream(path.join(folderPath, nextVersionFileName.toString()));
 
-		readStream.pipe(writeStream);
-	},
-	__readFile: function(writeFileStream, filePath, callback){
-		var readStream = fs.createReadStream(filePath);
+            writeStream.on("finish", callback);
+            writeStream.on("error", callback);
 
-		writeFileStream.on("finish", callback);
-		writeFileStream.on("error", callback);
+            readStream.pipe(writeStream);
+        });
+    },
+    __getNextVersionFileName: function (folderPath, fileName, callback) {
+        this.__getLatestVersionNameOfFile(folderPath, (err, fileVersion) => {
+            if(err) {
+                console.error(err);
+                return callback(err);
+            }
 
-		readStream.pipe(writeFileStream);
-	},
-	__progress: function(err, result){
-		if(err){
-			console.error(err);
-		}
-	},
-	__verifyFileExistence: function(filePath, callback){
-		fs.stat(filePath, callback);
-	}
+            callback(undefined, fileVersion + 1);
+        });
+    },
+    // ToDo: treat errors
+    __getLatestVersionNameOfFile: function (folderPath, callback) {
+        fs.readdir(folderPath, (err, files) => {
+            if (err) {
+                console.error(err);
+                callback(err);
+                return;
+            }
+
+            let fileVersion = 0;
+            if(files.length > 0) {
+                files.sort((left, right) => left.localeCompare(right));
+
+                const latestFile = files[files.length - 1];
+
+                fileVersion = Number.parseInt(latestFile);
+            }
+
+            callback(undefined, fileVersion);
+        });
+    },
+    __readFile: function(writeFileStream, filePath, callback){
+        const readStream = fs.createReadStream(filePath);
+
+        writeFileStream.on("finish", callback);
+        writeFileStream.on("error", callback);
+
+        readStream.pipe(writeFileStream);
+    },
+    __progress: function(err, result){
+        if(err){
+            console.error(err);
+        }
+    },
+    __verifyFileExistence: function(filePath, callback){
+        fs.stat(filePath, callback);
+    }
 });

@@ -38,6 +38,49 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 			next();
 		});
 
+        server.post('/CSB', function (req, res) {
+        	//preventing illegal characters passing as fileId
+            res.statusCode = 400;
+            res.end();
+        });
+
+        server.post('/CSB/:fileId', function (req, res) {
+            if (req.headers['content-type'] !== 'application/octet-stream') {
+
+                $$.flow.create("CSBmanager").write(req.params.fileId, req, function (err, result) {
+                    res.statusCode = 201;
+                    if (err) {
+                        console.log(err);
+                        res.statusCode = 500;
+                    }
+                    res.end();
+                });
+            }
+        });
+
+        server.get('/CSB/:fileId', function (req, res) {
+
+            $$.flow.create("CSBmanager").read(req.params.fileId, res, function (err, result) {
+                res.statusCode = 200;
+                if (err) {
+                    console.log(err);
+                    res.statusCode = 404;
+                }
+                res.end();
+            });
+        });
+
+        server.get('/CSB/:fileId/:version', function (req, res) {
+            $$.flow.create("CSBmanager").readVersion(req.params.fileId, req.params.version, res, function (err, result) {
+                res.statusCode = 200;
+                if (err) {
+                    console.log(err);
+                    res.statusCode = 404;
+                }
+                res.end();
+            });
+        });
+
 		server.post('/:channelId', function (req, res) {
 
 			$$.flow.create("RemoteSwarming").startSwarm(req.params.channelId, req, function (err, result) {
@@ -85,30 +128,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 			});
 		});
 
-		server.post('/CSB/:fileId', function (req, res) {
-			if (req.headers['content-type'] !== 'application/octet-stream') {
 
-				$$.flow.create("CSBmanager").write(req.params.fileId, req, function (err, result) {
-					res.statusCode = 201;
-					if (err) {
-						console.log(err);
-						res.statusCode = 500;
-					}
-					res.end();
-				});
-			}
-		});
-
-		server.get('/CSB/:fileId', function (req, res) {
-			$$.flow.create("CSBmanager").read(req.params.fileId, res, function (err, result) {
-				res.statusCode = 200;
-				if (err) {
-					console.log(err);
-					res.statusCode = 404;
-				}
-				res.end();
-			});
-		});
 
 		server.options('/*', function (req, res) {
 			var headers = {};
