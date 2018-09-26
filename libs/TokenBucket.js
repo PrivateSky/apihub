@@ -21,17 +21,23 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
     }
 
 
-    TokenBucket.prototype.COST_LOW = 10;     // equivalent to 10op/s with default values
+    TokenBucket.prototype.COST_LOW    = 10;  // equivalent to 10op/s with default values
     TokenBucket.prototype.COST_MEDIUM = 100; // equivalent to 1op/s with default values
-    TokenBucket.prototype.COST_HIGH = 600;   // equivalent to 10op/minute with default values
+    TokenBucket.prototype.COST_HIGH   = 500; // equivalent to 12op/minute with default values
 
-    TokenBucket.ERROR_LIMIT_EXCEDED = 1;
+    TokenBucket.ERROR_LIMIT_EXCEEDED  = 'error_limit_exceeded';
+    TokenBucket.ERROR_BAD_ARGUMENT    = 'error_bad_argument';
 
 
 
     const limits = {};
 
-    function takeToken(userKey, cost, callback) {
+    function takeToken(userKey, cost, callback = () => {}) {
+        if(typeof cost !== 'number' || isNaN(cost) || cost <= 0 || cost === Infinity) {
+            callback(TokenBucket.ERROR_BAD_ARGUMENT);
+            return;
+        }
+
         const userBucket = limits[userKey];
 
         if (userBucket) {
@@ -40,8 +46,11 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
 
             userBucket.timestamp = Date.now();
 
-            if (userBucket.tokens <= 0) {
-                callback(TokenBucket.ERROR_LIMIT_EXCEDED, 0);
+
+
+            if (userBucket.tokens < 0) {
+                userBucket.tokens = 0;
+                callback(TokenBucket.ERROR_LIMIT_EXCEEDED, 0);
                 return;
             }
 
@@ -77,7 +86,7 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
         return {
             set tokens(numberOfTokens) {
                 if (numberOfTokens < 0) {
-                    numberOfTokens = 0;
+                    numberOfTokens = -1;
                 }
 
                 if (numberOfTokens > maximumTokens) {

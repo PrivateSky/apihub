@@ -50,7 +50,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
 				if(err) {
 					switch (err) {
-						case TokenBucket.ERROR_LIMIT_EXCEDED:
+						case TokenBucket.ERROR_LIMIT_EXCEEDED:
 							res.statusCode = 429;
 							break;
 						default:
