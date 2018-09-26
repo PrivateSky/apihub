@@ -2,10 +2,13 @@ require("./flows/CSBmanager");
 require("./flows/remoteSwarming");
 const path = require("path");
 const Server = require('./libs/http-wrapper/src/index').Server;
+const TokenBucket = require('./libs/TokenBucket');
+
 
 function VirtualMQ(listeningPort, rootFolder, callback) {
 	const port = listeningPort || 8080;
 	const server = new Server().listen(port);
+    const tokenBucket = new TokenBucket();
 	const CSB_storage_folder = "uploads";
 	const SWARM_storage_folder = "swarms";
 	console.log("Listening on port:", port);
@@ -36,6 +39,31 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 			res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Origin');
 			res.setHeader('Access-Control-Allow-Credentials', true);
 			next();
+		});
+
+		server.use(function (req, res, next) {
+            const ip = res.socket.remoteAddress;
+
+			tokenBucket.takeToken(ip, tokenBucket.COST_MEDIUM, function(err, remainedTokens) {
+                res.setHeader('X-RateLimit-Limit', tokenBucket.getLimitByCost(tokenBucket.COST_MEDIUM));
+				res.setHeader('X-RateLimit-Remaining', tokenBucket.getRemainingTokenByCost(remainedTokens, tokenBucket.COST_MEDIUM));
+
+				if(err) {
+					switch (err) {
+						case TokenBucket.ERROR_LIMIT_EXCEDED:
+							res.statusCode = 429;
+							break;
+						default:
+							res.statusCode = 500;
+
+                    }
+
+                    res.end();
+					return;
+				}
+
+				next();
+			});
 		});
 
         server.post('/CSB', function (req, res) {
@@ -130,7 +158,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
 
 
-		server.options('/*', function (req, res) {
+		server.options('/!*', function (req, res) {
 			var headers = {};
 			// IE8 does not allow domains to be specified, just the *
 			// headers["Access-Control-Allow-Origin"] = req.headers.origin;
