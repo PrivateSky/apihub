@@ -1,7 +1,6 @@
-require("../../../engine/core");
 const path = require("path");
 const fs = require("fs");
-const folderMQ = require("soundpubsub").folderMQ;
+const folderMQ = require("foldermq");
 
 let rootfolder;
 const channels = {
@@ -81,7 +80,7 @@ $$.flow.describe("RemoteSwarming", {
 		if (!channel) {
 			let channelFolder = path.join(rootfolder, channelId);
 			let storedChannel;
-			channel = folderMQ.getFolderQueue(channelFolder, (err, result) => {
+			channel = folderMQ.createQue(channelFolder, (err, result) => {
 				if (err) {
 					//we delete the channel in order to try again next time
 					channels[channelId] = null;
@@ -101,7 +100,7 @@ $$.flow.describe("RemoteSwarming", {
 		let storedChannel = channels[channelId];
 		if(!storedChannel){
 			let channelFolder = path.join(rootfolder, channelId);
-			let channel = folderMQ.getFolderQueue(channelFolder, (err, result) => {
+			let channel = folderMQ.createQue(channelFolder, (err, result) => {
 				if(err){
 					//we delete the channel in order to try again next time
 					channels[channelId] = null;
@@ -118,7 +117,7 @@ $$.flow.describe("RemoteSwarming", {
 		let channel = channels[channelId];
 		if(!channel){
 			let channelFolder = path.join(rootfolder, channelId);
-			channel = folderMQ.getFolderQueue(channelFolder, (err, result) => {
+			channel = folderMQ.createQue(channelFolder, (err, result) => {
 				if(err){
 					//we delete the channel in order to try again next time
 					channels[channelId] = null;
