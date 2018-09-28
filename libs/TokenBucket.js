@@ -111,11 +111,9 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
         return elapsedTime * tokenValuePerTime;
     }
 
-    return {
-        takeToken,
-        getLimitByCost,
-        getRemainingTokenByCost
-    }
+    this.takeToken               = takeToken;
+    this.getLimitByCost          = getLimitByCost;
+    this.getRemainingTokenByCost = getRemainingTokenByCost;
 }
 
 module.exports = TokenBucket;
