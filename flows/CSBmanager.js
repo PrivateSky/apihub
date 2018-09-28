@@ -29,11 +29,12 @@ $$.flow.describe("CSBmanager", {
 
         const folderName = path.join(rootfolder, fileName.substr(0, folderNameSize), fileName);
 
-        const serialExecution = this.serial(callback);
-        serialExecution.__ensureFolderStructure(folderName, serialExecution.__progress);
-        serialExecution.__writeFile(readFileStream, folderName, fileName, (err, res) =>{
-            serialExecution.__progress(err, res);
-            callback(err, res);
+        this.__ensureFolderStructure(folderName, (err) => {
+            if (err) {
+                callback(err);
+                return;
+            }
+            this.__writeFile(readFileStream, folderName, fileName, callback);
         });
     },
     read: function(fileName, writeFileStream, callback){
