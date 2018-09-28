@@ -78,8 +78,11 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
                 $$.flow.create("CSBmanager").write(req.params.fileId, req, function (err, result) {
                     res.statusCode = 201;
                     if (err) {
-                        console.log(err);
                         res.statusCode = 500;
+
+                    	if(err.code === 'EACCES') {
+                    		res.statusCode = 409;
+						}
                     }
                     res.end();
                 });

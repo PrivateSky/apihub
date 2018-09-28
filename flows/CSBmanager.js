@@ -29,13 +29,10 @@ $$.flow.describe("CSBmanager", {
 
         const folderName = path.join(rootfolder, fileName.substr(0, folderNameSize), fileName);
 
-        this.__ensureFolderStructure(folderName, (err) => {
-            if (err) {
-                callback(err);
-                return;
-            }
-            this.__writeFile(readFileStream, folderName, fileName, callback);
-        });
+        const serial = this.serial(() => {});
+
+        serial.__ensureFolderStructure(folderName, serial.__progress);
+        serial.__writeFile(readFileStream, folderName, fileName, callback);
     },
     read: function(fileName, writeFileStream, callback){
         if(!this.__verifyFileName(fileName, callback)){
@@ -102,7 +99,9 @@ $$.flow.describe("CSBmanager", {
                 console.error(err);
                 return callback(err);
             }
-            const writeStream = fs.createWriteStream(path.join(folderPath, nextVersionFileName.toString()));
+            const writeStream = fs.createWriteStream(path.join(folderPath, nextVersionFileName.toString()), {
+                mode:0o444
+            });
 
             writeStream.on("finish", callback);
             writeStream.on("error", callback);
