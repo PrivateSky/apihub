@@ -98,6 +98,17 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
             });
         });
 
+        server.get('/CSB/:fileId/versions', function (req, res) {
+			$$.flow.create("CSBmanager").getVersionsForFile(req.params.fileId, res, function(err, fileVersions) {
+				if(err) {
+					console.error(err);
+					res.statusCode = 404;
+				}
+
+				res.end(fileVersions.toString());
+			})
+		});
+
         server.get('/CSB/:fileId/:version', function (req, res) {
             $$.flow.create("CSBmanager").readVersion(req.params.fileId, req.params.version, res, function (err, result) {
                 res.statusCode = 200;

@@ -72,6 +72,14 @@ $$.flow.describe("CSBmanager", {
             }
         });
     },
+    getVersionsForFile: function(fileName, writeFileStream, callback) {
+        if(!this.__verifyFileName(fileName, callback)){
+            return;
+        }
+
+        const folderPath = path.join(rootfolder, fileName.substr(0, folderNameSize), fileName);
+        fs.readdir(folderPath, callback)
+    },
     __verifyFileName: function(fileName, callback){
         if(!fileName || typeof fileName != "string"){
             callback(new Error("No fileId specified."));
