@@ -73,20 +73,18 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
         });
 
         server.post('/CSB/:fileId', function (req, res) {
-            if (req.headers['content-type'] !== 'application/octet-stream') {
+            $$.flow.create("CSBmanager").write(req.params.fileId, req, function (err, result) {
+                res.statusCode = 201;
+                if (err) {
+                    res.statusCode = 500;
 
-                $$.flow.create("CSBmanager").write(req.params.fileId, req, function (err, result) {
-                    res.statusCode = 201;
-                    if (err) {
-                        res.statusCode = 500;
-
-                    	if(err.code === 'EACCES') {
-                    		res.statusCode = 409;
-						}
+                    if (err.code === 'EACCES') {
+                        res.statusCode = 409;
                     }
-                    res.end();
-                });
-            }
+                }
+                res.end();
+            });
+
         });
 
         server.get('/CSB/:fileId', function (req, res) {
