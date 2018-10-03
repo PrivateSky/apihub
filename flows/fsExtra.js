@@ -2,7 +2,7 @@ const path = require("path");
 const fs = require("fs");
 
 
-$$.flow.create('fsExtra', {
+$$.flow.describe('fsExtra', {
     getFolderSize: function (folder, callback) {
         let total = 0;
 

@@ -14,13 +14,12 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 	console.log("Listening on port:", port);
 
 	this.close = server.close;
-
-	$$.flow.create("CSBmanager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
+	$$.flow.start("CSBmanager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
 		if (err) {
 			throw err;
 		} else {
 			console.log("CSBmanager is using folder", result);
-			$$.flow.create("RemoteSwarming").init(path.join(rootFolder, SWARM_storage_folder), function(err, result){
+			$$.flow.start("RemoteSwarming").init(path.join(rootFolder, SWARM_storage_folder), function(err, result){
 				registerEndpoints();
 				if (callback) {
 					callback();
@@ -73,7 +72,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
         });
 
         server.post('/CSB/:fileId', function (req, res) {
-            $$.flow.create("CSBmanager").write(req.params.fileId, req, function (err, result) {
+            $$.flow.start("CSBmanager").write(req.params.fileId, req, function (err, result) {
                 res.statusCode = 201;
                 if (err) {
                     res.statusCode = 500;
@@ -89,7 +88,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
         server.get('/CSB/:fileId', function (req, res) {
 
-            $$.flow.create("CSBmanager").read(req.params.fileId, res, function (err, result) {
+            $$.flow.start("CSBmanager").read(req.params.fileId, res, function (err, result) {
                 res.statusCode = 200;
                 if (err) {
                     console.log(err);
@@ -100,7 +99,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
         });
 
         server.get('/CSB/:fileId/versions', function (req, res) {
-			$$.flow.create("CSBmanager").getVersionsForFile(req.params.fileId, res, function(err, fileVersions) {
+			$$.flow.start("CSBmanager").getVersionsForFile(req.params.fileId, res, function(err, fileVersions) {
 				if(err) {
 					console.error(err);
 					res.statusCode = 404;
@@ -111,7 +110,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 		});
 
         server.get('/CSB/:fileId/:version', function (req, res) {
-            $$.flow.create("CSBmanager").readVersion(req.params.fileId, req.params.version, res, function (err, result) {
+            $$.flow.start("CSBmanager").readVersion(req.params.fileId, req.params.version, res, function (err, result) {
                 res.statusCode = 200;
                 if (err) {
                     console.log(err);
@@ -123,7 +122,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
 		server.post('/:channelId', function (req, res) {
 
-			$$.flow.create("RemoteSwarming").startSwarm(req.params.channelId, req, function (err, result) {
+			$$.flow.start("RemoteSwarming").startSwarm(req.params.channelId, req, function (err, result) {
 				res.statusCode = 201;
 				if (err) {
 					console.log(err);
@@ -134,7 +133,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 		});
 
 		server.get('/:channelId', function (req, res) {
-			$$.flow.create("RemoteSwarming").waitForSwarm(req.params.channelId, res, function (err, result, confirmationId) {
+			$$.flow.start("RemoteSwarming").waitForSwarm(req.params.channelId, res, function (err, result, confirmationId) {
 				if (err) {
 					console.log(err);
 					res.statusCode = 500;
@@ -144,7 +143,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
 				if((req.query.waitConfirmation || 'false')  === 'false') {
 					res.on('finish', () => {
-						$$.flow.create('RemoteSwarming').confirmSwarm(req.params.channelId, confirmationId, (err) => {});
+						$$.flow.start('RemoteSwarming').confirmSwarm(req.params.channelId, confirmationId, (err) => {});
 					});
 				} else {
 					responseMessage = {result, confirmationId};
@@ -159,7 +158,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 		});
 
 		server.delete("/:channelId/:confirmationId", function(req, res){
-			$$.flow.create("RemoteSwarming").confirmSwarm(req.params.channelId, req.params.confirmationId, function (err, result) {
+			$$.flow.start("RemoteSwarming").confirmSwarm(req.params.channelId, req.params.confirmationId, function (err, result) {
 				if (err) {
 					console.log(err);
 					res.statusCode = 500;
