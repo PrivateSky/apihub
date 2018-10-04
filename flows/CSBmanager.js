@@ -160,7 +160,6 @@ $$.flow.describe("CSBmanager", {
                     fileVersion = parseInt(latestFile);
                 } catch (e) {
                     e.code = 'invalid_file_name_found';
-                    console.log('da');
                     callback(e);
                 }
             }
