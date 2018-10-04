@@ -144,7 +144,6 @@ $$.flow.describe("CSBmanager", {
             callback(undefined, fileVersion + 1);
         });
     },
-    // ToDo: treat errors
     __getLatestVersionNameOfFile: function (folderPath, callback) {
         fs.readdir(folderPath, (err, files) => {
             if (err) {
@@ -154,16 +153,33 @@ $$.flow.describe("CSBmanager", {
             }
 
             let fileVersion = 0;
+
             if(files.length > 0) {
-                files.sort((left, right) => left.localeCompare(right));
-
-                const latestFile = files[files.length - 1];
-
-                fileVersion = Number.parseInt(latestFile);
+                try {
+                    const latestFile = this.__maxElement(files);
+                    fileVersion = parseInt(latestFile);
+                } catch (e) {
+                    e.code = 'invalid_file_name_found';
+                    console.log('da');
+                    callback(e);
+                }
             }
 
             callback(undefined, fileVersion);
         });
+    },
+    __maxElement: function (numbers) {
+        let max = numbers[0];
+
+        for(let i = 1; i < numbers.length; ++i) {
+            max = Math.max(max, numbers[i]);
+        }
+
+        if(isNaN(max)) {
+            throw new Error('Invalid element found');
+        }
+
+        return max;
     },
     __readFile: function(writeFileStream, filePath, callback){
         const readStream = fs.createReadStream(filePath);
