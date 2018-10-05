@@ -124,13 +124,19 @@ $$.flow.describe("CSBmanager", {
                 console.error(err);
                 return callback(err);
             }
-            const writeStream = fs.createWriteStream(path.join(folderPath, nextVersionFileName.toString()), {
-                mode:0o444
+
+            const writeStream = fs.createWriteStream(path.join(folderPath, nextVersionFileName.toString()), {autoClose: false});
+
+            writeStream.on("finish", function() {
+                writeStream.close();
+                callback(...arguments);
             });
-
-            writeStream.on("finish", callback);
-            writeStream.on("error", callback);
-
+            writeStream.on("error", function() {
+                console.error(arguments);
+				writeStream.close();
+                callback(...arguments);
+            });
+			//
             readStream.pipe(writeStream);
         });
     },
