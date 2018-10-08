@@ -127,12 +127,8 @@ $$.flow.describe("CSBmanager", {
 
             const writeStream = fs.createWriteStream(path.join(folderPath, nextVersionFileName.toString()), {autoClose: false});
 
-            writeStream.on("finish", function() {
-                writeStream.close();
-                callback(...arguments);
-            });
+            writeStream.on("finish", callback);
             writeStream.on("error", function() {
-                console.error(arguments);
 				writeStream.close();
                 callback(...arguments);
             });
