@@ -80,26 +80,33 @@ $$.flow.describe("CSBmanager", {
                 return callback(err);
             }
 
-            const filesInfoPromises = [];
+            const totalNumberOfFiles = files.length;
+            const filesData = [];
 
-            for (let i = 0; i < files.length; ++i) {
-                filesInfoPromises.push(new Promise((resolve, reject) => {
-                    fs.stat(path.join(folderPath, files[i]), (err, stats) => {
-                        if (err) {
-                            return reject(err);
-                        }
+            let resolvedFiles = 0;
 
-                        resolve({version: files[i], creationTime: stats.birthtime, creationTimeMs: stats.birthtimeMs});
-                    });
-                }));
+            for (let i = 0; i < totalNumberOfFiles; ++i) {
+                fs.stat(path.join(folderPath, files[i]), (err, stats) => {
+                    if (err) {
+                        filesData.push({version: files[i], creationTime: null, creationTimeMs: null});
+                        return;
+                    }
+
+                    filesData.push({version: files[i], creationTime: stats.birthtime, creationTimeMs: stats.birthtimeMs});
+
+                    resolvedFiles += 1;
+
+                    if (resolvedFiles >= totalNumberOfFiles) {
+                        filesData.sort((first, second) => {
+                            const firstCompareData = first.creationTimeMs || first.version;
+                            const secondCompareData = second.creationTimeMs || second.version;
+
+                            return firstCompareData - secondCompareData;
+                        });
+                        callback(undefined, filesData);
+                    }
+                });
             }
-
-            Promise.all(filesInfoPromises)
-                .then((filesInfo => {
-                    filesInfo.sort((first, second) => first.version - second.version);
-                    callback(undefined, filesInfo)
-                }))
-                .catch(callback);
         });
     },
     __verifyFileName: function(fileName, callback){
@@ -125,14 +132,14 @@ $$.flow.describe("CSBmanager", {
                 return callback(err);
             }
 
-            const writeStream = fs.createWriteStream(path.join(folderPath, nextVersionFileName.toString()), {autoClose: false});
+            const writeStream = fs.createWriteStream(path.join(folderPath, nextVersionFileName.toString()), {mode:0o444});
 
             writeStream.on("finish", callback);
             writeStream.on("error", function() {
 				writeStream.close();
                 callback(...arguments);
             });
-			//
+
             readStream.pipe(writeStream);
         });
     },
