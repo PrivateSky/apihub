@@ -97,7 +97,7 @@ $$.flow.describe("CSBmanager", {
             Promise.all(filesInfoPromises)
                 .then((filesInfo => {
                     filesInfo.sort((first, second) => first.version - second.version);
-                    callback(undefined, JSON.stringify(filesInfo))
+                    callback(undefined, filesInfo)
                 }))
                 .catch(callback);
         });

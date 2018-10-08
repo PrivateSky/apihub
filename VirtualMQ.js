@@ -105,7 +105,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 					res.statusCode = 404;
 				}
 
-				res.end(fileVersions.toString());
+				res.end(JSON.stringify(fileVersions));
 			})
 		});
 
