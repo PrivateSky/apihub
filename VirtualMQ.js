@@ -87,7 +87,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
         });
 
         server.get('/CSB/:fileId', function (req, res) {
-
+			res.setHeader("content-type", "application/octet-stream");
             $$.flow.start("CSBmanager").read(req.params.fileId, res, function (err, result) {
                 res.statusCode = 200;
                 if (err) {
