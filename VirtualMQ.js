@@ -99,7 +99,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
         });
 
         server.get('/CSB/:fileId/versions', function (req, res) {
-			$$.flow.start("CSBmanager").getVersionsForFile(req.params.fileId, res, function(err, fileVersions) {
+			$$.flow.start("CSBmanager").getVersionsForFile(req.params.fileId, function(err, fileVersions) {
 				if(err) {
 					console.error(err);
 					res.statusCode = 404;

@@ -69,7 +69,7 @@ $$.flow.describe("CSBmanager", {
             }
         });
     },
-    getVersionsForFile: function (fileName, writeFileStream, callback) {
+    getVersionsForFile: function (fileName, callback) {
         if (!this.__verifyFileName(fileName, callback)) {
             return;
         }
