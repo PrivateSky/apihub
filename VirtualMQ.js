@@ -169,7 +169,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 
 
 
-		server.options('/!*', function (req, res) {
+		server.options('/*', function (req, res) {
 			var headers = {};
 			// IE8 does not allow domains to be specified, just the *
 			// headers["Access-Control-Allow-Origin"] = req.headers.origin;
