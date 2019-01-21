@@ -121,17 +121,21 @@ $$.flow.describe("RemoteSwarming", {
 				if(err){
 					//we delete the channel in order to try again next time
 					channels[channelId] = null;
-					callback(new Error("Channel initialization failed"));
+					callback(new Error("Channel initialization failed"), {});
 					return;
 				}
-				registerConsumer(channelId, callback);
+				if(!registerConsumer(channelId, callback)){
+					callback(new Error("Registering consumer failed!"), {});
+				}
 				registerMainConsumer(channelId);
 			});
 			storeChannel(channelId, channel);
 		}else{
 			//channel.channel.registerConsumer(callback);
-			registerConsumer(channelId, callback);
-			registerMainConsumer(channelId);
+            if(!registerConsumer(channelId, callback)){
+                callback(new Error("Registering consumer failed!"), {});
+            }
+            registerMainConsumer(channelId);
 		}
 	}
 });
