@@ -1,8 +1,10 @@
 require('../../../engine/core');
 const path = require("path");
 const fs = require("fs");
+const PskHash = require('pskcrypto').PskHash;
 
 const folderNameSize = process.env.FOLDER_NAME_SIZE || 5;
+const FILE_SEPARATOR = '-';
 let rootfolder;
 
 $$.flow.describe("CSBmanager", {
@@ -109,6 +111,22 @@ $$.flow.describe("CSBmanager", {
             }
         });
     },
+    compareVersions: function(bodyStream, callback) {
+        let body = '';
+
+        bodyStream.on('data', (data) => {
+            body += data;
+        });
+
+        bodyStream.on('end', () => {
+           try {
+               body = JSON.parse(body);
+               this.__compareVersions(body, callback);
+           } catch (e) {
+                callback(e);
+           }
+        });
+    },
     __verifyFileName: function(fileName, callback){
         if(!fileName || typeof fileName != "string"){
             callback(new Error("No fileId specified."));
@@ -116,7 +134,7 @@ $$.flow.describe("CSBmanager", {
         }
 
         if(fileName.length < folderNameSize){
-            callback(new Error("FileId to small. "+fileName));
+            callback(new Error("FileId too small. "+fileName));
             return;
         }
 
@@ -132,11 +150,23 @@ $$.flow.describe("CSBmanager", {
                 return callback(err);
             }
 
-            const writeStream = fs.createWriteStream(path.join(folderPath, nextVersionFileName.toString()), {mode:0o444});
+            const hash = new PskHash();
+            readStream.on('data', (data) => {
+                hash.update(data);
+            });
 
-            writeStream.on("finish", callback);
+            const filePath = path.join(folderPath, nextVersionFileName.toString());
+            const writeStream = fs.createWriteStream(filePath, {mode:0o444});
+
+            writeStream.on("finish", () => {
+                const hashDigest = hash.digest().toString('hex');
+                const newPath = filePath + FILE_SEPARATOR + hashDigest;
+                fs.rename(filePath, newPath, callback);
+            });
+
             writeStream.on("error", function() {
 				writeStream.close();
+				readStream.close();
                 callback(...arguments);
             });
 
@@ -165,7 +195,8 @@ $$.flow.describe("CSBmanager", {
 
             if(files.length > 0) {
                 try {
-                    const latestFile = this.__maxElement(files);
+                    const allVersions = files.map(file => file.split(FILE_SEPARATOR)[0]);
+                    const latestFile = this.__maxElement(allVersions);
                     fileVersion = parseInt(latestFile);
                 } catch (e) {
                     e.code = 'invalid_file_name_found';
@@ -188,6 +219,32 @@ $$.flow.describe("CSBmanager", {
         }
 
         return max;
+    },
+    __compareVersions: function (files, callback) {
+        const filesWithChanges = [];
+        const entries = Object.entries(files);
+        let remaining = entries.length;
+
+        entries.forEach(([fileName, fileHash]) => {
+            this.getVersionsForFile(fileName, (err, versions) => {
+                if (err) {
+                    callback(err);
+                }
+
+                const match = versions.some(version => {
+                    const hash = version.version.split(FILE_SEPARATOR)[1];
+                    return hash === fileHash;
+                });
+
+                if (!match) {
+                    filesWithChanges.push(fileName);
+                }
+
+                if (--remaining === 0) {
+                    callback(undefined, filesWithChanges);
+                }
+            })
+        });
     },
     __readFile: function(writeFileStream, filePath, callback){
         const readStream = fs.createReadStream(filePath);

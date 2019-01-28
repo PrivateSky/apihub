@@ -71,6 +71,16 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
             res.end();
         });
 
+		server.post('/CSB/compareVersions', function(req, res) {
+			$$.flow.start('CSBmanager').compareVersions(req, function(err, filesWithChanges) {
+				if (err) {
+					console.log(err);
+					res.statusCode = 500;
+				}
+				res.end(JSON.stringify(filesWithChanges));
+			})
+		});
+
         server.post('/CSB/:fileId', function (req, res) {
             $$.flow.start("CSBmanager").write(req.params.fileId, req, function (err, result) {
                 res.statusCode = 201;
@@ -119,6 +129,8 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
                 res.end();
             });
         });
+
+
 
 		server.post('/:channelId', function (req, res) {
 
