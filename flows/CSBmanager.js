@@ -228,7 +228,12 @@ $$.flow.describe("CSBmanager", {
         entries.forEach(([fileName, fileHash]) => {
             this.getVersionsForFile(fileName, (err, versions) => {
                 if (err) {
-                    callback(err);
+                    if(err.code === 'ENOENT') {
+                        versions = [];
+                    } else {
+                        callback(err);
+                    }
+
                 }
 
                 const match = versions.some(version => {
