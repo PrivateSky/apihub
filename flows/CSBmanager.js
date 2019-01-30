@@ -49,7 +49,7 @@ $$.flow.describe("CSBmanager", {
                     if(err) {
                         return callback(err);
                     }
-                    this.__readFile(writeFileStream, path.join(filePath, fileVersion.toString()), callback);
+                    this.__readFile(writeFileStream, path.join(filePath, fileVersion.fullVersion), callback);
                 });
             }else{
                 callback(new Error("No file found."));
@@ -180,7 +180,7 @@ $$.flow.describe("CSBmanager", {
                 return callback(err);
             }
 
-            callback(undefined, fileVersion + 1);
+            callback(undefined, fileVersion.numericVersion + 1);
         });
     },
     __getLatestVersionNameOfFile: function (folderPath, callback) {
@@ -191,13 +191,17 @@ $$.flow.describe("CSBmanager", {
                 return;
             }
 
-            let fileVersion = 0;
+            let fileVersion = {numericVersion: 0, fullVersion: '0' + FILE_SEPARATOR};
 
             if(files.length > 0) {
                 try {
                     const allVersions = files.map(file => file.split(FILE_SEPARATOR)[0]);
                     const latestFile = this.__maxElement(allVersions);
-                    fileVersion = parseInt(latestFile);
+                    fileVersion = {
+                        numericVersion: parseInt(latestFile),
+                        fullVersion: files.filter(file => file.split(FILE_SEPARATOR)[0] === latestFile.toString())[0]
+                    };
+
                 } catch (e) {
                     e.code = 'invalid_file_name_found';
                     callback(e);
