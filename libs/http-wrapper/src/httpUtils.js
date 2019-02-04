@@ -29,4 +29,21 @@ function sendErrorResponse(error, response, statusCode) {
     response.end();
 }
 
-module.exports = {setDataHandler, setDataHandlerMiddleware, sendErrorResponse};
+function bodyParser(req, res, next) {
+    let bodyContent = '';
+
+    req.on('data', function (dataChunk) {
+        bodyContent += dataChunk;
+    });
+
+    req.on('end', function () {
+        req.body = bodyContent;
+        next();
+    });
+
+    req.on('error', function(err) {
+        next(err);
+    });
+}
+
+module.exports = {setDataHandler, setDataHandlerMiddleware, sendErrorResponse, bodyParser};

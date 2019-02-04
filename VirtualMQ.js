@@ -204,3 +204,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 module.exports.createVirtualMQ = function(port, folder, callback){
 	return new VirtualMQ(port, folder, callback);
 };
+
+module.exports.getHttpWrapper = function() {
+	return require('./libs/http-wrapper');
+};
