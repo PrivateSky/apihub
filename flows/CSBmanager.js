@@ -229,6 +229,11 @@ $$.flow.describe("CSBmanager", {
         const entries = Object.entries(files);
         let remaining = entries.length;
 
+        if(entries.length === 0) {
+            callback(undefined, filesWithChanges);
+            return;
+        }
+
         entries.forEach(([fileName, fileHash]) => {
             this.getVersionsForFile(fileName, (err, versions) => {
                 if (err) {
