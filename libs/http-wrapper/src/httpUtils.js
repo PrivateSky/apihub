@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 function setDataHandler(request, callback) {
     let bodyContent = '';
 
@@ -46,4 +49,33 @@ function bodyParser(req, res, next) {
     });
 }
 
-module.exports = {setDataHandler, setDataHandlerMiddleware, sendErrorResponse, bodyParser};
+function serveStaticFile(baseFolder, ignorePath) {
+    return function(req, res) {
+        const url = req.url.substring(ignorePath.length);
+
+        console.log('GOT CALL FOR URL ', url);
+
+        const filePath = path.join(baseFolder, url);
+        console.log('trying to read ', path.resolve(filePath));
+        fs.stat(filePath, (err) => {
+            if(err) {
+                res.statusCode = 404;
+                res.end();
+                return;
+            }
+
+            if(url.endsWith('.html')) {
+                res.contentType = 'text/html';
+            } else if(url.endsWith('.css')) {
+                res.contentType = 'text/css';
+            } else if(url.endsWith('.js')) {
+                res.contentType = 'text/javascript';
+            }
+
+            const fileStream = fs.createReadStream(filePath);
+            fileStream.pipe(res);
+        });
+    }
+}
+
+module.exports = {setDataHandler, setDataHandlerMiddleware, sendErrorResponse, bodyParser, serveStaticFile};
