@@ -189,7 +189,7 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
 			headers["Access-Control-Allow-Credentials"] = true;
 			headers["Access-Control-Max-Age"] = '3600'; //one hour
-			headers["Access-Control-Allow-Headers"] = "Content-Type, Access-Control-Allow-Origin";
+			headers["Access-Control-Allow-Headers"] = "Content-Type, Access-Control-Allow-Origin, User-Agent";
 			res.writeHead(200, headers);
 			res.end();
 		});
