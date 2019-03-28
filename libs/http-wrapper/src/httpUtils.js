@@ -44,36 +44,33 @@ function bodyParser(req, res, next) {
         next();
     });
 
-    req.on('error', function(err) {
+    req.on('error', function (err) {
         next(err);
     });
 }
 
 function serveStaticFile(baseFolder, ignorePath) {
-    return function(req, res) {
+    return function (req, res) {
         const url = req.url.substring(ignorePath.length);
-
-        console.log('GOT CALL FOR URL ', url);
-
         const filePath = path.join(baseFolder, url);
-        console.log('trying to read ', path.resolve(filePath));
         fs.stat(filePath, (err) => {
-            if(err) {
+            if (err) {
                 res.statusCode = 404;
                 res.end();
                 return;
             }
 
-            if(url.endsWith('.html')) {
+            if (url.endsWith('.html')) {
                 res.contentType = 'text/html';
-            } else if(url.endsWith('.css')) {
+            } else if (url.endsWith('.css')) {
                 res.contentType = 'text/css';
-            } else if(url.endsWith('.js')) {
+            } else if (url.endsWith('.js')) {
                 res.contentType = 'text/javascript';
             }
 
             const fileStream = fs.createReadStream(filePath);
             fileStream.pipe(res);
+
         });
     }
 }
