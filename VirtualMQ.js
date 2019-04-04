@@ -5,9 +5,9 @@ const Server = require('./libs/http-wrapper/src/index').Server;
 const TokenBucket = require('./libs/TokenBucket');
 
 
-function VirtualMQ(listeningPort, rootFolder, callback) {
+function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
-	const server = new Server().listen(port);
+	const server = new Server(sslConfig).listen(port);
     const tokenBucket = new TokenBucket(600000,1,10);
 	const CSB_storage_folder = "uploads";
 	const SWARM_storage_folder = "swarms";
@@ -201,9 +201,16 @@ function VirtualMQ(listeningPort, rootFolder, callback) {
 	}
 }
 
-module.exports.createVirtualMQ = function(port, folder, callback){
-	return new VirtualMQ(port, folder, callback);
+module.exports.createVirtualMQ = function(port, folder, sslConfig, callback){
+	if(typeof sslConfig === 'function') {
+		callback = sslConfig;
+		sslConfig = undefined;
+	}
+
+	return new VirtualMQ({listeningPort:port, rootFolder:folder, sslConfig}, callback);
 };
+
+module.exports.VirtualMQ = VirtualMQ;
 
 module.exports.getHttpWrapper = function() {
 	return require('./libs/http-wrapper');
