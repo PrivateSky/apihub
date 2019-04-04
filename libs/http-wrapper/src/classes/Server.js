@@ -1,9 +1,11 @@
 const Middleware = require('./Middleware');
 const http = require('http');
+const https = require('https');
 
-function Server() {
+function Server(sslOptions) {
     const middleware = new Middleware();
-    const server = http.createServer(middleware.go);
+    const server = _initServer(sslOptions);
+
 
     this.listen = function listen(port) {
         server.listen(port);
@@ -45,6 +47,16 @@ function Server() {
         middleware.use("OPTIONS", reqUrl, reqResolver)
     };
 
+
+    /* INTERNAL METHODS */
+
+    function _initServer(sslConfig) {
+        if (sslConfig) {
+            return https.createServer(sslConfig, middleware.go);
+        } else {
+            return http.createServer(middleware.go);
+        }
+    }
 }
 
 module.exports = Server;
