@@ -28,8 +28,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		}
 	});
 
-
-
 	function registerEndpoints() {
 
 		server.use(function (req, res, next) {
@@ -130,8 +128,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
             });
         });
 
-
-
 		server.post('/:channelId', function (req, res) {
 
 			$$.flow.start("RemoteSwarming").startSwarm(req.params.channelId, req, function (err, result) {
@@ -164,9 +160,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 				res.write(JSON.stringify(responseMessage));
 				res.end();
 			});
-
-
-
 		});
 
 		server.delete("/:channelId/:confirmationId", function(req, res){
@@ -178,8 +171,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 				res.end();
 			});
 		});
-
-
 
 		server.options('/*', function (req, res) {
 			var headers = {};

@@ -37,12 +37,33 @@ function registerConsumer(id, consumer){
 	return false;
 }
 
+function deliverToConsumers(consumers, err, result, confirmationId){
+	if(!consumers){
+		return false;
+	}
+    let deliveredMessages = 0;
+    while(consumers.length>0){
+        //we iterate through the consumers list in case that we have a ref. of a request that time-outed meanwhile
+        //and in this case we expect to have more then one consumer...
+        let consumer = consumers.pop();
+        try{
+            consumer(err, result, confirmationId);
+            deliveredMessages++;
+        }catch(error){
+            //just some small error ignored
+            console.log("Error catched", error);
+        }
+    }
+    return !!deliveredMessages;
+}
+
 function registerMainConsumer(id){
 	let storedChannel = channels[id];
 	if(storedChannel && !storedChannel.mqConsumer){
 		storedChannel.mqConsumer = (err, result, confirmationId) => {
 			channels[id] = null;
-			while(storedChannel.consumers.length>0){
+			deliverToConsumers(storedChannel.consumers, err, result, confirmationId);
+			/*while(storedChannel.consumers.length>0){
 				//we iterate through the consumers list in case that we have a ref. of a request that time-outed meanwhile
 				//and in this case we expect to have more then one consumer...
 				let consumer = storedChannel.consumers.pop();
@@ -52,7 +73,7 @@ function registerMainConsumer(id){
 					//just some small error ignored
 					console.log("Error catched", error);
 				}
-			}
+			}*/
 		};
 
 		storedChannel.channel.registerConsumer(storedChannel.mqConsumer, false, () => {
@@ -61,6 +82,21 @@ function registerMainConsumer(id){
 		return true;
 	}
 	return false;
+}
+
+function readSwarmFromStream(stream, callback){
+    let swarm = "";
+    stream.on('data', (chunk) =>{
+        swarm += chunk;
+	});
+
+    stream.on("end", () => {
+       callback(null, swarm);
+	});
+
+    stream.on("error", (err) =>{
+        callback(err);
+	});
 }
 
 $$.flow.describe("RemoteSwarming", {
@@ -88,15 +124,53 @@ $$.flow.describe("RemoteSwarming", {
 					return;
 				}
 
-				storedChannel.handler.addStream(readSwarmStream, callback);
+                readSwarmFromStream(readSwarmStream, (err, swarmSerialization) => {
+					if(err){
+						callback(err);
+					}else{
+                        let sent = false;
+                        try{
+                            sent = deliverToConsumers(channel.consumers, null, JSON.parse(swarmSerialization));
+                        }catch(err){
+                            console.log(err);
+                        }
+
+                        if(!sent){
+                            storedChannel.handler.sendSwarmSerialization(swarmSerialization, callback);
+                        }else{
+                        	callback(null, swarmSerialization);
+						}
+					}
+				});
 				
 			});
 			storedChannel = storeChannel(channelId, channel);
 		} else {
-			channel.handler.addStream(readSwarmStream, callback);
+            readSwarmFromStream(readSwarmStream, (err, swarmSerialization) => {
+            	if(err){
+            		callback(err);
+				}else{
+            		let sent = false;
+            		try{
+                        sent = deliverToConsumers(channel.consumers, null, JSON.parse(swarmSerialization));
+					}catch(err){
+						console.log(err);
+					}
+
+                    if(!sent){
+						channel.handler.sendSwarmSerialization(swarmSerialization, callback);
+					}else{
+                        callback(null, swarmSerialization);
+                    }
+				}
+			});
 		}
 	},
 	confirmSwarm: function(channelId, confirmationId, callback){
+		if(!confirmationId){
+			callback();
+			return;
+		}
 		let storedChannel = channels[channelId];
 		if(!storedChannel){
 			let channelFolder = path.join(rootfolder, channelId);
