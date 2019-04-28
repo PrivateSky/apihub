@@ -108,7 +108,29 @@ $$.flow.describe("RemoteSwarming", {
 		rootFolder = path.resolve(rootFolder);
 		$$.ensureFolderExists(rootFolder, function(err, path){
 			rootfolder = rootFolder;
-			callback(err, rootFolder);
+
+			if(!err){
+				fs.readdir(rootfolder, (cleanErr, files) => {
+					while(files && files.length > 0){
+						console.log("Root folder found to have some dirs. Start cleaning empty dirs.")
+						let dir = files.pop();
+						try{
+							let path = require("path");
+							dir = path.join(rootFolder, dir);
+							var content = fs.readdirSync(dir);
+							if(content && content.length === 0){
+								console.log("Removing empty dir", dir);
+								fs.rmdirSync(dir);
+							}
+						}catch(err){
+							//console.log(err);
+						}
+					}
+					callback(cleanErr, rootFolder);
+				});
+			}else{
+				callback(err, rootFolder);
+			}
 		});
 	},
 	startSwarm: function (channelId, readSwarmStream, callback) {
