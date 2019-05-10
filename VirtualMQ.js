@@ -1,7 +1,9 @@
 require("./flows/CSBmanager");
 require("./flows/remoteSwarming");
 const path = require("path");
-const Server = require('./libs/http-wrapper/src/index').Server;
+const httpWrapper = require('./libs/http-wrapper');
+const Server = httpWrapper.Server;
+const Router = httpWrapper.Router;
 const TokenBucket = require('./libs/TokenBucket');
 
 
