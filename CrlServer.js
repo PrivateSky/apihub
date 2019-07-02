@@ -114,7 +114,7 @@ function CrlServer(listeningPort, rootFolder) {
         folderMQInstance.registerConsumer((messageContent, messageId) => {
             gotAnswer = true;
         response.end(JSON.stringify({id: messageId, content: messageContent}));
-    }, () => gotAnswer = true, false, shouldWaitForMore);
+    }, () => {gotAnswer = true;}, false, shouldWaitForMore);
 
     });
 
@@ -200,7 +200,7 @@ function CrlServer(listeningPort, rootFolder) {
         fs.unlink(filePath, (err) => {
             if (err) {
                 res.statusCode = 404;
-                res.end(err)
+                res.end(err);
             }
             res.end();
     });
@@ -246,7 +246,7 @@ function CachedFolderMQ() {
     };
 
     function cleanup() {
-        let keys = Object.keys(content);
+        const keys = Object.keys(content);
         let sum = 0;
 
         let i = keys.length;

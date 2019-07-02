@@ -14,7 +14,7 @@ $$.flow.describe("CSBmanager", {
             return;
         }
         rootFolder = path.resolve(rootFolder);
-        this.__ensureFolderStructure(rootFolder, function(err, path){
+        this.__ensureFolderStructure(rootFolder, function(err/*, path*/){
             rootfolder = rootFolder;
             callback(err, rootFolder);
         });
@@ -31,7 +31,7 @@ $$.flow.describe("CSBmanager", {
 
         const folderName = path.join(rootfolder, fileName.substr(0, folderNameSize), fileName);
 
-        const serial = this.serial(() => {});
+        const serial = this.serial(() => {}); //TODO: Empty function
 
         serial.__ensureFolderStructure(folderName, serial.__progress);
         serial.__writeFile(readFileStream, folderName, fileName, callback);
@@ -52,7 +52,7 @@ $$.flow.describe("CSBmanager", {
                     this.__readFile(writeFileStream, path.join(filePath, fileVersion.fullVersion), callback);
                 });
             }else{
-                callback(new Error("No file found."));
+                return callback(new Error("No file found."));
             }
         });
     },
@@ -67,7 +67,7 @@ $$.flow.describe("CSBmanager", {
             if(!err){
                 this.__readFile(writeFileStream, path.join(filePath), callback);
             }else{
-                callback(new Error("No file found."));
+                return callback(new Error("No file found."));
             }
         });
     },
@@ -105,7 +105,7 @@ $$.flow.describe("CSBmanager", {
 
                             return firstCompareData - secondCompareData;
                         });
-                        callback(undefined, filesData);
+                        return callback(undefined, filesData);
                     }
                 });
             }
@@ -123,7 +123,7 @@ $$.flow.describe("CSBmanager", {
                body = JSON.parse(body);
                this.__compareVersions(body, callback);
            } catch (e) {
-                callback(e);
+                return callback(e);
            }
         });
     },
@@ -195,16 +195,16 @@ $$.flow.describe("CSBmanager", {
 
             if(files.length > 0) {
                 try {
-                    const allVersions = files.map(file => file.split(FILE_SEPARATOR)[0]);
+                    const allVersions = files.map((file) => file.split(FILE_SEPARATOR)[0]);
                     const latestFile = this.__maxElement(allVersions);
                     fileVersion = {
                         numericVersion: parseInt(latestFile),
-                        fullVersion: files.filter(file => file.split(FILE_SEPARATOR)[0] === latestFile.toString())[0]
+                        fullVersion: files.filter((file) => file.split(FILE_SEPARATOR)[0] === latestFile.toString())[0]
                     };
 
                 } catch (e) {
                     e.code = 'invalid_file_name_found';
-                    callback(e);
+                    return callback(e);
                 }
             }
 
@@ -234,18 +234,18 @@ $$.flow.describe("CSBmanager", {
             return;
         }
 
-        entries.forEach(([fileName, fileHash]) => {
+        entries.forEach(([ fileName, fileHash ]) => {
             this.getVersionsForFile(fileName, (err, versions) => {
                 if (err) {
                     if(err.code === 'ENOENT') {
                         versions = [];
                     } else {
-                        callback(err);
+                        return callback(err);
                     }
 
                 }
 
-                const match = versions.some(version => {
+                const match = versions.some((version) => {
                     const hash = version.version.split(FILE_SEPARATOR)[1];
                     return hash === fileHash;
                 });
@@ -255,9 +255,9 @@ $$.flow.describe("CSBmanager", {
                 }
 
                 if (--remaining === 0) {
-                    callback(undefined, filesWithChanges);
+                    return callback(undefined, filesWithChanges);
                 }
-            })
+            });
         });
     },
     __readFile: function(writeFileStream, filePath, callback){

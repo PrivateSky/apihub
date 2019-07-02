@@ -63,7 +63,7 @@ function Middleware() {
     }
 
     this.use = function (...params) {
-	    let args = [undefined, undefined, undefined];
+	    let args = [ undefined, undefined, undefined ];
 
 	    switch (params.length) {
             case 0:
@@ -91,7 +91,7 @@ function Middleware() {
                     throw Error('If three or more arguments are provided the first one must be a string (HTTP verb), the second a string (url) and the third a function');
                 }
 
-                if (!(['get', 'post', 'put', 'delete', 'patch', 'head', 'connect', 'options', 'trace'].includes(params[0].toLowerCase()))) {
+                if (!([ 'get', 'post', 'put', 'delete', 'patch', 'head', 'connect', 'options', 'trace' ].includes(params[0].toLowerCase()))) {
                     throw new Error('If three or more arguments are provided the first one must be a HTTP verb but none could be matched');
                 }
 

@@ -1,6 +1,6 @@
 const Client = require('./libs/http-wrapper').Client;
 
-let client = new Client();
+const client = new Client();
 
 client.get('http://127.0.0.1:8080/test', function (res) {
 

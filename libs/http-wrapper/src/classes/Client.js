@@ -21,7 +21,7 @@ function Request(url, body) {
 
     this.getHttpRequest = function () {
         return this.request;
-    }
+    };
 }
 
 
@@ -73,7 +73,7 @@ function bodyContentLength(request) {
         return;
     }
 
-    if (request.body.constructor.name in ['String', 'Buffer', 'ArrayBuffer']) {
+    if (request.body.constructor.name in [ 'String', 'Buffer', 'ArrayBuffer' ]) {
         request.options.headers['Content-Length'] = Buffer.byteLength(request.body);
     }
 }
@@ -97,7 +97,7 @@ function Client() {
     function getReq(url, config, callback) {
         const modifiers = [
             urlToOptions,
-            request => request.options.headers = config.headers || {}
+            (request) => {request.options.headers = config.headers || {};}
         ];
 
         const packedRequest = request(new Request(url, config.body), modifiers);
@@ -110,8 +110,8 @@ function Client() {
     function postReq(url, config, callback) {
         const modifiers = [
             urlToOptions,
-            request => request.options.method = 'POST',
-            request => request.options.headers = config.headers || {},
+            (request) => {request.options.method = 'POST'; },
+            (request) => {request.options.headers = config.headers || {}; },
             serializeBody,
             bodyContentLength
         ];
@@ -131,8 +131,8 @@ function Client() {
     function deleteReq(url, config, callback) {
         const modifiers = [
             urlToOptions,
-            request => request.options.method = 'DELETE',
-            request => request.options.headers = config.headers || {},
+            (request) => {request.options.method = 'DELETE';},
+            (request) => {request.options.headers = config.headers || {};},
         ];
 
         const packedRequest = request(new Request(url, config.body), modifiers);
@@ -200,11 +200,11 @@ const handler = {
             return function () {
                 const args = parametersPreProcessing(arguments);
                 return target[propName].apply(target, args);
-            }
+            };
         }
     }
 };
 
 module.exports = function () {
-    return new Proxy(new Client(), handler)
+    return new Proxy(new Client(), handler);
 };

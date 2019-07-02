@@ -36,7 +36,7 @@ $$.flow.describe('fsExtra', {
                             total += size;
 
                             if (!--remainingFiles) {
-                                callback(undefined, total);
+                                return callback(undefined, total);
                             }
                         });
 
@@ -46,7 +46,7 @@ $$.flow.describe('fsExtra', {
 
                         if (--remainingFiles === 0) {
 
-                            callback(undefined, total);
+                            return callback(undefined, total);
                         }
                     }
                 });

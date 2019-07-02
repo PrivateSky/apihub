@@ -9,7 +9,7 @@ function setDataHandler(request, callback) {
     });
 
     request.on('end', function () {
-        callback(undefined, bodyContent)
+        callback(undefined, bodyContent);
     });
 
     request.on('error', callback);
@@ -22,7 +22,7 @@ function setDataHandlerMiddleware(request, response, next) {
             next(error);
         });
     } else {
-        next();
+        return next();
     }
 }
 
@@ -72,7 +72,7 @@ function serveStaticFile(baseFolder, ignorePath) {
             fileStream.pipe(res);
 
         });
-    }
+    };
 }
 
 module.exports = {setDataHandler, setDataHandlerMiddleware, sendErrorResponse, bodyParser, serveStaticFile};

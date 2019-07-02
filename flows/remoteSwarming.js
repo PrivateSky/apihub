@@ -29,7 +29,7 @@ function storeChannel(id, channel, clientConsumer){
 
 
 function registerConsumer(id, consumer){
-	let storedChannel = channels[id];
+	const storedChannel = channels[id];
 	if(storedChannel){
 		storedChannel.consumers.push(consumer);
 		return true;
@@ -45,7 +45,7 @@ function deliverToConsumers(consumers, err, result, confirmationId){
     while(consumers.length>0){
         //we iterate through the consumers list in case that we have a ref. of a request that time-outed meanwhile
         //and in this case we expect to have more then one consumer...
-        let consumer = consumers.pop();
+        const consumer = consumers.pop();
         try{
             consumer(err, result, confirmationId);
             deliveredMessages++;
@@ -58,7 +58,7 @@ function deliverToConsumers(consumers, err, result, confirmationId){
 }
 
 function registerMainConsumer(id){
-	let storedChannel = channels[id];
+	const storedChannel = channels[id];
 	if(storedChannel && !storedChannel.mqConsumer){
 		storedChannel.mqConsumer = (err, result, confirmationId) => {
 			channels[id] = null;
@@ -76,9 +76,7 @@ function registerMainConsumer(id){
 			}*/
 		};
 
-		storedChannel.channel.registerConsumer(storedChannel.mqConsumer, false, () => {
-			return !!channels[id];
-		});
+		storedChannel.channel.registerConsumer(storedChannel.mqConsumer, false, () => !!channels[id]);
 		return true;
 	}
 	return false;
@@ -112,10 +110,10 @@ $$.flow.describe("RemoteSwarming", {
 			if(!err){
 				fs.readdir(rootfolder, (cleanErr, files) => {
 					while(files && files.length > 0){
-						console.log("Root folder found to have some dirs. Start cleaning empty dirs.")
+						console.log("Root folder found to have some dirs. Start cleaning empty dirs.");
 						let dir = files.pop();
 						try{
-							let path = require("path");
+							const path = require("path");
 							dir = path.join(rootFolder, dir);
 							var content = fs.readdirSync(dir);
 							if(content && content.length === 0){
@@ -129,14 +127,14 @@ $$.flow.describe("RemoteSwarming", {
 					callback(cleanErr, rootFolder);
 				});
 			}else{
-				callback(err, rootFolder);
+				return callback(err, rootFolder);
 			}
 		});
 	},
 	startSwarm: function (channelId, readSwarmStream, callback) {
 		let channel = channels[channelId];
 		if (!channel) {
-			let channelFolder = path.join(rootfolder, channelId);
+			const channelFolder = path.join(rootfolder, channelId);
 			let storedChannel;
 			channel = folderMQ.createQue(channelFolder, (err, result) => {
 				if (err) {
@@ -148,7 +146,7 @@ $$.flow.describe("RemoteSwarming", {
 
                 readSwarmFromStream(readSwarmStream, (err, swarmSerialization) => {
 					if(err){
-						callback(err);
+						return callback(err);
 					}else{
                         let sent = false;
                         try{
@@ -160,7 +158,7 @@ $$.flow.describe("RemoteSwarming", {
                         if(!sent){
                             storedChannel.handler.sendSwarmSerialization(swarmSerialization, callback);
                         }else{
-                        	callback(null, swarmSerialization);
+                        	return callback(null, swarmSerialization);
 						}
 					}
 				});
@@ -170,7 +168,7 @@ $$.flow.describe("RemoteSwarming", {
 		} else {
             readSwarmFromStream(readSwarmStream, (err, swarmSerialization) => {
             	if(err){
-            		callback(err);
+            		return callback(err);
 				}else{
             		let sent = false;
             		try{
@@ -182,7 +180,7 @@ $$.flow.describe("RemoteSwarming", {
                     if(!sent){
 						channel.handler.sendSwarmSerialization(swarmSerialization, callback);
 					}else{
-                        callback(null, swarmSerialization);
+                        return callback(null, swarmSerialization);
                     }
 				}
 			});
@@ -193,10 +191,10 @@ $$.flow.describe("RemoteSwarming", {
 			callback();
 			return;
 		}
-		let storedChannel = channels[channelId];
+		const storedChannel = channels[channelId];
 		if(!storedChannel){
-			let channelFolder = path.join(rootfolder, channelId);
-			let channel = folderMQ.createQue(channelFolder, (err, result) => {
+			const channelFolder = path.join(rootfolder, channelId);
+			const channel = folderMQ.createQue(channelFolder, (err, result) => {
 				if(err){
 					//we delete the channel in order to try again next time
 					channels[channelId] = null;
@@ -212,7 +210,7 @@ $$.flow.describe("RemoteSwarming", {
 	waitForSwarm: function(channelId, writeSwarmStream, callback){
 		let channel = channels[channelId];
 		if(!channel){
-			let channelFolder = path.join(rootfolder, channelId);
+			const channelFolder = path.join(rootfolder, channelId);
 			channel = folderMQ.createQue(channelFolder, (err, result) => {
 				if(err){
 					//we delete the channel in order to try again next time

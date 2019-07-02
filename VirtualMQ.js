@@ -3,7 +3,6 @@ require("./flows/remoteSwarming");
 const path = require("path");
 const httpWrapper = require('./libs/http-wrapper');
 const Server = httpWrapper.Server;
-const Router = httpWrapper.Router;
 const TokenBucket = require('./libs/TokenBucket');
 
 
@@ -22,9 +21,12 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		} else {
 			console.log("CSBmanager is using folder", result);
 			$$.flow.start("RemoteSwarming").init(path.join(rootFolder, SWARM_storage_folder), function(err, result){
+				if (err) {
+					console.log(err);
+				}
 				registerEndpoints();
 				if (callback) {
-					callback();
+					return callback();
 				}
 			});
 		}
@@ -78,7 +80,7 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 					res.statusCode = 500;
 				}
 				res.end(JSON.stringify(filesWithChanges));
-			})
+			});
 		});
 
         server.post('/CSB/:fileId', function (req, res) {
@@ -116,7 +118,7 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 				}
 
 				res.end(JSON.stringify(fileVersions));
-			})
+			});
 		});
 
         server.get('/CSB/:fileId/:version', function (req, res) {
@@ -153,7 +155,7 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 
 				if((req.query.waitConfirmation || 'false')  === 'false') {
 					res.on('finish', () => {
-						$$.flow.start('RemoteSwarming').confirmSwarm(req.params.channelId, confirmationId, (err) => {});
+						$$.flow.start('RemoteSwarming').confirmSwarm(req.params.channelId, confirmationId, (err) => { if (err) { console.log(err); }});
 					});
 				} else {
 					responseMessage = {result, confirmationId};

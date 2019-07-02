@@ -54,7 +54,7 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
                 return;
             }
 
-            callback(undefined, userBucket.tokens);
+            return callback(undefined, userBucket.tokens);
         } else {
             limits[userKey] = new Limit(startTokens, Date.now());
             takeToken(userKey, cost, callback);
@@ -96,10 +96,10 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
                 self.tokens = numberOfTokens;
             },
             get tokens() {
-                return self.tokens
+                return self.tokens;
             },
             timestamp
-        }
+        };
     }
 
 

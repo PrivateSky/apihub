@@ -15,7 +15,7 @@ function serverWrapper(baseUrl, server) {
             server.use(baseUrl + url, reqResolver);
         },
         get(url, reqResolver) {
-            server.get(baseUrl + url, reqResolver)
+            server.get(baseUrl + url, reqResolver);
         },
         post(url, reqResolver) {
             server.post(baseUrl + url, reqResolver);

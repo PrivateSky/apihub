@@ -32,19 +32,19 @@ function Server(sslOptions) {
     };
 
     this.post = function postReq(reqUrl, reqResolver) {
-        middleware.use("POST", reqUrl, reqResolver)
+        middleware.use("POST", reqUrl, reqResolver);
     };
 
     this.put = function putReq(reqUrl, reqResolver) {
-        middleware.use("PUT", reqUrl, reqResolver)
+        middleware.use("PUT", reqUrl, reqResolver);
     };
 
     this.delete = function deleteReq(reqUrl, reqResolver) {
-        middleware.use("DELETE", reqUrl, reqResolver)
+        middleware.use("DELETE", reqUrl, reqResolver);
     };
 
     this.options = function optionsReq(reqUrl, reqResolver) {
-        middleware.use("OPTIONS", reqUrl, reqResolver)
+        middleware.use("OPTIONS", reqUrl, reqResolver);
     };
 
 
