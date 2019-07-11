@@ -1,38 +1,42 @@
-require("./flows/CSBmanager");
+// require("./flows/CSBmanager");
 require("./flows/remoteSwarming");
 const path = require("path");
 const httpWrapper = require('./libs/http-wrapper');
+const edfs = require("edfs");
+const EDFSMiddleware = edfs.EDFSMiddleware;
 const Server = httpWrapper.Server;
+const Router = httpWrapper.Router;
 const TokenBucket = require('./libs/TokenBucket');
 
 
 function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
 	const server = new Server(sslConfig).listen(port);
-    const tokenBucket = new TokenBucket(600000,1,10);
+	const tokenBucket = new TokenBucket(600000,1,10);
 	const CSB_storage_folder = "uploads";
 	const SWARM_storage_folder = "swarms";
 	console.log("Listening on port:", port);
 
 	this.close = server.close;
-	$$.flow.start("CSBmanager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
+	$$.flow.start("BricksManager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
 		if (err) {
 			throw err;
 		} else {
-			console.log("CSBmanager is using folder", result);
+			console.log("CSBManager is using folder", result);
 			$$.flow.start("RemoteSwarming").init(path.join(rootFolder, SWARM_storage_folder), function(err, result){
-				if (err) {
-					console.log(err);
-				}
 				registerEndpoints();
 				if (callback) {
-					return callback();
+					callback();
 				}
 			});
 		}
 	});
 
 	function registerEndpoints() {
+		const router = new Router(server);
+		router.use("/EDFS", (newServer) => {
+			new EDFSMiddleware(newServer);
+		});
 
 		server.use(function (req, res, next) {
 			res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,10 +47,10 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		});
 
 		server.use(function (req, res, next) {
-            const ip = res.socket.remoteAddress;
+			const ip = res.socket.remoteAddress;
 
 			tokenBucket.takeToken(ip, tokenBucket.COST_MEDIUM, function(err, remainedTokens) {
-                res.setHeader('X-RateLimit-Limit', tokenBucket.getLimitByCost(tokenBucket.COST_MEDIUM));
+				res.setHeader('X-RateLimit-Limit', tokenBucket.getLimitByCost(tokenBucket.COST_MEDIUM));
 				res.setHeader('X-RateLimit-Remaining', tokenBucket.getRemainingTokenByCost(remainedTokens, tokenBucket.COST_MEDIUM));
 
 				if(err) {
@@ -57,80 +61,15 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 						default:
 							res.statusCode = 500;
 
-                    }
+					}
 
-                    res.end();
+					res.end();
 					return;
 				}
 
 				next();
 			});
 		});
-
-        server.post('/CSB', function (req, res) {
-        	//preventing illegal characters passing as fileId
-            res.statusCode = 400;
-            res.end();
-        });
-
-		server.post('/CSB/compareVersions', function(req, res) {
-			$$.flow.start('CSBmanager').compareVersions(req, function(err, filesWithChanges) {
-				if (err) {
-					console.log(err);
-					res.statusCode = 500;
-				}
-				res.end(JSON.stringify(filesWithChanges));
-			});
-		});
-
-        server.post('/CSB/:fileId', function (req, res) {
-            $$.flow.start("CSBmanager").write(req.params.fileId, req, function (err, result) {
-                res.statusCode = 201;
-                if (err) {
-                    res.statusCode = 500;
-
-                    if (err.code === 'EACCES') {
-                        res.statusCode = 409;
-                    }
-                }
-                res.end();
-            });
-
-        });
-
-        server.get('/CSB/:fileId', function (req, res) {
-			res.setHeader("content-type", "application/octet-stream");
-            $$.flow.start("CSBmanager").read(req.params.fileId, res, function (err, result) {
-                res.statusCode = 200;
-                if (err) {
-                    console.log(err);
-                    res.statusCode = 404;
-                }
-                res.end();
-            });
-        });
-
-        server.get('/CSB/:fileId/versions', function (req, res) {
-			$$.flow.start("CSBmanager").getVersionsForFile(req.params.fileId, function(err, fileVersions) {
-				if(err) {
-					console.error(err);
-					res.statusCode = 404;
-				}
-
-				res.end(JSON.stringify(fileVersions));
-			});
-		});
-
-        server.get('/CSB/:fileId/:version', function (req, res) {
-            $$.flow.start("CSBmanager").readVersion(req.params.fileId, req.params.version, res, function (err, result) {
-                res.statusCode = 200;
-                if (err) {
-                    console.log(err);
-                    res.statusCode = 404;
-                }
-                res.end();
-            });
-        });
 
 		server.post('/:channelId', function (req, res) {
 
@@ -155,7 +94,7 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 
 				if((req.query.waitConfirmation || 'false')  === 'false') {
 					res.on('finish', () => {
-						$$.flow.start('RemoteSwarming').confirmSwarm(req.params.channelId, confirmationId, (err) => { if (err) { console.log(err); }});
+						$$.flow.start('RemoteSwarming').confirmSwarm(req.params.channelId, confirmationId, (err) => {});
 					});
 				} else {
 					responseMessage = {result, confirmationId};
