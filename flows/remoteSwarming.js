@@ -3,9 +3,7 @@ const fs = require("fs");
 const folderMQ = require("foldermq");
 
 let rootfolder;
-const channels = {
-
-};
+const channels = {};
 
 function storeChannel(id, channel, clientConsumer){
 	var storedChannel = {
@@ -131,7 +129,7 @@ $$.flow.describe("RemoteSwarming", {
 			}
 		});
 	},
-	startSwarm: function (channelId, readSwarmStream, callback) {
+	startSwarm: function (channelId, swarmSerialization, callback) {
 		let channel = channels[channelId];
 		if (!channel) {
 			const channelFolder = path.join(rootfolder, channelId);
@@ -144,46 +142,35 @@ $$.flow.describe("RemoteSwarming", {
 					return;
 				}
 
-                readSwarmFromStream(readSwarmStream, (err, swarmSerialization) => {
-					if(err){
-						return callback(err);
-					}else{
-                        let sent = false;
-                        try{
-                            sent = deliverToConsumers(channel.consumers, null, JSON.parse(swarmSerialization));
-                        }catch(err){
-                            console.log(err);
-                        }
+				let sent = false;
+				try {
+					sent = deliverToConsumers(channel.consumers, null, JSON.parse(swarmSerialization));
+				} catch (err) {
+					console.log(err);
+				}
 
-                        if(!sent){
-                            storedChannel.handler.sendSwarmSerialization(swarmSerialization, callback);
-                        }else{
-                        	return callback(null, swarmSerialization);
-						}
-					}
-				});
-				
+				if (!sent) {
+					storedChannel.handler.sendSwarmSerialization(swarmSerialization, callback);
+				} else {
+					return callback(null, swarmSerialization);
+				}
+
 			});
 			storedChannel = storeChannel(channelId, channel);
 		} else {
-            readSwarmFromStream(readSwarmStream, (err, swarmSerialization) => {
-            	if(err){
-            		return callback(err);
-				}else{
-            		let sent = false;
-            		try{
-                        sent = deliverToConsumers(channel.consumers, null, JSON.parse(swarmSerialization));
-					}catch(err){
-						console.log(err);
-					}
 
-                    if(!sent){
-						channel.handler.sendSwarmSerialization(swarmSerialization, callback);
-					}else{
-                        return callback(null, swarmSerialization);
-                    }
-				}
-			});
+			let sent = false;
+			try {
+				sent = deliverToConsumers(channel.consumers, null, JSON.parse(swarmSerialization));
+			} catch (err) {
+				console.log(err);
+			}
+
+			if (!sent) {
+				channel.handler.sendSwarmSerialization(swarmSerialization, callback);
+			} else {
+				return callback(null, swarmSerialization);
+			}
 		}
 	},
 	confirmSwarm: function(channelId, confirmationId, callback){

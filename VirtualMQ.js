@@ -7,6 +7,7 @@ const EDFSMiddleware = edfs.EDFSMiddleware;
 const Server = httpWrapper.Server;
 const Router = httpWrapper.Router;
 const TokenBucket = require('./libs/TokenBucket');
+const msgpack = require('@msgpack/msgpack');
 
 
 function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
@@ -46,64 +47,129 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			next();
 		});
 
-		server.use(function (req, res, next) {
-			const ip = res.socket.remoteAddress;
+        server.use(function (req, res, next) {
+            const ip = res.socket.remoteAddress;
 
-			tokenBucket.takeToken(ip, tokenBucket.COST_MEDIUM, function(err, remainedTokens) {
-				res.setHeader('X-RateLimit-Limit', tokenBucket.getLimitByCost(tokenBucket.COST_MEDIUM));
-				res.setHeader('X-RateLimit-Remaining', tokenBucket.getRemainingTokenByCost(remainedTokens, tokenBucket.COST_MEDIUM));
+            tokenBucket.takeToken(ip, tokenBucket.COST_MEDIUM, function(err, remainedTokens) {
+            	res.setHeader('X-RateLimit-Limit', tokenBucket.getLimitByCost(tokenBucket.COST_MEDIUM));
+            	res.setHeader('X-RateLimit-Remaining', tokenBucket.getRemainingTokenByCost(remainedTokens, tokenBucket.COST_MEDIUM));
 
-				if(err) {
-					switch (err) {
-						case TokenBucket.ERROR_LIMIT_EXCEEDED:
-							res.statusCode = 429;
-							break;
-						default:
-							res.statusCode = 500;
+            	if(err) {
+            		switch (err) {
+            			case TokenBucket.ERROR_LIMIT_EXCEEDED:
+            				res.statusCode = 429;
+            				break;
+            			default:
+            				res.statusCode = 500;
 
-					}
+            		}
 
-					res.end();
-					return;
-				}
+            		res.end();
+            		return;
+            	}
 
-				next();
-			});
-		});
+            	next();
+            });
+            next();
+        });
 
-		server.post('/:channelId', function (req, res) {
+        server.post('/:channelId', function (req, res, next) {
+            const contentType = req.headers['content-type'];
 
-			$$.flow.start("RemoteSwarming").startSwarm(req.params.channelId, req, function (err, result) {
-				res.statusCode = 201;
-				if (err) {
-					console.log(err);
-					res.statusCode = 500;
-				}
-				res.end();
-			});
-		});
+            if (contentType === 'application/octet-stream') {
+                const contentLength = Number.parseInt(req.headers['content-length']);
 
-		server.get('/:channelId', function (req, res) {
-			$$.flow.start("RemoteSwarming").waitForSwarm(req.params.channelId, res, function (err, result, confirmationId) {
-				if (err) {
-					console.log(err);
-					res.statusCode = 500;
-				}
+                streamToBuffer(req, contentLength, (err, bodyAsBuffer) => {
+                    if(err) {
+                        res.statusCode = 500;
+                        return;
+                    }
 
-				let responseMessage = result;
+                    req.body = msgpack.decode(bodyAsBuffer);
 
-				if((req.query.waitConfirmation || 'false')  === 'false') {
-					res.on('finish', () => {
-						$$.flow.start('RemoteSwarming').confirmSwarm(req.params.channelId, confirmationId, (err) => {});
-					});
-				} else {
-					responseMessage = {result, confirmationId};
-				}
+                    next();
+                });
+            } else {
+                next();
+            }
 
-				res.write(JSON.stringify(responseMessage));
-				res.end();
-			});
-		});
+
+            /***** HELPER FUNCTION *****/
+
+            function streamToBuffer(stream, bufferSize, callback) {
+                const buffer = Buffer.alloc(bufferSize);
+                let currentOffset = 0;
+
+                stream
+                    .on('data', chunk => {
+                        const chunkSize = chunk.length;
+                        const nextOffset = chunkSize + currentOffset;
+
+                        if (currentOffset > bufferSize - 1) {
+                            stream.close();
+                            return callback(new Error('Stream is bigger than reported size'));
+                        }
+
+                        unsafeAppendInBufferFromOffset(buffer, chunk, currentOffset);
+                        currentOffset = nextOffset;
+
+                    })
+                    .on('end', () => {
+                        callback(undefined, buffer);
+                    })
+                    .on('error', callback);
+
+
+            }
+
+            function unsafeAppendInBufferFromOffset(buffer, dataToAppend, offset) {
+                const dataSize = dataToAppend.length;
+
+                for (let i = 0; i < dataSize; i++) {
+                    buffer[offset++] = dataToAppend[i];
+                }
+            }
+
+        });
+
+        server.post('/:channelId', function (req, res) {
+            $$.flow.start("RemoteSwarming").startSwarm(req.params.channelId, JSON.stringify(req.body), function (err, result) {
+                res.statusCode = 201;
+                if (err) {
+                    console.log(err);
+                    res.statusCode = 500;
+                }
+                res.end();
+            });
+        });
+
+
+        server.get('/:channelId', function (req, res) {
+            $$.flow.start("RemoteSwarming").waitForSwarm(req.params.channelId, res, function (err, result, confirmationId) {
+
+                if (err) {
+                    console.log(err);
+                    res.statusCode = 500;
+                }
+
+                let responseMessage = result;
+
+                if ((req.query.waitConfirmation || 'false') === 'false') {
+                    res.on('finish', () => {
+                        $$.flow.start('RemoteSwarming').confirmSwarm(req.params.channelId, confirmationId, (err) => {
+                        });
+                    });
+                } else {
+                    responseMessage = {result, confirmationId};
+                }
+
+                res.setHeader('Content-Type', 'application/octet-stream');
+
+                const encodedResponseMessage = msgpack.encode(responseMessage);
+                res.write(Buffer.from(encodedResponseMessage));
+                res.end();
+            });
+        });
 
 		server.delete("/:channelId/:confirmationId", function(req, res){
 			$$.flow.start("RemoteSwarming").confirmSwarm(req.params.channelId, req.params.confirmationId, function (err, result) {
