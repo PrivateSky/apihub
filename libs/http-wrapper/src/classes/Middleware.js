@@ -156,7 +156,7 @@ function Middleware() {
         fn(...params, (err) => {
             counter++;
             if (counter > 1) {
-                console.warn('You called next multiple time, only the first one will be executed');
+                console.warn('You called next multiple times, only the first one will be executed');
                 return;
             }
 
