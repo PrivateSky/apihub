@@ -70,7 +70,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 
             	next();
             });
-            next();
         });
 
         server.post('/:channelId', function (req, res, next) {
