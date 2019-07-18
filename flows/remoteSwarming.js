@@ -102,7 +102,7 @@ $$.flow.describe("RemoteSwarming", {
 			return;
 		}
 		rootFolder = path.resolve(rootFolder);
-		$$.ensureFolderExists(rootFolder, function(err, path){
+		fs.mkdir(rootFolder, {recursive: true}, function(err, path){
 			rootfolder = rootFolder;
 
 			if(!err){

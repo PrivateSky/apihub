@@ -1,4 +1,4 @@
-require('../../engine/core');
+require('launcher');
 const Server = require('./libs/http-wrapper/src/index').Server;
 const httpUtils = require('./libs/http-wrapper/src/index').httpUtils;
 const folderMQ = require('soundpubsub').folderMQ;

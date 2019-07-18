@@ -1,4 +1,4 @@
-require('../../../../../engine/core');
+require('launcher');
 const FileShare = require('../index');
 const Server = require('../../http-wrapper').Server;
 const Client = require('../../http-wrapper').Client;

@@ -1,4 +1,4 @@
-require('../../../engine/core');
+require('launcher');
 const path = require("path");
 const fs = require("fs");
 const PskHash = require('pskcrypto').PskHash;
@@ -141,7 +141,7 @@ $$.flow.describe("CSBmanager", {
         return true;
     },
     __ensureFolderStructure: function(folder, callback){
-        $$.ensureFolderExists(folder, callback);
+        fs.mkdir(folder, {recursive: true},  callback);
     },
     __writeFile: function(readStream, folderPath, fileName, callback){
         this.__getNextVersionFileName(folderPath, fileName, (err, nextVersionFileName) => {
