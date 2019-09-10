@@ -190,6 +190,7 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 					res.statusCode = 200;
 				}
 				res.end();
+				console.log('ended')
 			})
 		});
 
@@ -197,12 +198,16 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			let fileManager = require('./fileManager');
 			fileManager.download(req, (err, result)=>{
 				if(err){
-					res.statusCode = 500;
+					res.statusCode = 404;
+					res.end();
 				}else{
 					res.statusCode = 200;
-					res.send(result);
+					res.setHeader('Content-Type', `image/${req.params.fileId.split('.')[1]}`);
+					result.pipe(res);
+					result.on('finish', () => {
+						res.end();
+					})
 				}
-				res.end();
 			})
 		});
 
