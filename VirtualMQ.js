@@ -180,6 +180,32 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			});
 		});
 
+		//folder can be userId/tripId/...
+		server.post('/upload/:folder/:fileId', function (req,res) {
+			let fileManager = require('./fileManager');
+			fileManager.upload(req, (err, result)=>{
+				if(err){
+					res.statusCode = 500;
+				}else{
+					res.statusCode = 200;
+				}
+				res.end();
+			})
+		});
+
+		server.get('/download/:folder/:fileId', function (req,res) {
+			let fileManager = require('./fileManager');
+			fileManager.download(req, (err, result)=>{
+				if(err){
+					res.statusCode = 500;
+				}else{
+					res.statusCode = 200;
+					res.send(result);
+				}
+				res.end();
+			})
+		});
+
 		server.post('/CSB', function (req, res) {
 			//preventing illegal characters passing as fileId
 			res.statusCode = 400;
