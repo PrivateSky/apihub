@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 let rootFolder = process.env.ROOT_FILE_UPLOAD || "./FileUploads";
+
 rootFolder = path.resolve(rootFolder);
 
 guid = function() {
@@ -19,8 +20,8 @@ module.exports.upload = function (req, callback) {
         callback(new Error("Something wrong happened"));
         return;
     }
-    // console.log(req);
-    const folder = req.params.folder;
+
+    const folder = Buffer.from(req.params.folder, 'base64').toString().replace('\n', '');
     let filename = guid();
     if (filename.split('.').length > 1){
         return callback('err');
@@ -34,13 +35,12 @@ module.exports.upload = function (req, callback) {
     }else {
         return callback('err');
     }
-
     try {
-        fs.mkdirSync(completeFolderPath, {recursive: true});
+        fs.mkdirSync(completeFolderPath, { recursive: true });
     }catch (e) {
         return callback(e);
     }
-    const writeStream = fs.createWriteStream( path.join(completeFolderPath, filename) );
+    const writeStream = fs.createWriteStream( path.join(completeFolderPath, filename));
 
     writeStream.on('finish', () => {
         writeStream.close();
