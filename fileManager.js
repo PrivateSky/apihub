@@ -22,6 +22,9 @@ module.exports.upload = function (req, callback) {
     }
 
     const folder = Buffer.from(req.params.folder, 'base64').toString().replace('\n', '');
+    if (folder.includes('..')){
+        return callback('err');
+    }
     let filename = guid();
     if (filename.split('.').length > 1){
         return callback('err');
