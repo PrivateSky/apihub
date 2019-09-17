@@ -13,7 +13,7 @@ const msgpack = require('@msgpack/msgpack');
 function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
 	const server = new Server(sslConfig).listen(port);
-	const tokenBucket = new TokenBucket(600000,1,10);
+	const tokenBucket = new TokenBucket(600000, 1, 10);
 	const CSB_storage_folder = "uploads";
 	const SWARM_storage_folder = "swarms";
 	console.log("Listening on port:", port);
@@ -181,20 +181,20 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		});
 
 		//folder can be userId/tripId/...
-		server.post('/upload/:folder/:fileId', function (req,res) {
+		server.post('/files/upload/:folder', function (req,res) {
 			let fileManager = require('./fileManager');
 			fileManager.upload(req, (err, result)=>{
 				if(err){
 					res.statusCode = 500;
+					res.end();
 				}else{
 					res.statusCode = 200;
+					res.end(JSON.stringify(result));
 				}
-				res.end();
-				console.log('ended')
 			})
 		});
 
-		server.get('/download/:folder/:fileId', function (req,res) {
+		server.get('/files/download/:folder/:fileId', function (req,res) {
 			let fileManager = require('./fileManager');
 			fileManager.download(req, (err, result)=>{
 				if(err){
