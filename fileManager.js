@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-let rootFolder = process.env.ROOT_FILE_UPLOAD || "./FileUploads";
+let rootFolder = process.env.npm_package_config_ROOT_FILE_UPLOAD || process.env.ROOT_FILE_UPLOAD || "./FileUploads";
 
 rootFolder = path.resolve(rootFolder);
 
@@ -47,7 +47,7 @@ module.exports.upload = function (req, callback) {
 
     writeStream.on('finish', () => {
         writeStream.close();
-        return callback(null, {'path': path.join(folder,filename)});
+        return callback(null, {'path': path.posix.join(folder,filename)});
     });
 
     writeStream.on('error', (err) => {
