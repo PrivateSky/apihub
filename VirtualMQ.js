@@ -276,9 +276,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			});
 		});
 
-
-
-
 		server.options('/*', function (req, res) {
 			var headers = {};
 			// IE8 does not allow domains to be specified, just the *

@@ -4,7 +4,6 @@ function Router(server) {
     };
 }
 
-
 function serverWrapper(baseUrl, server) {
     if (baseUrl.endsWith('/')) {
         baseUrl = baseUrl.substring(0, baseUrl.length - 1);
