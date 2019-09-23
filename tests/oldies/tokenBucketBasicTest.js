@@ -1,7 +1,7 @@
-require("../../../psknode/bundles/pskruntime");
+require("../../../../psknode/bundles/pskruntime");
 require('../../../engine/core');
 const assert = require('double-check').assert;
-const TokenBucket = require('../../../modules/virtualmq/libs/TokenBucket');
+const TokenBucket = require('../../libs/TokenBucket');
 
 
 const flow = $$.flow.describe('tokenBucketBasicTest', {

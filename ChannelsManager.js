@@ -1,11 +1,14 @@
 const storageFolder = process.env.channel_storage || "../tmp";
 const defaultQueueSize = process.env.queue_size || 100;
+const tokenSize = process.env.token_size || 48;
+const tokenHeaderName = process.env.token_header_name || "tokenHeader";
 
 const channelsFolderName = "channels";
 const channelKeyFileName = "channel_key";
 
 const path = require("path");
 const fs = require("fs");
+const crypto = require('crypto');
 
 function ChannelsManager(server){
 
@@ -14,9 +17,15 @@ function ChannelsManager(server){
 
     const channelKeys = {};
 
+    function generateToken(){
+        let buffer = crypto.randomBytes(tokenSize);
+        return buffer.toString('hex');
+    }
+
     function createChannel(name, publicKey, callback){
         let channelFolder = path.join(rootFolder, name);
         let keyFile = path.join(channelFolder, channelKeyFileName);
+        let token = generateToken();
 
         if(typeof channelKeys[name] !== "undefined" || fs.existsSync(channelFolder)){
             return callback(new Error("channel exists!"));
@@ -28,11 +37,11 @@ function ChannelsManager(server){
             return callback(new Error("channel has owner set!"));
         }
 
-        fs.writeFile(keyFile, publicKey, (err, res)=>{
+        fs.writeFile(keyFile, JSON.stringify({publicKey, token}), (err, res)=>{
             if(!err){
                 channelKeys[name] = publicKey;
             }
-            callback(err, res);
+            return callback(err, !err ? token : undefined);
         });
     }
 
@@ -42,9 +51,9 @@ function ChannelsManager(server){
         }else{
             fs.readFile(path.join(rootFolder, channelName, channelKeyFileName), (err, res)=>{
                 if(res){
-                    channelKeys[channelName] = res;
+                    channelKeys[channelName] = JSON.parse(res);
                 }
-                callback(err, res);
+                callback(err, channelKeys[channelName]);
             });
         }
     }
@@ -57,14 +66,44 @@ function ChannelsManager(server){
 
     }
 
-    server.post("/create-chanel", function(req, res){
-        const {channelName, publicKey} = req.body;
+    function readBody(req, callback){
+        let data = "";
+        req.on("data", (messagePart)=>{
+            data += messagePart;
+        });
 
-        if(typeof channelName !== "string" || typeof publicKey !== "string"){
-            return sendStatus(res, 400);
-        }
+        req.on("end", ()=>{
+           callback(null, data);
+        });
 
-        createChannel(channelName, publicKey, getBasicReturnHandler(res));
+        req.on("error", (err)=>{
+           callback(err);
+        });
+    }
+
+    server.put("/create-channel/:channelName", function(req, res){
+        const channelName = req.params.channelName;
+
+        readBody(req, (err, message)=>{
+            if(err){
+                return sendStatus(res, 400);
+            }
+
+            const publicKey = message;
+
+            if(typeof channelName !== "string" || typeof publicKey !== "string"){
+                return sendStatus(res, 400);
+            }
+
+            let handler = getBasicReturnHandler(res);
+
+            createChannel(channelName, publicKey, (err, token)=>{
+                if(!err){
+                    res.setHeader(tokenHeaderName, token);
+                }
+                handler(err, res);
+            });
+        });
     });
 
     function sendStatus(res, reasonCode){
@@ -116,4 +155,4 @@ function ChannelsManager(server){
 
 }
 
-module.exports = ChannelsManager(server);
+module.exports = ChannelsManager;

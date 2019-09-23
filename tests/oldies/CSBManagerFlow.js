@@ -1,11 +1,11 @@
-require("../../../psknode/bundles/pskruntime");
-require("../../../psknode/bundles/virtualMQ");
-require("../../../psknode/bundles/psknode");
+require("../../../../psknode/bundles/pskruntime");
+require("../../../../psknode/bundles/virtualMQ");
+require("../../../../psknode/bundles/psknode");
 const double_check = require("double-check");
 const assert = double_check.assert;
 const path = require('path');
 const Duplex = require('stream').Duplex;
-const fileStateManager = require('../../../libraries/utils/FileStateManager').getFileStateManager();
+const fileStateManager = require('../../../../libraries/utils/FileStateManager').getFileStateManager();
 const fs = require('fs');
 
 var fileName = 'test.txt';

@@ -1,5 +1,5 @@
-const Client = require('../libs/http-wrapper').Client;
-const httpUtils = require('../libs/http-wrapper').httpUtils;
+const Client = require('../../libs/http-wrapper/src').Client;
+const httpUtils = require('../../libs/http-wrapper/src').httpUtils;
 const CrlServer = require('../CrlServer');
 const cleanUp = require('./testCleanUp');
 

@@ -1,6 +1,6 @@
 require("../testBase");
 const assert = require('double-check').assert;
-const TokenBucket = require('../../../modules/virtualmq/libs/TokenBucket');
+const TokenBucket = require('../../libs/TokenBucket');
 
 const initParamsToTest = [
     [0, 1, 2],

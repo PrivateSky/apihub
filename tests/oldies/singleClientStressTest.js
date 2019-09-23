@@ -1,10 +1,10 @@
-require("../../../psknode/bundles/pskruntime");
-require("../../../psknode/bundles/virtualMQ");
-require("../../../psknode/bundles/psknode");
+require("../../../../psknode/bundles/pskruntime");
+require("../../../../psknode/bundles/virtualMQ");
+require("../../../../psknode/bundles/psknode");
 
 const assert           = require("double-check").assert;
-const fileStateManager = require('../../../libraries/utils/FileStateManager').getFileStateManager();
-const VirtualMQ = require('../../../modules/virtualmq');
+const fileStateManager = require('../../../../libraries/utils/FileStateManager').getFileStateManager();
+const VirtualMQ = require('../../index');
 const path             = require('path');
 const childProcess     = require('child_process');
 require('psk-http-client');

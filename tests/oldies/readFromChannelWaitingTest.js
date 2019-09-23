@@ -1,8 +1,8 @@
 /**
  * Code that tests the blocking property of the GET request for messages
  */
-const Client = require('../libs/http-wrapper').Client;
-let httpUtils = require('../libs/http-wrapper').httpUtils;
+const Client = require('../../libs/http-wrapper/src').Client;
+let httpUtils = require('../../libs/http-wrapper/src').httpUtils;
 const CrlServer = require('../CrlServer');
 const cleanUp = require('./testCleanUp');
 

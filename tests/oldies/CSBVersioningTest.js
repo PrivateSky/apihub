@@ -1,9 +1,9 @@
-require("../../../psknode/bundles/pskruntime");
-require('../../../modules/virtualmq/flows/CSBmanager');
+require("../../../../psknode/bundles/pskruntime");
+require('../../flows/CSBmanager');
 const assert = require("double-check").assert;
 const path = require('path');
 const Duplex = require('stream').Duplex;
-const fileStateManager = require('../../../libraries/utils/FileStateManager').getFileStateManager();
+const fileStateManager = require('../../../../libraries/utils/FileStateManager').getFileStateManager();
 const os = require('os');
 
 const tempFolder = path.resolve(path.join(os.tmpdir(), 'CSB'));

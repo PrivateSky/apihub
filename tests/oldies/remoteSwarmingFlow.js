@@ -1,11 +1,11 @@
-require("../../../psknode/bundles/pskruntime");
+require("../../../../psknode/bundles/pskruntime");
 require("callflow");
-require('../../../modules/virtualmq/flows/remoteSwarming');
-require("../../../psknode/bundles/pskruntime");
+require('../../flows/remoteSwarming');
+require("../../../../psknode/bundles/pskruntime");
 const assert           = require("double-check").assert;
 const path             = require('path');
 const Duplex           = require('stream').Duplex;
-const fileStateManager = require('../../../libraries/utils/FileStateManager').getFileStateManager();
+const fileStateManager = require('../../../../libraries/utils/FileStateManager').getFileStateManager();
 
 const CHANNEL_ID = '123';
 const tempFolder = path.resolve('../../../tmp');

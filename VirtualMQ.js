@@ -289,6 +289,8 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			res.end();
 		});
 
+		require("./ChannelsManager.js")(server);
+
 		server.use(function (req, res) {
 			res.statusCode = 404;
 			res.end();

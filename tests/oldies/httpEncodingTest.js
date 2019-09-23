@@ -2,7 +2,7 @@
  * to the expected result*/
 
 const utils = require("../Utils/virtualMQUtils");
-const msg = require("russianText");
+const msg = require("modules/virtualmq/tests/oldies/russianText");
 const assert = require("double-check").assert;
 var countMsg = 0;
 var index = 0;

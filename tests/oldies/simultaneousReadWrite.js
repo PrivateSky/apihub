@@ -1,6 +1,6 @@
-require("../../../psknode/bundles/pskruntime");
+require("../../../../psknode/bundles/pskruntime");
 const assert           = require("double-check").assert;
-const fileStateManager = require('../../../libraries/utils/FileStateManager').getFileStateManager();
+const fileStateManager = require('../../../../libraries/utils/FileStateManager').getFileStateManager();
 const VirtualMQ        = require('virtualmq');
 const path             = require('path');
 const fs               = require('fs');

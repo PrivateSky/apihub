@@ -2,7 +2,7 @@ require('launcher');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const Client = require('../libs/http-wrapper').Client;
+const Client = require('../../libs/http-wrapper/src').Client;
 const FileShare = require('../libs/file-share');
 const CrlServer = require('../CrlServer');
 const cleanUp = require('./testCleanUp');
