@@ -28,22 +28,45 @@ function createServer(folder, callback) {
 function mainTest(server, port, finishTest){
     channelName = crypto.randomBytes(24).toString('hex');
 
-    const options = {
-        hostname: "127.0.0.1",
-        port: port,
-        path: `/create-channel/${channelName}`,
-        method: "PUT"
-    };
+    function createChannel(channelName, callback){
+        const options = {
+            hostname: "127.0.0.1",
+            port: port,
+            path: `/create-channel/${channelName}`,
+            method: "PUT"
+        };
 
-    const req = http.request(options, (res)=>{
+        const req = http.request(options, callback);
+        req.write("my-public-key");
+        req.end();
+    }
+
+    function enableForward(channelName, callback){
+        const options = {
+            hostname: "127.0.0.1",
+            port: port,
+            path: `/forward-zeromq/${channelName}`,
+            method: "POST"
+        };
+
+        const req = http.request(options, callback);
+        req.setHeader("signature", "justasimplestringfornow");
+        req.end();
+    }
+
+    createChannel(channelName, (res)=>{
         assert.equal(res.statusCode, 200);
 
         let token = res.headers["tokenHeader"];
         assert.notNull(token);
-        finishTest();
+
+        enableForward(channelName, (res)=>{
+            assert.equal(res.statusCode, 200);
+
+            finishTest();
+        });
+
     });
-    req.write("my-public-key");
-    req.end();
 }
 
 assert.callback("Create Channel Test", (callback)=>{

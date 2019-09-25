@@ -2,6 +2,7 @@ const storageFolder = process.env.channel_storage || "../tmp";
 const defaultQueueSize = process.env.queue_size || 100;
 const tokenSize = process.env.token_size || 48;
 const tokenHeaderName = process.env.token_header_name || "tokenHeader";
+const signatureHeaderName = process.env.signature_header_name || "signature";
 
 const channelsFolderName = "channels";
 const channelKeyFileName = "channel_key";
@@ -58,12 +59,26 @@ function ChannelsManager(server){
         }
     }
 
-    function setForwardChannel(channelName){
+    function forwardChannel(channelName, forward, callback){
+        let channelKeyFile = path.join(rootFolder, channelName, channelKeyFileName);
+        fs.readFile(channelKeyFile, (err, content)=>{
+            let config;
+            try{
+                config = JSON.parse(content);
+            }catch(e){
+                return callback(e);
+            }
 
-    }
-
-    function stopForwardChannel(channelName){
-
+            if(typeof config !== "undefined"){
+                config.forward = forward;
+                fs.writeFile(channelKeyFile, JSON.stringify(config), (err, ...args)=>{
+                    if(!err){
+                        //TODO: start forward client
+                    }
+                    callback(err, ...args);
+                });
+            }
+        });
     }
 
     function readBody(req, callback){
@@ -122,25 +137,30 @@ function ChannelsManager(server){
         }
     }
 
-    server.post("/forward-channel", function(req, res){
-        const {channelName, enable, signature} = req.body;
+    server.post("/forward-zeromq/:channelName", function(req, res){
 
-        if(typeof channelName !== "string" || typeof signature !== "string"){
-            return sendStatus(res, 400);
-        }
+        readBody(req, (err, message)=>{
+            const {enable} = message;
+            const channelName = req.params.channelName;
+            const signature = req.headers[signatureHeaderName];
 
-        retriveChannelKey(channelName, (err, key)=>{
-            if(err){
-                return sendStatus(res, 500);
-            }else{
-                //todo: check signature against key
-
-                if(enable){
-                    setForwardChannel(channelName, getBasicReturnHandler(res));
-                }else{
-                    stopForwardChannel(channelName, getBasicReturnHandler(res));
-                }
+            if(typeof channelName !== "string" || typeof signature !== "string"){
+                return sendStatus(res, 400);
             }
+
+            retriveChannelKey(channelName, (err, key)=>{
+                if(err){
+                    return sendStatus(res, 500);
+                }else{
+                    //todo: check signature against key
+
+                    if(typeof enable === "undefined" || enable){
+                        forwardChannel(channelName, true, getBasicReturnHandler(res));
+                    }else{
+                        forwardChannel(channelName, null, getBasicReturnHandler(res));
+                    }
+                }
+            });
         });
 
     });
