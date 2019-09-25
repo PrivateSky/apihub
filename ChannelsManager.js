@@ -102,7 +102,7 @@ function ChannelsManager(server){
         });
     }
 
-    server.put("/create-channel/:channelName", function(req, res){
+    function createChannelHandler(req, res){
         const channelName = req.params.channelName;
 
         readBody(req, (err, message)=>{
@@ -125,7 +125,7 @@ function ChannelsManager(server){
                 handler(err, res);
             });
         });
-    });
+    }
 
     function sendStatus(res, reasonCode){
         res.statusCode = reasonCode;
@@ -142,7 +142,7 @@ function ChannelsManager(server){
         }
     }
 
-    server.post("/forward-zeromq/:channelName", function(req, res){
+    function enableForwarderHandler(req, res){
 
         readBody(req, (err, message)=>{
             const {enable} = message;
@@ -167,7 +167,7 @@ function ChannelsManager(server){
                 }
             });
         });
-    });
+    }
 
     function getQueue(name){
         if(typeof queues[name] === "undefined"){
@@ -183,49 +183,60 @@ function ChannelsManager(server){
         });
     }
 
-    server.post("/send-message/:channelName", function(req, res){
+    function writeMessage(subscribers, message){
+        let dispatched = false;
+        try {
+            while(subscribers.length>0){
+                subscriber = subscribers.pop();
+                if(!dispatched){
+                    subscriber.write(message);
+                    sendStatus(subscriber, 200);
+                    dispatched = true;
+                }else{
+                    sendStatus(subscriber, 403);
+                }
+            }
+        }catch(err) {
+            //... some subscribers could have a timeout connection
+            if(subscribers.length>0){
+                writeMessage(subscribers, message);
+            }
+        }
+    }
+
+    function sendMessageHandler(req, res){
         let channelName = req.params.channelName;
         readBody(req, (err, message)=>{
             checkIfChannelExist(channelName, (err, exists)=>{
-               if(!exists){
-                   return sendStatus(res, 403);
-               }else{
-                   let queue = getQueue(channelName);
-                   let subscribers = getSubscribersList(channelName);
-                   let dispatched = false;
-                   if(queue.isEmpty()){
-                       try {
-                           for (let i = 0; i < subscribers.length; i++) {
-                               subscribers[i].write(message);
-                               sendStatus(subscribers[i], 200);
-                           }
-                           if(subscribers.length >0){
-                               dispatched = true;
-                           }
-                       }catch(err) {
-                           //... some subscribers could have a timeout connection
-                       }
-                   }
-                   if(!dispatched) {
-                       if(queue.length < maxQueueSize){
-                           queue.push(message);
-                       }else{
-                           return sendStatus(res, 429);
-                       }
+                if(!exists){
+                    return sendStatus(res, 403);
+                }else{
+                    let queue = getQueue(channelName);
+                    let subscribers = getSubscribersList(channelName);
+                    let dispatched = false;
+                    if(queue.isEmpty()){
+                        writeMessage(subscribers, message);
+                    }
+                    if(!dispatched) {
+                        if(queue.length < maxQueueSize){
+                            queue.push(message);
+                        }else{
+                            return sendStatus(res, 429);
+                        }
 
-                       /*
-                       if(subscribers.length>0){
-                           //... if we have somebody waiting for a message and the queue is not empty means that something bad
-                           //happened and maybe we should try to dispatch first message from queue
-                       }
-                       */
+                        /*
+                        if(subscribers.length>0){
+                            //... if we have somebody waiting for a message and the queue is not empty means that something bad
+                            //happened and maybe we should try to dispatch first message from queue
+                        }
+                        */
 
-                   }
-                   return sendStatus(res, 200);
-               }
+                    }
+                    return sendStatus(res, 200);
+                }
             });
         });
-    });
+    }
 
     function getSubscribersList(channelName){
         if(typeof subscribers[channelName] === "undefined"){
@@ -235,7 +246,7 @@ function ChannelsManager(server){
         return subscribers[channelName];
     }
 
-    server.get("/receive-message/:channelName", function(req, res){
+    function receiveMessageHandler(req, res){
         let channelName = req.params.channelName;
         checkIfChannelExist(channelName, (err, exists)=>{
             if(!exists){
@@ -250,7 +261,7 @@ function ChannelsManager(server){
                     let message = queue.pop();
 
                     if(!message){
-                        getSubscribersList().push(res);
+                        getSubscribersList(channelName).push(res);
                     }else{
                         res.write(message);
                         sendStatus(res, 200);
@@ -258,8 +269,12 @@ function ChannelsManager(server){
                 });
             }
         });
-    });
+    }
 
+    server.put("/create-channel/:channelName", createChannelHandler);
+    server.post("/forward-zeromq/:channelName", enableForwarderHandler);
+    server.post("/send-message/:channelName", sendMessageHandler);
+    server.get("/receive-message/:channelName", receiveMessageHandler);
 }
 
 module.exports = ChannelsManager;
