@@ -80,11 +80,17 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 
                 streamToBuffer(req, contentLength, (err, bodyAsBuffer) => {
                     if(err) {
-                        res.statusCode = 500;
+						res.statusCode = 500;
+						res.end();
                         return;
                     }
-
-                    req.body = msgpack.decode(bodyAsBuffer);
+					try{
+						req.body = msgpack.decode(bodyAsBuffer);
+					} catch (e) {
+						res.statusCode = 500;
+						res.end();
+						return;
+					}
 
                     next();
                 });
