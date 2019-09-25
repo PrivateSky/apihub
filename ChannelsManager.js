@@ -177,39 +177,53 @@ function ChannelsManager(server){
         return queues[name];
     }
 
+    function checkIfChannelExist(channelName, callback){
+        retriveChannelDetails(channelName, (err, details)=>{
+            callback(null, err ? false : true);
+        });
+    }
+
     server.post("/send-message/:channelName", function(req, res){
-        let channelName = req.body.channelName;
+        let channelName = req.params.channelName;
         readBody(req, (err, message)=>{
-            let queue = getQueue(channelName);
-            let subscribers = getSubscribersList(channelName);
-            let dispatched = false;
-            if(queue.isEmpty()){
-                try {
-                    for (let i = 0; i < subscribers.length; i++) {
-                        subscribers[i].write(message);
-                        sendStatus(subscribers[i], 200);
-                    }
-                    dispatched = true;
-                }catch(err) {
-                    //... some subscribers could have a timeout connection
-                }
-            }
-            if(!dispatched) {
-                if(queue.length < maxQueueSize){
-                    queue.push(message);
-                }else{
-                    return sendStatus(res, 429);
-                }
+            checkIfChannelExist(channelName, (err, exists)=>{
+               if(!exists){
+                   return sendStatus(res, 403);
+               }else{
+                   let queue = getQueue(channelName);
+                   let subscribers = getSubscribersList(channelName);
+                   let dispatched = false;
+                   if(queue.isEmpty()){
+                       try {
+                           for (let i = 0; i < subscribers.length; i++) {
+                               subscribers[i].write(message);
+                               sendStatus(subscribers[i], 200);
+                           }
+                           if(subscribers.length >0){
+                               dispatched = true;
+                           }
+                       }catch(err) {
+                           //... some subscribers could have a timeout connection
+                       }
+                   }
+                   if(!dispatched) {
+                       if(queue.length < maxQueueSize){
+                           queue.push(message);
+                       }else{
+                           return sendStatus(res, 429);
+                       }
 
-                /*
-                if(subscribers.length>0){
-                    //... if we have somebody waiting for a message and the queue is not empty means that something bad
-                    //happened and maybe we should try to dispatch first message from queue
-                }
-                */
+                       /*
+                       if(subscribers.length>0){
+                           //... if we have somebody waiting for a message and the queue is not empty means that something bad
+                           //happened and maybe we should try to dispatch first message from queue
+                       }
+                       */
 
-            }
-            return sendStatus(res, 200);
+                   }
+                   return sendStatus(res, 200);
+               }
+            });
         });
     });
 
@@ -223,19 +237,25 @@ function ChannelsManager(server){
 
     server.get("/receive-message/:channelName", function(req, res){
         let channelName = req.params.channelName;
-        retriveChannelDetails(channelName, (err, details)=>{
-            if(err){
-                return sendStatus(res, 500);
-            }
-            //TODO: check signature agains details.publickey
-            let queue = getQueue(channelName);
-            let message = queue.pop();
-
-            if(!message){
-                getSubscribersList.push(res);
+        checkIfChannelExist(channelName, (err, exists)=>{
+            if(!exists){
+                return sendStatus(res, 403);
             }else{
-                res.write(message);
-                sendStatus(res, 200);
+                retriveChannelDetails(channelName, (err, details)=>{
+                    if(err){
+                        return sendStatus(res, 500);
+                    }
+                    //TODO: check signature agains details.publickey
+                    let queue = getQueue(channelName);
+                    let message = queue.pop();
+
+                    if(!message){
+                        getSubscribersList().push(res);
+                    }else{
+                        res.write(message);
+                        sendStatus(res, 200);
+                    }
+                });
             }
         });
     });
