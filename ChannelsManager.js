@@ -80,6 +80,7 @@ function ChannelsManager(server){
                     if(!err){
                         channelKeys[channelName] = config;
                         //TODO: start forward client
+
                     }
                     callback(err, ...args);
                 });
@@ -257,6 +258,13 @@ function ChannelsManager(server){
                         return sendStatus(res, 500);
                     }
                     //TODO: check signature agains details.publickey
+
+
+                    if(details.forward){
+                        //if channel is forward it does not make sense
+                        return sendStatus(res, 409);
+                    }
+
                     let queue = getQueue(channelName);
                     let message = queue.pop();
 
