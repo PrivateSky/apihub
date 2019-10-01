@@ -10,6 +10,7 @@ const channelKeyFileName = "channel_key";
 const path = require("path");
 const fs = require("fs");
 const crypto = require('crypto');
+const integration = require("./zeromqintegration");
 
 const Queue = require("swarmutils").Queue;
 
@@ -21,6 +22,18 @@ function ChannelsManager(server){
     const channelKeys = {};
     const queues = {};
     const subscribers = {};
+
+    const options = {
+        env:
+            {
+                enable_signature_check: true,
+                vmq_zeromq_sub_address: "tcp://127.0.0.1:6000",
+                vmq_zeromq_pub_address: "tcp://127.0.0.1:6001"
+            }
+    };
+    const zeromqNode = require("child_process").fork(path.join(__dirname,"zeromqintegration","bin","zeromqProxy.js"), null, options);
+
+    const forwarder = integration.getForwarderInstance(options.env.vmq_zeromq_sub_address);
 
     function generateToken(){
         let buffer = crypto.randomBytes(tokenSize);
@@ -79,8 +92,6 @@ function ChannelsManager(server){
                 fs.writeFile(channelKeyFile, JSON.stringify(config), (err, ...args)=>{
                     if(!err){
                         channelKeys[channelName] = config;
-                        //TODO: start forward client
-
                     }
                     callback(err, ...args);
                 });
@@ -207,33 +218,40 @@ function ChannelsManager(server){
 
     function sendMessageHandler(req, res){
         let channelName = req.params.channelName;
+        let message = req.body;
         readBody(req, (err, message)=>{
             checkIfChannelExist(channelName, (err, exists)=>{
                 if(!exists){
                     return sendStatus(res, 403);
                 }else{
-                    let queue = getQueue(channelName);
-                    let subscribers = getSubscribersList(channelName);
-                    let dispatched = false;
-                    if(queue.isEmpty()){
-                        writeMessage(subscribers, message);
-                    }
-                    if(!dispatched) {
-                        if(queue.length < maxQueueSize){
-                            queue.push(message);
+                    retriveChannelDetails(channelName, (err, details)=>{
+                        if(details.forward){
+                            forwarder.send(channelName, message);
                         }else{
-                            return sendStatus(res, 429);
-                        }
+                            let queue = getQueue(channelName);
+                            let subscribers = getSubscribersList(channelName);
+                            let dispatched = false;
+                            if(queue.isEmpty()){
+                                writeMessage(subscribers, message);
+                            }
+                            if(!dispatched) {
+                                if(queue.length < maxQueueSize){
+                                    queue.push(message);
+                                }else{
+                                    return sendStatus(res, 429);
+                                }
 
-                        /*
-                        if(subscribers.length>0){
-                            //... if we have somebody waiting for a message and the queue is not empty means that something bad
-                            //happened and maybe we should try to dispatch first message from queue
-                        }
-                        */
+                                /*
+                                if(subscribers.length>0){
+                                    //... if we have somebody waiting for a message and the queue is not empty means that something bad
+                                    //happened and maybe we should try to dispatch first message from queue
+                                }
+                                */
 
-                    }
-                    return sendStatus(res, 200);
+                            }
+                        }
+                        return sendStatus(res, 200);
+                    })
                 }
             });
         });
@@ -279,8 +297,66 @@ function ChannelsManager(server){
         });
     }
 
+    function bodyPreprocessing(req, res, next) {
+        const contentType = req.headers['content-type'];
+
+        if (contentType === 'application/octet-stream') {
+            const contentLength = Number.parseInt(req.headers['content-length']);
+
+            streamToBuffer(req, contentLength, (err, bodyAsBuffer) => {
+                if(err) {
+                    res.statusCode = 500;
+                    return;
+                }
+
+                req.body = msgpack.decode(bodyAsBuffer);
+
+                next();
+            });
+        } else {
+            next();
+        }
+
+        function streamToBuffer(stream, bufferSize, callback) {
+            const buffer = Buffer.alloc(bufferSize);
+            let currentOffset = 0;
+
+            stream
+                .on('data', chunk => {
+                    const chunkSize = chunk.length;
+                    const nextOffset = chunkSize + currentOffset;
+
+                    if (currentOffset > bufferSize - 1) {
+                        stream.close();
+                        return callback(new Error('Stream is bigger than reported size'));
+                    }
+
+                    unsafeAppendInBufferFromOffset(buffer, chunk, currentOffset);
+                    currentOffset = nextOffset;
+
+                })
+                .on('end', () => {
+                    callback(undefined, buffer);
+                })
+                .on('error', callback);
+
+
+        }
+
+        function unsafeAppendInBufferFromOffset(buffer, dataToAppend, offset) {
+            const dataSize = dataToAppend.length;
+
+            for (let i = 0; i < dataSize; i++) {
+                buffer[offset++] = dataToAppend[i];
+            }
+        }
+
+    }
+
+
     server.put("/create-channel/:channelName", createChannelHandler);
     server.post("/forward-zeromq/:channelName", enableForwarderHandler);
+    //server.post('/send-message/:channelName', bodyPreprocessing);
     server.post("/send-message/:channelName", sendMessageHandler);
     server.get("/receive-message/:channelName", receiveMessageHandler);
 }

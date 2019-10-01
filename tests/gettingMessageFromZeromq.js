@@ -106,19 +106,30 @@ function mainTest(server, port, finishTest){
 
         let message = "message";
 
-        sendMessage(channelName, message, (res)=>{
-            assert.equal(res.statusCode, 200);
+        const zmq = require("../../../node_modules/zeromq");
 
-            receiveMessage(channelName, (res)=>{
-                //request is failling and IT SHOULD!!!
-                assert.equal(res.statusCode, 409);
-                finishTest();
+        let socket = zmq.socket("sub");
+console.log("connecting to zeromq... ");
+        socket.connect("tcp://127.0.0.1:6001", (err)=>{
+            assert.isNull(err);
+            socket.subscribe(channelName);
+            console.log("Everything is ready... sending the message");
+            sendMessage(channelName, message, (res)=>{
+                assert.equal(res.statusCode, 200);
+                //..
             });
         });
+
+        socket.on("message", (receivedMessage)=>{
+            assert.equal(message, receivedMessage);
+            socket.close();
+            finishTest();
+        });
+
     });
 }
 
-assert.callback("Failing to retrive a message from a channel that has forward to zeromq enable", (callback)=>{
+assert.callback("Retrive a message from a zeromq channel that has messages forward enable", (callback)=>{
     doubleCheck.createTestFolder("vmq", (err, folder)=>{
         if(!err){
             process.env.channel_storage = path.join(folder, "tmp");
