@@ -25,28 +25,18 @@ function ZeromqForwarder(bindAddress){
     let socket = zmq.socket("pub");
     let initialized = false;
 
-    let delay = 500;
     function connect(){
-        socket.connect(bindAddress, (err)=>{
-            if(err){
-                console.log(`Got error connecting to zeromq server. Trying again in ${delay}ms`);
-                setTimeout(()=>{
-                    connect();
-                    delay = (delay * 1.5) / 4500;
-                }, delay);
-            }else{
-                console.log(`Zeromq forwarder connected on ${bindAddress}`);
-                initialized = true;
-                sendBuffered();
-            }
+        socket.monitor();
+        socket.connect(bindAddress);
+
+        socket.on("connect",(fd)=>{
+            console.log(`\nZeromq forwarder connected on ${bindAddress}\n`);
+            initialized = true;
+            sendBuffered();
         });
     }
 
     connect();
-
-    socket.on("message", (message)=>{
-        console.log(message);
-    });
 
     registerKiller([socket]);
 
@@ -55,14 +45,18 @@ function ZeromqForwarder(bindAddress){
 
     let sendBuffered = ()=>{
         while(buffered.length>0){
-            this.send(buffered.pop());
+            this.send(...buffered.pop());
         }
     };
 
     this.send = function(channel, ...args){
         if(initialized){
-            socket.send([channel, ...args]);
+            console.log("[Forwarder] Putting message on socket", args);
+            socket.send([channel, ...args], undefined, (...args)=>{
+                console.log("What a got", ...args);
+            });
         }else{
+            console.log("[Forwarder] Saving it for later");
             buffered.push([channel, ...args]);
         }
     }
@@ -79,40 +73,53 @@ function ZeromqProxyNode(subAddress, pubAddress, signatureChecker){
     subscribersNode.setsockopt(zmq.ZMQ_XPUB_VERBOSE, 1);
 
     publishersNode.on('message', (...args) => {
+        console.log(`[Proxy] - Received`, args);
         subscribersNode.send(args);
     });
 
-    subscribersNode.on('message', (message) => {
-        if(typeof signatureChecker === "undefined"){
-            //no signature checker defined then transparent proxy...
-            return publishersNode.send(message);
-        }
+    subscribersNode.on('message', function(subscription){
+        console.log("[Proxy] - manage message", subscription.toString());
 
-        if(!Buffer.isBuffer(message)){
-            console.log("Signature checker is defined but wrong message type received!");
-            return ;
+        let message = subscription.toString();
+        let type = subscription[0];
+        message = message.substr(1);
+
+        console.log(`[Proxy] - Trying to send ${type==1?"subscribe":"unsubscribe"} type of message`);
+
+        if(typeof signatureChecker === "undefined"){
+            console.log("[Proxy] - No signature checker defined then transparent proxy...");
+            return publishersNode.send(subscription);
         }
 
         try{
+            console.log("[Proxy] - let's deserialize and start analize");
             let deserializedData = JSON.parse(message);
-            //check deserializedData.signature
-            signatureChecker(deserializedData.channel, signature, (err, res)=>{
+            //TODO: check deserializedData.signature
+            console.log("[Proxy] - Start checking message signature");
+            signatureChecker(deserializedData.channelName, deserializedData.signature, (err, res)=>{
                 if(err){
-                    //
+                    //...
+                    console.log("Err", err);
                 }else{
-                    publishersNode.send(deserializedData.channel);
+                    //let newSub = Buffer.concat([Buffer.from(type.toString()), Buffer.from(deserializedData.channelName)]);
+                    //let newSub = Buffer.from(type+deserializedData.channelName.toString());
+                    let newSub = Buffer.alloc(deserializedData.channelName.length+1);
+                    newSub.write("01", 0, 1, "hex");
+                    Buffer.from(deserializedData.channelName).copy(newSub, 1);
+                    console.log("[Proxy] - sending subscription", "\n\t\t", subscription.toString('hex'), "\n\t\t", newSub.toString('hex'), newSub.toString());
+                    publishersNode.send(newSub);
                 }
             });
         }catch(err){
-            console.log("Wrong subscribe message type. No subscription will be made");
+            console.log("Something went wrong. Subscription will not be made.", err);
         }
 
     });
 
     try{
-        console.log(`Starting ZeroMQ proxy on [subs:${subAddress}] [pubs:${pubAddress}]`);
         publishersNode.bindSync(pubAddress);
         subscribersNode.bindSync(subAddress);
+        console.log(`\nStarting ZeroMQ proxy on [subs:${subAddress}] [pubs:${pubAddress}]\n`);
     }catch(err){
         console.log("Caught error on binding", err);
         throw new Error("No zeromq!!!");

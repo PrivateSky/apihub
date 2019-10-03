@@ -33,7 +33,7 @@ function ChannelsManager(server){
     };
     const zeromqNode = require("child_process").fork(path.join(__dirname,"zeromqintegration","bin","zeromqProxy.js"), null, options);
 
-    const forwarder = integration.getForwarderInstance(options.env.vmq_zeromq_sub_address);
+    const forwarder = integration.getForwarderInstance(options.env.vmq_zeromq_pub_address);
 
     function generateToken(){
         let buffer = crypto.randomBytes(tokenSize);
@@ -226,6 +226,7 @@ function ChannelsManager(server){
                 }else{
                     retriveChannelDetails(channelName, (err, details)=>{
                         if(details.forward){
+                            console.log("Forwarding message <", message, "> on channel", channelName);
                             forwarder.send(channelName, message);
                         }else{
                             let queue = getQueue(channelName);

@@ -98,6 +98,40 @@ function mainTest(server, port, finishTest){
         });
     }
 
+    function createFakeDomainSubscriber(channelName, message){
+        const zmq = require("../../../node_modules/zeromq");
+
+        let socket = zmq.socket("sub");
+        console.log("connecting to zeromq... ");
+        socket.monitor();
+        socket.connect("tcp://127.0.0.1:6000");
+        socket.subscribe(JSON.stringify({channelName, signature:""}));
+        //console.log("Subscribed on channel", channelName);
+
+        /*["connect_delay", "connect_retry", "listen", "bind_error", "accept", "accept_error", "close", "close_error", "disconnect"].forEach((eventType)=>{
+            socket.on(eventType, (...args)=>{
+                console.log("Event type caught", eventType, ...args);
+            })
+        });*/
+
+
+        socket.on("connect", (...args)=>{
+            console.log("Everything is ready...", ...args);
+            console.log("sending the message");
+            sendMessage(channelName, message, (res)=>{
+                assert.equal(res.statusCode, 200);
+                //..
+            });
+        });
+
+        socket.on("message", (receivedMessage)=>{
+            console.log("Getting my message back", receivedMessage);
+            assert.equal(message, receivedMessage);
+            socket.close();
+            finishTest();
+        });
+    }
+
     createChannel(channelName, (res)=>{
         assert.equal(res.statusCode, 200);
 
@@ -106,25 +140,9 @@ function mainTest(server, port, finishTest){
 
         let message = "message";
 
-        const zmq = require("../../../node_modules/zeromq");
-
-        let socket = zmq.socket("sub");
-console.log("connecting to zeromq... ");
-        socket.connect("tcp://127.0.0.1:6001", (err)=>{
-            assert.isNull(err);
-            socket.subscribe(channelName);
-            console.log("Everything is ready... sending the message");
-            sendMessage(channelName, message, (res)=>{
-                assert.equal(res.statusCode, 200);
-                //..
-            });
-        });
-
-        socket.on("message", (receivedMessage)=>{
-            assert.equal(message, receivedMessage);
-            socket.close();
-            finishTest();
-        });
+        setTimeout(()=>{
+            createFakeDomainSubscriber(channelName, message)
+        }, 1000);
 
     });
 }
@@ -138,4 +156,4 @@ assert.callback("Retrive a message from a zeromq channel that has messages forwa
             });
         }
     });
-}, 3000);
+}, 5000);
