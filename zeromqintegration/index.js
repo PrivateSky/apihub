@@ -8,8 +8,9 @@ function registerKiller(children, method){
     const events = ["SIGINT", "SIGUSR1", "SIGUSR2", "uncaughtException", "SIGTERM", "SIGHUP"];
 
     events.forEach(function(event){
-        process.on(event, function(){
+        process.on(event, function(...args){
             children.forEach(function(child){
+                console.log("Uite cum fac damage...", event, ...args);
                 if(method){
                     child[method](0);
                 }else{
@@ -53,7 +54,7 @@ function ZeromqForwarder(bindAddress){
         if(initialized){
             console.log("[Forwarder] Putting message on socket", args);
             socket.send([channel, ...args], undefined, (...args)=>{
-                console.log("What a got", ...args);
+                console.log("[Forwarder] message sent");
             });
         }else{
             console.log("[Forwarder] Saving it for later");
@@ -72,12 +73,25 @@ function ZeromqProxyNode(subAddress, pubAddress, signatureChecker){
     // uncomment next lines if messages are lost
     subscribersNode.setsockopt(zmq.ZMQ_XPUB_VERBOSE, 1);
 
-    publishersNode.on('message', (...args) => {
-        console.log(`[Proxy] - Received`, args);
-        subscribersNode.send(args);
-    });
+    publishersNode.on('message', deliverMessage);
 
-    subscribersNode.on('message', function(subscription){
+    function deliverMessage(channel, message){
+        console.log(`[Proxy] - Received message on channel ${channel.toString()}`);
+        let ch = channelTranslationDictionary[channel.toString()];
+        if(ch){
+            console.log("[Proxy] - Sending message on channel", ch);
+            subscribersNode.send([Buffer.from(ch), message]);
+        }else{
+            console.log(`[Proxy] - message dropped!`);
+        }
+        //subscribersNode.send([channel, message]);
+    }
+
+    let channelTranslationDictionary = {};
+
+    subscribersNode.on('message', manageSubscriptions);
+
+    function manageSubscriptions(subscription){
         console.log("[Proxy] - manage message", subscription.toString());
 
         let message = subscription.toString();
@@ -87,8 +101,9 @@ function ZeromqProxyNode(subAddress, pubAddress, signatureChecker){
         console.log(`[Proxy] - Trying to send ${type==1?"subscribe":"unsubscribe"} type of message`);
 
         if(typeof signatureChecker === "undefined"){
-            console.log("[Proxy] - No signature checker defined then transparent proxy...");
-            return publishersNode.send(subscription);
+            console.log("[Proxy] - No signature checker defined then transparent proxy...", subscription);
+            publishersNode.send(subscription);
+            return;
         }
 
         try{
@@ -101,20 +116,27 @@ function ZeromqProxyNode(subAddress, pubAddress, signatureChecker){
                     //...
                     console.log("Err", err);
                 }else{
-                    //let newSub = Buffer.concat([Buffer.from(type.toString()), Buffer.from(deserializedData.channelName)]);
-                    //let newSub = Buffer.from(type+deserializedData.channelName.toString());
                     let newSub = Buffer.alloc(deserializedData.channelName.length+1);
-                    newSub.write("01", 0, 1, "hex");
-                    Buffer.from(deserializedData.channelName).copy(newSub, 1);
-                    console.log("[Proxy] - sending subscription", "\n\t\t", subscription.toString('hex'), "\n\t\t", newSub.toString('hex'), newSub.toString());
+                    let ch = Buffer.from(deserializedData.channelName);
+                    if(type===1){
+                        newSub.write("01", 0, 1, "hex");
+                    }else{
+                        newSub.write("00", 0, 1, "hex");
+                    }
+
+                    ch.copy(newSub, 1);
+                    console.log("[Proxy] - sending subscription", /*"\n\t\t", subscription.toString('hex'), "\n\t\t", newSub.toString('hex'),*/ newSub);
+                    channelTranslationDictionary[deserializedData.channelName] = message;
                     publishersNode.send(newSub);
+                    return;
                 }
             });
         }catch(err){
-            console.log("Something went wrong. Subscription will not be made.", err);
+            if(message.toString()!==""){
+                console.log("Something went wrong. Subscription will not be made.", err);
+            }
         }
-
-    });
+    }
 
     try{
         publishersNode.bindSync(pubAddress);
@@ -126,6 +148,64 @@ function ZeromqProxyNode(subAddress, pubAddress, signatureChecker){
     }
 
     registerKiller([publishersNode, subscribersNode]);
+}
+
+function ZeromqConsumer(bindAddress, monitorFunction){
+
+    let socket = zmq.socket("sub");
+
+    if(typeof monitorFunction === "function"){
+        let events = ["connect", "connect_delay", "connect_retry", "listen", "bind_error", "accept", "accept_error", "close", "close_error", "disconnect"];
+        socket.monitor();
+        events.forEach((eventType)=>{
+            socket.on(eventType, (...args)=>{
+                monitorFunction(eventType, ...args);
+            });
+        });
+    }
+
+    function connect(callback){
+        socket.connect(bindAddress);
+        socket.on("connect", callback);
+    }
+
+    let subscriptions = {};
+    let connected = false;
+
+    this.subscribe = function(channelName, signature, callback){
+        let subscription = JSON.stringify({channelName, signature:signature});
+        if(!subscriptions[subscription]){
+            subscriptions[subscription] = [];
+        }
+
+        subscriptions[subscription].push(callback);
+
+        if(!connected){
+            connect(()=>{
+                connected = true;
+                for(var subscription in subscriptions){
+                    socket.subscribe(subscription);
+                }
+            });
+        }else{
+            socket.subscribe(subscription);
+        }
+    };
+
+    this.close = function(){
+        socket.close();
+    };
+
+    socket.on("message", (channel, receivedMessage)=>{
+       let callbacks = subscriptions[channel];
+       if(!callbacks || callbacks.length === 0){
+           return console.log(`No subscriptions found for channel ${channel}. Message dropped!`);
+       }
+       for(let i = 0; i<callbacks.length; i++){
+           let cb = callbacks[i];
+           cb(channel, receivedMessage);
+       }
+    });
 }
 
 let instance;
@@ -141,6 +221,10 @@ module.exports.createZeromqProxyNode = function(subAddress, pubAddress, signatur
     subAddress = subAddress || defaultSubAddress;
     pubAddress = pubAddress || defaultPubAddress;
     return new ZeromqProxyNode(subAddress, pubAddress, signatureChecker);
+};
+
+module.exports.createZeromqConsumer = function(bindAddress, monitorFunction){
+    return new ZeromqConsumer(bindAddress, monitorFunction);
 };
 
 module.exports.registerKiller = registerKiller;

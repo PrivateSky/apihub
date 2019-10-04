@@ -31,7 +31,7 @@ function ChannelsManager(server){
                 vmq_zeromq_pub_address: "tcp://127.0.0.1:6001"
             }
     };
-    const zeromqNode = require("child_process").fork(path.join(__dirname,"zeromqintegration","bin","zeromqProxy.js"), null, options);
+    const zeromqNode = require("./zeromqintegration/pingpongFork").fork(path.join(__dirname,"zeromqintegration","bin","zeromqProxy.js"), null, options);
 
     const forwarder = integration.getForwarderInstance(options.env.vmq_zeromq_pub_address);
 

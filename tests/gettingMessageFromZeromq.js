@@ -1,8 +1,10 @@
 const http = require("http");
 const path = require("path");
 const crypto = require("crypto");
+
 require("../../../psknode/bundles/pskruntime");
 require("../../../psknode/bundles/virtualMQ");
+
 const VirtualMQ = require("../index");
 const doubleCheck = require('../../double-check');
 const assert = doubleCheck.assert;
@@ -99,35 +101,23 @@ function mainTest(server, port, finishTest){
     }
 
     function createFakeDomainSubscriber(channelName, message){
-        const zmq = require("../../../node_modules/zeromq");
+        const zmqIntegration = require("../zeromqintegration");
 
-        let socket = zmq.socket("sub");
-        console.log("connecting to zeromq... ");
-        socket.monitor();
-        socket.connect("tcp://127.0.0.1:6000");
-        socket.subscribe(JSON.stringify({channelName, signature:""}));
-        //console.log("Subscribed on channel", channelName);
+        let catchEvents = (eventType, ...args)=>{
+            console.log("Event type caught", eventType, ...args);
+            if(eventType === "connect"){
+                sendMessage(channelName, message, (res)=>{
+                    assert.equal(res.statusCode, 200);
+                    //..
+                });
+            }
+        };
 
-        /*["connect_delay", "connect_retry", "listen", "bind_error", "accept", "accept_error", "close", "close_error", "disconnect"].forEach((eventType)=>{
-            socket.on(eventType, (...args)=>{
-                console.log("Event type caught", eventType, ...args);
-            })
-        });*/
-
-
-        socket.on("connect", (...args)=>{
-            console.log("Everything is ready...", ...args);
-            console.log("sending the message");
-            sendMessage(channelName, message, (res)=>{
-                assert.equal(res.statusCode, 200);
-                //..
-            });
-        });
-
-        socket.on("message", (receivedMessage)=>{
-            console.log("Getting my message back", receivedMessage);
-            assert.equal(message, receivedMessage);
-            socket.close();
+        let consumer = zmqIntegration.createZeromqConsumer("tcp://127.0.0.1:6000", catchEvents);
+        consumer.subscribe(channelName, "", (channel, receivedMessage)=>{
+            console.log("Getting my message back", channel.toString(), receivedMessage.toString());
+            assert.true(message == receivedMessage.toString());
+            consumer.close();
             finishTest();
         });
     }
@@ -151,7 +141,8 @@ assert.callback("Retrive a message from a zeromq channel that has messages forwa
     doubleCheck.createTestFolder("vmq", (err, folder)=>{
         if(!err){
             process.env.channel_storage = path.join(folder, "tmp");
-            createServer(folder, (...args)=>{
+            console.log(process.env.channel_storage);
+            createServer(process.env.channel_storage, (...args)=>{
                 mainTest(...args, callback);
             });
         }
