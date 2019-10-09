@@ -2,7 +2,7 @@ const defaultForwardAddress = process.env.vmq_zeromq_forward_address || "tcp://1
 const defaultSubAddress = process.env.vmq_zeromq_sub_address || "tcp://127.0.0.1:5000";
 const defaultPubAddress = process.env.vmq_zeromq_pub_address || "tcp://127.0.0.1:5001";
 
-let zmq = require("../../../node_modules/zeromq");
+let zmq = require("zeromq");
 
 function registerKiller(children, method){
     const events = ["SIGINT", "SIGUSR1", "SIGUSR2", "uncaughtException", "SIGTERM", "SIGHUP"];
