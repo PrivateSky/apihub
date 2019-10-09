@@ -16,7 +16,9 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	let bindFinish = (err)=>{
 		if(err){
 			console.log(err);
-			callback(err);
+			if(callback){
+				callback(err);
+			}
 			return;
 		}
 		const tokenBucket = new TokenBucket(600000, 1, 10);
