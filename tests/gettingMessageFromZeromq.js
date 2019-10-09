@@ -8,9 +8,9 @@ require("../../../psknode/bundles/virtualMQ");
 const VirtualMQ = require("../index");
 const doubleCheck = require('../../double-check');
 const assert = doubleCheck.assert;
+let port = 8000;
 
 function createServer(folder, callback) {
-    let port = 8000;
     var server = VirtualMQ.createVirtualMQ(port, folder, undefined, (err, res) => {
         if (err) {
             console.log("Failed to create VirtualMQ server on port ", port, "Trying again...");
