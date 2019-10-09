@@ -12,26 +12,35 @@ const msgpack = require('@msgpack/msgpack');
 
 function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
-	const server = new Server(sslConfig).listen(port, callback);
-	const tokenBucket = new TokenBucket(600000, 1, 10);
-	const CSB_storage_folder = "uploads";
-	const SWARM_storage_folder = "swarms";
-	console.log("Listening on port:", port);
 
-	this.close = server.close;
-	$$.flow.start("CSBmanager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
-		if (err) {
-			throw err;
-		} else {
-			console.log("CSBManager is using folder", result);
-			$$.flow.start("RemoteSwarming").init(path.join(rootFolder, SWARM_storage_folder), function(err, result){
-				registerEndpoints();
-				if (callback) {
-					callback();
-				}
-			});
+	let bindFinish = (err)=>{
+		if(err){
+			console.log(err);
+			callback(err);
+			return;
 		}
-	});
+		const tokenBucket = new TokenBucket(600000, 1, 10);
+		const CSB_storage_folder = "uploads";
+		const SWARM_storage_folder = "swarms";
+		console.log("Listening on port:", port);
+
+		this.close = server.close;
+		$$.flow.start("CSBmanager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
+			if (err) {
+				throw err;
+			} else {
+				console.log("CSBManager is using folder", result);
+				$$.flow.start("RemoteSwarming").init(path.join(rootFolder, SWARM_storage_folder), function(err, result){
+					registerEndpoints();
+					if (callback) {
+						callback();
+					}
+				});
+			}
+		});
+	};
+
+	const server = new Server(sslConfig).listen(port, bindFinish);
 
 	function registerEndpoints() {
 		const router = new Router(server);
