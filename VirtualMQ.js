@@ -12,16 +12,19 @@ const msgpack = require('@msgpack/msgpack');
 
 function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
+	const tokenBucket = new TokenBucket(600000, 1, 10);
+	const CSB_storage_folder = "uploads";
+	const SWARM_storage_folder = "swarms";
 
 	let bindFinish = (err)=>{
 		if(err){
 			console.log(err);
-			callback(err);
+			if(callback){
+				callback(err);
+			}
 			return;
 		}
-		const tokenBucket = new TokenBucket(600000, 1, 10);
-		const CSB_storage_folder = "uploads";
-		const SWARM_storage_folder = "swarms";
+
 		console.log("Listening on port:", port);
 
 		this.close = server.close;
