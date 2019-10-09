@@ -12,7 +12,6 @@ const msgpack = require('@msgpack/msgpack');
 
 function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
-	const server = new Server(sslConfig).listen(port, bindFinish);
 
 	let bindFinish = (err)=>{
 		if(err){
@@ -39,6 +38,8 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			}
 		});
 	};
+
+	const server = new Server(sslConfig).listen(port, bindFinish);
 
 	function registerEndpoints() {
 		const router = new Router(server);
