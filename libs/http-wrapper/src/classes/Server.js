@@ -7,8 +7,23 @@ function Server(sslOptions) {
     const server = _initServer(sslOptions);
 
 
-    this.listen = function listen(port) {
-        server.listen(port);
+    this.listen = function listen(port, callback) {
+        server.listen(port, ()=>{
+            if(callback){
+                callback(null);
+            }
+        });
+
+        server.on("error", (err)=>{
+            console.log(err);
+            if (err.code === 'EADDRINUSE') {
+                server.close();
+                if(callback){
+                    callback(err);
+                }
+            }
+        });
+
         return this;
     };
 
