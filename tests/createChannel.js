@@ -1,12 +1,18 @@
 const http = require("http");
 const path = require("path");
 const crypto = require("crypto");
+
 require("../../../psknode/bundles/pskruntime");
 require("../../../psknode/bundles/virtualMQ");
+
 const VirtualMQ = require("../index");
 const doubleCheck = require('../../double-check');
 const assert = doubleCheck.assert;
+
 let port = 8000;
+process.env.vmq_zeromq_forward_address = "tcp://127.0.0.1:5000";
+process.env.vmq_zeromq_sub_address = "tcp://127.0.0.1:5000";
+process.env.vmq_zeromq_pub_address = "tcp://127.0.0.1:5001";
 
 function createServer(folder, callback) {
     var server = VirtualMQ.createVirtualMQ(port, folder, undefined, (err, res) => {
@@ -72,8 +78,8 @@ function mainTest(server, port, finishTest){
 assert.callback("Create Channel Test", (callback)=>{
     doubleCheck.createTestFolder("vmq", (err, folder)=>{
         if(!err){
-            process.env.channel_storage = path.join(folder, "tmp");
-            createServer(folder, (...args)=>{
+            process.env.vmq_channel_storage = path.join(folder, "tmp");
+            createServer(process.env.vmq_channel_storage, (...args)=>{
                 mainTest(...args, callback);
             });
         }

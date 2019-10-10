@@ -23,17 +23,20 @@ function ChannelsManager(server){
     const queues = {};
     const subscribers = {};
 
-    const options = {
-        env:
-            {
-                enable_signature_check: true,
-                vmq_zeromq_sub_address: "tcp://127.0.0.1:6000",
-                vmq_zeromq_pub_address: "tcp://127.0.0.1:6001"
-            }
-    };
-    const zeromqNode = require("./zeromqintegration/pingpongFork").fork(path.join(__dirname,"zeromqintegration","bin","zeromqProxy.js"), null, options);
 
-    const forwarder = integration.getForwarderInstance(options.env.vmq_zeromq_pub_address);
+    process.env.enable_signature_check = true;
+
+    let baseDir = __dirname;
+
+    //if __dirname appears in process.cwd path it means that the code isn't run from browserified version
+    //TODO: check for better implementation
+    if(process.cwd().indexOf(__dirname) ===-1){
+        baseDir = path.join(process.cwd(), __dirname);
+    }
+
+    const zeromqNode = require("./zeromqintegration/pingpongFork").fork(path.join(baseDir,"zeromqintegration","bin","zeromqProxy.js"));
+
+    const forwarder = integration.getForwarderInstance(process.env.vmq_zeromq_forward_address);
 
     function generateToken(){
         let buffer = crypto.randomBytes(tokenSize);

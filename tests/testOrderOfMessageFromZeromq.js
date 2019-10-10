@@ -8,7 +8,11 @@ require("../../../psknode/bundles/virtualMQ");
 const VirtualMQ = require("../index");
 const doubleCheck = require('../../double-check');
 const assert = doubleCheck.assert;
+
 let port = 8000;
+process.env.vmq_zeromq_forward_address = "tcp://127.0.0.1:5061";
+process.env.vmq_zeromq_sub_address = "tcp://127.0.0.1:5060";
+process.env.vmq_zeromq_pub_address = "tcp://127.0.0.1:5061";
 
 function createServer(folder, callback) {
     var server = VirtualMQ.createVirtualMQ(port, folder, undefined, (err, res) => {
@@ -145,7 +149,7 @@ function mainTest(server, port, finishTest){
             }
         };
 
-        let consumer = zmqIntegration.createZeromqConsumer("tcp://127.0.0.1:6000", catchEvents);
+        let consumer = zmqIntegration.createZeromqConsumer(process.env.vmq_zeromq_sub_address, catchEvents);
         consumer.subscribe(channelName, "", (channel, receivedMessage)=>{
             //console.log("Getting my message back", channel.toString(), receivedMessage.toString());
             receivedMessage = Number(receivedMessage.toString());
@@ -176,11 +180,10 @@ function mainTest(server, port, finishTest){
 assert.callback("Retrive a message from a zeromq channel that has messages forward enable", (callback)=>{
     doubleCheck.createTestFolder("vmq", (err, folder)=>{
         if(!err){
-            process.env.channel_storage = path.join(folder, "tmp");
-            console.log(process.env.channel_storage);
-            createServer(process.env.channel_storage, (...args)=>{
+            process.env.vmq_channel_storage = path.join(folder, "tmp");
+            createServer(process.env.vmq_channel_storage, (...args)=>{
                 mainTest(...args, callback);
             });
         }
     });
-}, 5000);
+}, 7000);
