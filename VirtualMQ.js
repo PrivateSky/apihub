@@ -19,11 +19,11 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	console.log("Listening on port:", port);
 
 	this.close = server.close;
-	$$.flow.start("CSBmanager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
+	$$.flow.start("BricksManager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
 		if (err) {
 			throw err;
 		} else {
-			console.log("CSBManager is using folder", result);
+			console.log("BricksManager is using folder", result);
 			$$.flow.start("RemoteSwarming").init(path.join(rootFolder, SWARM_storage_folder), function(err, result){
 				registerEndpoints();
 				if (callback) {
