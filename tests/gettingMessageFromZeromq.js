@@ -62,7 +62,7 @@ function mainTest(server, port, finishTest){
         req.end();
     }
 
-    function sendMessage(channelName, message, callback){
+    /*function sendMessage(channelName, message, callback){
         const options = {
             hostname: "127.0.0.1",
             port: port,
@@ -73,6 +73,26 @@ function mainTest(server, port, finishTest){
         const req = http.request(options, callback);
         req.setHeader("signature", "justasimplestringfornow");
         req.write(message);
+        req.end();
+    }*/
+
+    function sendMessage(channelName, message, callback){
+        const options = {
+            hostname: "127.0.0.1",
+            port: port,
+            path: `/send-message/${channelName}`,
+            method: "POST"
+        };
+
+        const req = http.request(options, callback);
+        req.setHeader("signature", "justasimplestringfornow");
+
+        require("./../../psk-http-client");
+        let pack = $$.remote.messagePacker.prototype.pack(message);
+
+        req.setHeader("content-length", pack.byteLength);
+        req.setHeader("content-type", 'application/octet-stream');
+        req.write(new Buffer(pack));
         req.end();
     }
 
@@ -89,7 +109,7 @@ function mainTest(server, port, finishTest){
         req.end();
     }
 
-    function readBody(req, callback){
+/*    function readBody(req, callback){
         let data = "";
         req.on("data", (messagePart)=>{
             data += messagePart;
@@ -102,7 +122,7 @@ function mainTest(server, port, finishTest){
         req.on("error", (err)=>{
             callback(err);
         });
-    }
+    }*/
 
     function createFakeDomainSubscriber(channelName, message){
         const zmqIntegration = require("../zeromqintegration");
@@ -119,8 +139,9 @@ function mainTest(server, port, finishTest){
 
         let consumer = zmqIntegration.createZeromqConsumer(process.env.vmq_zeromq_sub_address, catchEvents);
         consumer.subscribe(channelName, "", (channel, receivedMessage)=>{
-            console.log("Getting my message back", channel.toString(), receivedMessage.toString());
-            assert.true(message == receivedMessage.toString());
+            let unpackedMessage = $$.remote.messagePacker.prototype.unpack(receivedMessage.buffer);
+            console.log("Getting my message back", channel.toString(), unpackedMessage);
+            assert.true(message.meta.swarmId === unpackedMessage.meta.swarmId);
             consumer.close();
             finishTest();
         });
@@ -132,10 +153,21 @@ function mainTest(server, port, finishTest){
         let token = res.headers["tokenHeader"];
         assert.notNull(token);
 
-        let message = "message";
+        let message = {meta:{
+                swarmId: "123456789abcdef",
+                requestId: "123456789abcdef",
+                swarmTypeName: "testSwarmType",
+                phaseName: "swarmPhaseName",
+                args: [],
+                command: "executeSwarmPhase",
+                target: "agentURL",
+                homeSecurityContext: "no_home_no_return"
+            }};
 
-        setTimeout(()=>{
-            createFakeDomainSubscriber(channelName, message)
+        message = require("./../../swarmutils").OwM.prototype.convert(message);
+
+        setTimeout(function(){
+            createFakeDomainSubscriber(channelName, message);
         }, 1000);
 
     });

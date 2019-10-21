@@ -14,6 +14,8 @@ const integration = require("./zeromqintegration");
 
 const Queue = require("swarmutils").Queue;
 
+require("psk-http-client");
+
 function ChannelsManager(server){
 
     const rootFolder = path.join(storageFolder, channelsFolderName);
@@ -217,17 +219,79 @@ function ChannelsManager(server){
                 writeMessage(subscribers, message);
             }
         }
+
+        return dispatched;
+    }
+
+    function readSendMessageBody(req, callback){
+        const contentType = req.headers['content-type'];
+
+        if (contentType === 'application/octet-stream') {
+            const contentLength = Number.parseInt(req.headers['content-length'], 10);
+
+            if(Number.isNaN(contentLength)){
+                return callback(new Error("Wrong content length header received!"));
+            }
+
+            streamToBuffer(req, contentLength, (err, bodyAsBuffer) => {
+                if(err) {
+                    return callback(err);
+                }
+                callback(undefined, bodyAsBuffer);
+            });
+        } else {
+            callback(new Error("Wrong message format received!"));
+        }
+
+        function streamToBuffer(stream, bufferSize, callback) {
+            const buffer = Buffer.alloc(bufferSize);
+            let currentOffset = 0;
+
+            stream.on('data', function(chunk){
+                const chunkSize = chunk.length;
+                const nextOffset = chunkSize + currentOffset;
+
+                if (currentOffset > bufferSize - 1) {
+                    stream.close();
+                    return callback(new Error('Stream is bigger than reported size'));
+                }
+
+                write2Buffer(buffer, chunk, currentOffset);
+                currentOffset = nextOffset;
+
+            });
+            stream.on('end', function(){
+                callback(undefined, buffer);
+            });
+            stream.on('error', callback);
+        }
+
+        function write2Buffer(buffer, dataToAppend, offset) {
+            const dataSize = dataToAppend.length;
+
+            for (let i = 0; i < dataSize; i++) {
+                buffer[offset++] = dataToAppend[i];
+            }
+        }
     }
 
     function sendMessageHandler(req, res){
         let channelName = req.params.channelName;
-        let message = req.body;
-        readBody(req, (err, message)=>{
-            checkIfChannelExist(channelName, (err, exists)=>{
-                if(!exists){
-                    return sendStatus(res, 403);
-                }else{
-                    retriveChannelDetails(channelName, (err, details)=>{
+
+        checkIfChannelExist(channelName, (err, exists)=>{
+            if(!exists){
+                return sendStatus(res, 403);
+            }else{
+                retriveChannelDetails(channelName, (err, details)=>{
+                    //we choose to read the body of request only after we know that we recognize the destination channel
+                    readSendMessageBody(req, (err, message)=>{
+                        if(err){
+                            console.log(err);
+                            return sendStatus(res, 403);
+                        }
+
+                        //TODO: to all checks based on message header
+
                         if(details.forward){
                             console.log("Forwarding message <", message, "> on channel", channelName);
                             forwarder.send(channelName, message);
@@ -236,12 +300,13 @@ function ChannelsManager(server){
                             let subscribers = getSubscribersList(channelName);
                             let dispatched = false;
                             if(queue.isEmpty()){
-                                writeMessage(subscribers, message);
+                                dispatched = writeMessage(subscribers, message);
                             }
                             if(!dispatched) {
                                 if(queue.length < maxQueueSize){
                                     queue.push(message);
                                 }else{
+                                    //queue is full
                                     return sendStatus(res, 429);
                                 }
 
@@ -255,9 +320,9 @@ function ChannelsManager(server){
                             }
                         }
                         return sendStatus(res, 200);
-                    })
-                }
-            });
+                    });
+                })
+            }
         });
     }
 
