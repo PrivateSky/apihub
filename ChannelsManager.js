@@ -10,7 +10,7 @@ const channelKeyFileName = "channel_key";
 const path = require("path");
 const fs = require("fs");
 const crypto = require('crypto');
-const integration = require("./zeromqintegration");
+const integration = require("zmq_adapter");
 
 const Queue = require("swarmutils").Queue;
 const SwarmPacker = require("swarmutils").SwarmPacker;

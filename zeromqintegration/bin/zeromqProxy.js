@@ -1,4 +1,4 @@
-const integration = require("./../index");
+const integration = require("../../../zmq_adapter");
 const enableSignatureCheck = process.env.enable_signature_check || false;
 
 require("../pingpongFork").enableLifeLine();

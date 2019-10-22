@@ -125,7 +125,7 @@ function mainTest(server, port, finishTest){
     }*/
 
     function createFakeDomainSubscriber(channelName, message){
-        const zmqIntegration = require("../zeromqintegration");
+        const zmqIntegration = require("zmq_adapter");
 
         let catchEvents = (eventType, ...args)=>{
             console.log("Event type caught", eventType, ...args);
