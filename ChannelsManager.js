@@ -13,8 +13,7 @@ const crypto = require('crypto');
 const integration = require("./zeromqintegration");
 
 const Queue = require("swarmutils").Queue;
-
-require("psk-http-client");
+const SwarmPacker = require("swarmutils").SwarmPacker;
 
 function ChannelsManager(server){
 
@@ -366,66 +365,8 @@ function ChannelsManager(server){
         });
     }
 
-    function bodyPreprocessing(req, res, next) {
-        const contentType = req.headers['content-type'];
-
-        if (contentType === 'application/octet-stream') {
-            const contentLength = Number.parseInt(req.headers['content-length']);
-
-            streamToBuffer(req, contentLength, (err, bodyAsBuffer) => {
-                if(err) {
-                    res.statusCode = 500;
-                    return;
-                }
-
-                req.body = msgpack.decode(bodyAsBuffer);
-
-                next();
-            });
-        } else {
-            next();
-        }
-
-        function streamToBuffer(stream, bufferSize, callback) {
-            const buffer = Buffer.alloc(bufferSize);
-            let currentOffset = 0;
-
-            stream
-                .on('data', chunk => {
-                    const chunkSize = chunk.length;
-                    const nextOffset = chunkSize + currentOffset;
-
-                    if (currentOffset > bufferSize - 1) {
-                        stream.close();
-                        return callback(new Error('Stream is bigger than reported size'));
-                    }
-
-                    unsafeAppendInBufferFromOffset(buffer, chunk, currentOffset);
-                    currentOffset = nextOffset;
-
-                })
-                .on('end', () => {
-                    callback(undefined, buffer);
-                })
-                .on('error', callback);
-
-
-        }
-
-        function unsafeAppendInBufferFromOffset(buffer, dataToAppend, offset) {
-            const dataSize = dataToAppend.length;
-
-            for (let i = 0; i < dataSize; i++) {
-                buffer[offset++] = dataToAppend[i];
-            }
-        }
-
-    }
-
-
     server.put("/create-channel/:channelName", createChannelHandler);
     server.post("/forward-zeromq/:channelName", enableForwarderHandler);
-    //server.post('/send-message/:channelName', bodyPreprocessing);
     server.post("/send-message/:channelName", sendMessageHandler);
     server.get("/receive-message/:channelName", receiveMessageHandler);
 }

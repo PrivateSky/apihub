@@ -6,6 +6,7 @@ require("../../../psknode/bundles/pskruntime");
 require("../../../psknode/bundles/virtualMQ");
 
 const VirtualMQ = require("../index");
+const SwarmPacker = require("swarmutils").SwarmPacker;
 const doubleCheck = require('../../double-check');
 const assert = doubleCheck.assert;
 
@@ -87,8 +88,7 @@ function mainTest(server, port, finishTest){
         const req = http.request(options, callback);
         req.setHeader("signature", "justasimplestringfornow");
 
-        require("./../../psk-http-client");
-        let pack = $$.remote.messagePacker.prototype.pack(message);
+        let pack = SwarmPacker.pack(message);
 
         req.setHeader("content-length", pack.byteLength);
         req.setHeader("content-type", 'application/octet-stream');
@@ -139,7 +139,7 @@ function mainTest(server, port, finishTest){
 
         let consumer = zmqIntegration.createZeromqConsumer(process.env.vmq_zeromq_sub_address, catchEvents);
         consumer.subscribe(channelName, "", (channel, receivedMessage)=>{
-            let unpackedMessage = $$.remote.messagePacker.prototype.unpack(receivedMessage.buffer);
+            let unpackedMessage = SwarmPacker.unpack(receivedMessage.buffer);
             console.log("Getting my message back", channel.toString(), unpackedMessage);
             assert.true(message.meta.swarmId === unpackedMessage.meta.swarmId);
             consumer.close();
