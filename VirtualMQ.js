@@ -294,9 +294,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			});
 		});
 
-
-
-
 		server.options('/*', function (req, res) {
 			var headers = {};
 			// IE8 does not allow domains to be specified, just the *
@@ -309,6 +306,8 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			res.writeHead(200, headers);
 			res.end();
 		});
+
+		require("./ChannelsManager.js")(server);
 
 		server.use(function (req, res) {
 			res.statusCode = 404;
