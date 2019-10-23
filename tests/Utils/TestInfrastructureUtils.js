@@ -6,7 +6,8 @@ require("../../../../psknode/bundles/pskruntime");
 require("../../../../psknode/bundles/virtualMQ");
 
 const VirtualMQ = require("../../index");
-const SwarmPacker = require("swarmutils").SwarmPacker;
+const swarmUtils = require("swarmutils");
+const SwarmPacker = swarmUtils.SwarmPacker;
 const doubleCheck = require('../../../double-check');
 const assert = doubleCheck.assert;
 
@@ -44,9 +45,7 @@ function RequestFactory(hostname, port){
             method: "PUT"
         };
 
-        const req = http.request(options, (res)=>{
-            callback(null, res);
-        });
+        const req = http.request(options, callback);
         req.write(publicKey);
         req.end();
     }
@@ -106,7 +105,13 @@ function RequestFactory(hostname, port){
             method: "GET"
         };
 
-        const req = http.request(options, callback);
+        const req = http.request(options, function(res){
+            const utils = require("../../utils");
+            utils.readMessageBufferFromStream(res, function(err, message){
+
+                callback(err, res, (message && Buffer.isBuffer(message)) ? SwarmPacker.unpack(message.buffer) : message);
+            });
+        });
         req.setHeader("signature", signature);
         req.end();
     }
@@ -125,17 +130,40 @@ function RequestFactory(hostname, port){
         let consumer = zmqIntegration.createZeromqConsumer(process.env.vmq_zeromq_sub_address, catchEvents);
         consumer.subscribe(channelName, signature, (channel, receivedMessage)=>{
             let unpackedMessage = SwarmPacker.unpack(receivedMessage.buffer);
-            console.log("Getting my message back", channel.toString(), unpackedMessage);
+            //console.log("Getting my message back", channel.toString(), unpackedMessage);
             receivedCallback(JSON.parse(channel.toString()).channelName, unpackedMessage);
         });
     }
 
+    function generateMessage(swarmName, swarmPhase, args, targetAgent, returnAddress){
+        return {
+            meta:{
+                swarmId: swarmUtils.generateUid(32).toString("hex"),
+                requestId: swarmUtils.generateUid(32).toString("hex"),
+                swarmTypeName: swarmName || "testSwarmType",
+                phaseName: swarmPhase || "swarmPhaseName",
+                args: args || [],
+                command: "executeSwarmPhase",
+                target: targetAgent || "agentURL",
+                homeSecurityContext: returnAddress || "no_home_no_return"
+            }};
+    }
+
+    function getPort(){
+        return port;
+    }
+
+    //targeted virtualmq apis
     this.createChannel = createChannel;
     this.createForwardChannel = createForwardChannel;
     this.enableForward = enableForward;
     this.sendMessage = sendMessage;
     this.receiveMessage = receiveMessage;
     this.receiveMessageFromZMQ = receiveMessageFromZMQ;
+
+    //utils----
+    this.getPort = getPort;
+    this.generateMessage = generateMessage;
 
 }
 

@@ -1,124 +1,45 @@
-const http = require("http");
-const path = require("path");
 const crypto = require("crypto");
 
 require("../../../psknode/bundles/pskruntime");
-require("../../../psknode/bundles/virtualMQ");
 
-const VirtualMQ = require("../index");
 const doubleCheck = require('../../double-check');
 const assert = doubleCheck.assert;
 
-let port = 8000;
-process.env.vmq_zeromq_forward_address = "tcp://127.0.0.1:5040";
-process.env.vmq_zeromq_sub_address = "tcp://127.0.0.1:5040";
-process.env.vmq_zeromq_pub_address = "tcp://127.0.0.1:5041";
-
-function createServer(folder, callback) {
-    var server = VirtualMQ.createVirtualMQ(port, folder, undefined, (err, res) => {
-        if (err) {
-            console.log("Failed to create VirtualMQ server on port ", port, "Trying again...");
-            if (port > 80 && port < 50000) {
-                port++;
-                createServer(folder, callback);
-            } else {
-                console.log("There is no available port to start VirtualMQ instance need it for test!");
-            }
-        } else {
-            console.log("Server ready and available on port ", port);
-            callback(server, port);
-        }
-    });
-}
-
-function mainTest(server, port, finishTest){
+function mainTest(api, finishTest){
     channelName = crypto.randomBytes(24).toString('hex');
 
-    function createChannel(channelName, callback){
-        const options = {
-            hostname: "127.0.0.1",
-            port: port,
-            path: `/create-channel/${channelName}`,
-            method: "PUT"
-        };
-
-        const req = http.request(options, callback);
-        req.write("my-public-key");
-        req.end();
-    }
-
-    function sendMessage(channelName, message, callback){
-        const options = {
-            hostname: "127.0.0.1",
-            port: port,
-            path: `/send-message/${channelName}`,
-            method: "POST"
-        };
-
-        const req = http.request(options, callback);
-        req.setHeader("signature", "justasimplestringfornow");
-        req.write(message);
-        req.end();
-    }
-
-    function receiveMessage(channelName, callback){
-        const options = {
-            hostname: "127.0.0.1",
-            port: port,
-            path: `/receive-message/${channelName}`,
-            method: "GET"
-        };
-
-        const req = http.request(options, callback);
-        req.setHeader("signature", "justasimplestringfornow");
-        req.end();
-    }
-
-    function readBody(req, callback){
-        let data = "";
-        req.on("data", (messagePart)=>{
-            data += messagePart;
-        });
-
-        req.on("end", ()=>{
-            callback(null, data);
-        });
-
-        req.on("error", (err)=>{
-            callback(err);
-        });
-    }
-
-    createChannel(channelName, (res)=>{
+    api.createChannel(channelName, "publickey", function(res){
         assert.equal(res.statusCode, 200);
 
         let token = res.headers["tokenHeader"];
         assert.notNull(token);
 
-        let message = "message";
+        let message = api.generateMessage();
 
-        sendMessage(channelName, message, (res)=>{
+        let OwM = require("./../../swarmutils").OwM;
+        message = OwM.prototype.convert(message);
+
+        api.sendMessage(channelName, message, "signature", function(res){
             assert.equal(res.statusCode, 200);
 
-            receiveMessage(channelName, (res)=>{
-                readBody(res, (err, returnMessage)=>{
-                    assert.isNull(err);
-                    assert.equal(returnMessage, message);
+            api.receiveMessage(channelName, "signature", function(err, res, receivedMessage){
+                assert.equal(200, res.statusCode);
+                console.log(receivedMessage);
+                assert.equal(message.getMeta("swarmId"), OwM.prototype.getMetaFrom(receivedMessage, "swarmId"), "Wrong message received");
 
-                    finishTest();
-                });
+                finishTest();
             });
         });
     });
 }
 
-assert.callback("Message Delivery Test", (callback)=>{
-    doubleCheck.createTestFolder("vmq", (err, folder)=>{
-        if(!err){
-            process.env.vmq_channel_storage = path.join(folder, "tmp");
-            createServer(process.env.vmq_channel_storage, (...args)=>{
-                mainTest(...args, callback);
-            });
-        }
-    });
-}, 3000);
+let timeout = 3000;
+let testName = "Message Delivery Test";
+
+require("./Utils/TestInfrastructureUtils").createInfrastructureTest(testName, timeout, "127.0.0.1", function(err, api, finish){
+    if(!err){
+        mainTest(api, finish);
+    }else{
+        console.log("No test run.");
+    }
+});

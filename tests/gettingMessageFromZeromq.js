@@ -1,7 +1,6 @@
 const crypto = require("crypto");
 
 require("../../../psknode/bundles/pskruntime");
-require("../../../psknode/bundles/virtualMQ");
 
 const doubleCheck = require('../../double-check');
 const assert = doubleCheck.assert;
@@ -15,16 +14,7 @@ function mainTest(api, finishTest){
         let token = res.headers["tokenHeader"];
         assert.notNull(token);
 
-        let message = {meta:{
-                swarmId: "123456789abcdef",
-                requestId: "123456789abcdef",
-                swarmTypeName: "testSwarmType",
-                phaseName: "swarmPhaseName",
-                args: [],
-                command: "executeSwarmPhase",
-                target: "agentURL",
-                homeSecurityContext: "no_home_no_return"
-            }};
+        let message = api.generateMessage();
 
         let OwM = require("./../../swarmutils").OwM;
         message = OwM.prototype.convert(message);

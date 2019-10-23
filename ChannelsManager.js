@@ -205,8 +205,7 @@ function ChannelsManager(server){
             while(subscribers.length>0){
                 subscriber = subscribers.pop();
                 if(!dispatched){
-                    subscriber.write(message);
-                    sendStatus(subscriber, 200);
+                    deliverMessage(subscriber, message);
                     dispatched = true;
                 }else{
                     sendStatus(subscriber, 403);
@@ -215,7 +214,7 @@ function ChannelsManager(server){
         }catch(err) {
             //... some subscribers could have a timeout connection
             if(subscribers.length>0){
-                writeMessage(subscribers, message);
+                deliverMessage(subscribers, message);
             }
         }
 
@@ -292,7 +291,7 @@ function ChannelsManager(server){
                         //TODO: to all checks based on message header
 
                         if(details.forward){
-                            console.log("Forwarding message <", message, "> on channel", channelName);
+                            //console.log("Forwarding message <", message, "> on channel", channelName);
                             forwarder.send(channelName, message);
                         }else{
                             let queue = getQueue(channelName);
@@ -333,6 +332,19 @@ function ChannelsManager(server){
         return subscribers[channelName];
     }
 
+    function deliverMessage(res, message){
+        if(Buffer.isBuffer(message)) {
+            res.setHeader('content-type', 'application/octet-stream');
+        }
+
+        if(typeof message.length !== "undefined"){
+            res.setHeader('content-length', message.length);
+        }
+
+        res.write(message);
+        sendStatus(res, 200);
+    }
+
     function receiveMessageHandler(req, res){
         let channelName = req.params.channelName;
         checkIfChannelExist(channelName, (err, exists)=>{
@@ -357,8 +369,7 @@ function ChannelsManager(server){
                     if(!message){
                         getSubscribersList(channelName).push(res);
                     }else{
-                        res.write(message);
-                        sendStatus(res, 200);
+                        deliverMessage(res, message);
                     }
                 });
             }
