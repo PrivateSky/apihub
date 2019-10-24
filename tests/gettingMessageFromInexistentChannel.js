@@ -8,21 +8,14 @@ const assert = doubleCheck.assert;
 function mainTest(api, finishTest){
     channelName = crypto.randomBytes(24).toString('hex');
 
-    api.createChannel(channelName, "mysuperkey", function(res){
-        assert.equal(res.statusCode, 200);
-
-        let token = res.headers["tokenHeader"];
-        assert.notNull(token);
-
-        api.createChannel(channelName, "mysuperkey", function(res){
-            assert.equal(res.statusCode, 409);
-
-            finishTest();
-        });
+    api.receiveMessage(channelName, "justasignature", function(err, res, message){
+       assert.equal(403, res.statusCode);
+       finishTest();
     });
 }
-let timeout = 3000;
-let testName = "Create Channel Negative Test";
+
+let timeout = 10000;
+let testName = "Retrive a message from an inexistent channel";
 
 require("./Utils/TestInfrastructureUtils").createInfrastructureTest(testName, timeout, "127.0.0.1", function(err, api, finish){
     if(!err){

@@ -50,13 +50,17 @@ function ChannelsManager(server){
         let token = generateToken();
 
         if(typeof channelKeys[name] !== "undefined" || fs.existsSync(channelFolder)){
-            return callback(new Error("channel exists!"));
+            let e = new Error("channel exists!");
+            e.code = 409;
+            return callback(e);
         }
 
         fs.mkdirSync(channelFolder);
 
         if(fs.existsSync(keyFile)){
-            return callback(new Error("channel has owner set!"));
+            let e = new Error("channel exists!");
+            e.code = 409;
+            return callback(e);
         }
 
         const config = JSON.stringify({publicKey, token});
@@ -151,7 +155,7 @@ function ChannelsManager(server){
     function getBasicReturnHandler(res){
         return function(err, result){
             if(err){
-                return sendStatus(res, 500);
+                return sendStatus(res, err.code || 500);
             }
 
             return sendStatus(res, 200);
@@ -284,7 +288,7 @@ function ChannelsManager(server){
                     //we choose to read the body of request only after we know that we recognize the destination channel
                     readSendMessageBody(req, (err, message)=>{
                         if(err){
-                            console.log(err);
+                            //console.log(err);
                             return sendStatus(res, 403);
                         }
 

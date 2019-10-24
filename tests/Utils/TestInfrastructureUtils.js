@@ -120,7 +120,7 @@ function RequestFactory(hostname, port){
         const zmqIntegration = require("zmq_adapter");
 
         let catchEvents = (eventType, ...args)=>{
-            console.log("Event type caught", eventType, ...args);
+            //console.log("Event type caught", eventType, ...args);
             if(eventType === "connect"){
                 //connected so all good
                 readyCallback();
