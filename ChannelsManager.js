@@ -292,6 +292,14 @@ function ChannelsManager(server){
                             return sendStatus(res, 403);
                         }
 
+                        let header;
+                        try{
+                            header = SwarmPacker.unpack(message.buffer);
+                        }catch(error){
+                            //console.log(error);
+                            return sendStatus(res, 400);
+                        }
+
                         //TODO: to all checks based on message header
 
                         if(details.forward){

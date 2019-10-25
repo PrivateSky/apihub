@@ -17,8 +17,8 @@ function createTestSuite(api, finish){
             method: "POST"
         };
 
-        req = http.request(options, callback);
-        return  req;
+        let req = http.request(options, callback);
+        return req;
     }
 
     let testSuite = [];
@@ -68,8 +68,35 @@ function createTestSuite(api, finish){
         req.write("someDummyMessageThatWillfail");
         req.end();
     }
+
     testSuite.push(SendRequestWithoutHeaders);
 
+    function SendAlterateGoodMessage(callback){
+        const firstRequest = createBasicRequest(function(res){
+            assert.equal(400, res.statusCode);
+            callback();
+        });
+
+        let message = api.generateMessage();
+        const OwM = require("swarmutils").OwM;
+        const SwarmPacker = require("swarmutils").SwarmPacker;
+        let pack = SwarmPacker.pack(OwM.prototype.convert(message));
+
+        req.setHeader("content-length", pack.byteLength);
+
+        firstRequest.setHeader("signature", "someWrongSignature");
+        firstRequest.setHeader("content-type", 'application/octet-stream');
+
+        //alterate buffer
+        let dv = new DataView(pack);
+        const offset = pack.length-2;
+        dv.setUint32(offset, dv.getUint32(offset)+100);
+
+        firstRequest.write(Buffer.from(pack));
+        firstRequest.end();
+    }
+
+    testSuite.push(SendAlterateGoodMessage);
 
     api.createForwardChannel(channelName, "publicKey", function(res){
         assert.equal(res.statusCode, 200);
