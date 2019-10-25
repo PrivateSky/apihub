@@ -232,7 +232,9 @@ function ChannelsManager(server){
             const contentLength = Number.parseInt(req.headers['content-length'], 10);
 
             if(Number.isNaN(contentLength)){
-                return callback(new Error("Wrong content length header received!"));
+                let error = new Error("Wrong content length header received!");
+                error.code = 411;
+                return callback(error);
             }
 
             streamToBuffer(req, contentLength, (err, bodyAsBuffer) => {
