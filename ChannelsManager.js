@@ -131,8 +131,8 @@ function ChannelsManager(server){
             }
 
             const publicKey = message;
-
-            if(typeof channelName !== "string" || typeof publicKey !== "string"){
+            if(typeof channelName !== "string" || channelName.length == 0 ||
+                typeof publicKey !== "string" || publicKey.length == 0){
                 return sendStatus(res, 400);
             }
 
@@ -140,7 +140,7 @@ function ChannelsManager(server){
 
             createChannel(channelName, publicKey, (err, token)=>{
                 if(!err){
-                    res.setHeader(tokenHeaderName, token);
+                    res.setHeader('Cookie', [`${tokenHeaderName}=${token}`]);
                 }
                 handler(err, res);
             });
@@ -359,6 +359,28 @@ function ChannelsManager(server){
         sendStatus(res, 200);
     }
 
+    function getCookie(res, cookieName){
+        let cookies = res.headers['cookie'];
+        if(typeof cookies === "undefined"){
+            return undefined;
+        }
+        if(Array.isArray(cookies)){
+            for(let i=0; i<cookies.length; i++){
+                let cookie = cookies[i];
+                if(cookie.indexOf(cookieName) !== -1){
+                    return cookie.substr(cookieName.length+1);
+                }
+            }
+        }else{
+            cookieName = cookieName.replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1');
+
+            let regex = new RegExp('(?:^|;)\\s?' + cookieName + '=(.*?)(?:;|$)','i');
+            let match = cookies.match(regex);
+
+            return match && unescape(match[1]);
+        }
+    }
+
     function receiveMessageHandler(req, res){
         let channelName = req.params.channelName;
         checkIfChannelExist(channelName, (err, exists)=>{
@@ -375,6 +397,17 @@ function ChannelsManager(server){
                     if(details.forward){
                         //if channel is forward it does not make sense
                         return sendStatus(res, 409);
+                    }
+
+                    let signature = req.headers["signature"];
+                    if(typeof signature === "undefined"){
+                        return sendStatus(res, 403);
+                    }
+
+                    let cookie = getCookie(req, tokenHeaderName);
+
+                    if(typeof cookie === "undefined" || cookie === null){
+                        return sendStatus(res, 412);
                     }
 
                     let queue = getQueue(channelName);

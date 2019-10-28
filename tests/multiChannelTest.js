@@ -55,6 +55,8 @@ function mainTest(api, finishTest){
         assert.callback("Receiving a message on channel "+channelName, function(callback){
             let swarmTypeName = "swarm"+channelName;
             api.receiveMessage(channelName, "signature", function(err, res, message){
+                console.log(err);
+                assert.isNull(err);
                 assert.true(200, res.statusCode);
                 assert.true(swarmTypeName, message.swarmTypeName, "Received wrong message");
                 callback();
