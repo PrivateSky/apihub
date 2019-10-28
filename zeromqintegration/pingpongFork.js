@@ -25,7 +25,6 @@ module.exports.fork = function pingPongFork(modulePath, args, options){
 
     child.on("message", (message)=>{
         if(message === PING){
-            console.log("Got a PING message from child. Responding with a PONG");
             child.send(PONG);
         }
     });
@@ -36,6 +35,10 @@ module.exports.fork = function pingPongFork(modulePath, args, options){
 module.exports.enableLifeLine = function(timeout){
     let lastConfirmationTime;
     const interval = timeout || 2000;
+
+    // this is needed because new Date().getTime() has reduced precision to mitigate timer based attacks
+    // for more information see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTime
+    const roundingError = 101;
 
     function sendPing(){
         process.send(PING);
@@ -49,11 +52,11 @@ module.exports.enableLifeLine = function(timeout){
 
     setInterval(function(){
         const currentTime = new Date().getTime();
-        if(typeof lastConfirmationTime === "undefined" || currentTime-lastConfirmationTime<interval){
-            console.log("Sending a PING message to check is parent still present.");
+
+        if(typeof lastConfirmationTime === "undefined" || currentTime - lastConfirmationTime < interval + roundingError){
             sendPing();
         }else{
-            console.log("Parent process did not answer. Shuting down...");
+            console.log("Parent process did not answer. Shutting down...");
             process.exit(1);
         }
     }, interval);
