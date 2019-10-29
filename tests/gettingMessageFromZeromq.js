@@ -6,7 +6,7 @@ const doubleCheck = require('../../double-check');
 const assert = doubleCheck.assert;
 
 function mainTest(api, finishTest){
-    channelName = crypto.randomBytes(24).toString('hex');
+    const channelName = crypto.randomBytes(24).toString('hex');
 
     api.createForwardChannel(channelName, "my-public-key",(res)=>{
         assert.equal(res.statusCode, 200);

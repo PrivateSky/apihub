@@ -1,8 +1,8 @@
 const storageFolder = process.env.vmq_channel_storage || "../tmp";
 const maxQueueSize = process.env.vmq_max_queue_size || 100;
 const tokenSize = process.env.vmq_token_size || 48;
-const tokenHeaderName = process.env.vmq_token_header_name || "tokenHeader";
-const signatureHeaderName = process.env.vmq_signature_header_name || "signature";
+const tokenHeaderName = process.env.vmq_token_header_name || "x-tokenHeader";
+const signatureHeaderName = process.env.vmq_signature_header_name || "x-signature";
 
 const channelsFolderName = "channels";
 const channelKeyFileName = "channel_key";
@@ -131,8 +131,8 @@ function ChannelsManager(server){
             }
 
             const publicKey = message;
-            if(typeof channelName !== "string" || channelName.length == 0 ||
-                typeof publicKey !== "string" || publicKey.length == 0){
+            if (typeof channelName !== "string" || channelName.length === 0 ||
+                typeof publicKey !== "string" || publicKey.length === 0) {
                 return sendStatus(res, 400);
             }
 
@@ -207,7 +207,7 @@ function ChannelsManager(server){
         let dispatched = false;
         try {
             while(subscribers.length>0){
-                subscriber = subscribers.pop();
+                let subscriber = subscribers.pop();
                 if(!dispatched){
                     deliverMessage(subscriber, message);
                     dispatched = true;
@@ -399,16 +399,16 @@ function ChannelsManager(server){
                         return sendStatus(res, 409);
                     }
 
-                    let signature = req.headers["signature"];
+                    /*let signature = req.headers["signature"];
                     if(typeof signature === "undefined"){
                         return sendStatus(res, 403);
-                    }
+                    }*/
 
-                    let cookie = getCookie(req, tokenHeaderName);
+                    // let cookie = getCookie(req, tokenHeaderName);
 
-                    if(typeof cookie === "undefined" || cookie === null){
-                        return sendStatus(res, 412);
-                    }
+                    // if(typeof cookie === "undefined" || cookie === null){
+                    //     return sendStatus(res, 412);
+                    // }
 
                     let queue = getQueue(channelName);
                     let message = queue.pop();

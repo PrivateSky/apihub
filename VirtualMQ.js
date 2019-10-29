@@ -9,6 +9,7 @@ const Router = httpWrapper.Router;
 const TokenBucket = require('./libs/TokenBucket');
 const msgpack = require('@msgpack/msgpack');
 
+const signatureHeaderName = process.env.vmq_signature_header_name || 'x-signature';
 
 function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
@@ -52,9 +53,9 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		});
 
 		server.use(function (req, res, next) {
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.setHeader('Access-Control-Allow-Origin', req.headers.origin || req.headers.host);
 			res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-			res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Origin');
+			res.setHeader('Access-Control-Allow-Headers', `Content-Type, Access-Control-Allow-Origin, ${signatureHeaderName}`);
 			res.setHeader('Access-Control-Allow-Credentials', true);
 			next();
 		});
@@ -297,12 +298,12 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		server.options('/*', function (req, res) {
 			var headers = {};
 			// IE8 does not allow domains to be specified, just the *
-			// headers["Access-Control-Allow-Origin"] = req.headers.origin;
-			headers["Access-Control-Allow-Origin"] = "*";
+			headers["Access-Control-Allow-Origin"] = req.headers.origin;
+			// headers["Access-Control-Allow-Origin"] = "*";
 			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
 			headers["Access-Control-Allow-Credentials"] = true;
 			headers["Access-Control-Max-Age"] = '3600'; //one hour
-			headers["Access-Control-Allow-Headers"] = "Content-Type, Access-Control-Allow-Origin, User-Agent";
+			headers["Access-Control-Allow-Headers"] = `Content-Type, Access-Control-Allow-Origin, User-Agent, ${signatureHeaderName}`;
 			res.writeHead(200, headers);
 			res.end();
 		});
