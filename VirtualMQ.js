@@ -213,15 +213,14 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			})
 		});
 
-		server.get('/files/download/:folder/:fileId', function (req,res) {
+		server.get('/files/download/:filepath', function (req,res) {
 			let fileManager = require('./fileManager');
-			fileManager.download(req, (err, result)=>{
+			fileManager.download(req, res, (err, result)=>{
 				if(err){
 					res.statusCode = 404;
 					res.end();
 				}else{
 					res.statusCode = 200;
-					res.setHeader('Content-Type', `image/${req.params.fileId.split('.')[1]}`);
 					result.pipe(res);
 					result.on('finish', () => {
 						res.end();
