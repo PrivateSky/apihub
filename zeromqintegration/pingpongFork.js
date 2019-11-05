@@ -50,14 +50,31 @@ module.exports.enableLifeLine = function(timeout){
         }
     });
 
-    setInterval(function(){
+    function exit(code){
+        setTimeout(()=>{
+            process.exit(code);
+        }, 0);
+    }
+
+    const exceptionEvents = ["SIGINT", "SIGUSR1", "SIGUSR2", "uncaughtException", "SIGTERM", "SIGHUP"];
+    let killingSignal = false;
+    for(let i=0; i<exceptionEvents.length; i++){
+        process.on(exceptionEvents[i], (event, code)=>{
+            killingSignal = true;
+            clearInterval(timeoutInterval);
+            console.log(`Caught event type [${exceptionEvents[i]}]. Shutting down...`);
+            exit(code);
+        });
+    }
+
+    const timeoutInterval = setInterval(function(){
         const currentTime = new Date().getTime();
 
-        if(typeof lastConfirmationTime === "undefined" || currentTime - lastConfirmationTime < interval + roundingError){
+        if(typeof lastConfirmationTime === "undefined" || currentTime - lastConfirmationTime < interval + roundingError && !killingSignal){
             sendPing();
         }else{
-            console.log("Parent process did not answer. Shutting down...");
-            process.exit(1);
+            console.log("Parent process did not answer. Shutting down...", process.argv, killingSignal);
+            exit(1);
         }
     }, interval);
 };
