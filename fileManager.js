@@ -33,7 +33,7 @@ module.exports.upload = function (req, callback) {
 
     contentType = req.headers['content-type'].split('/');
 
-    if (contentType[0] === 'image') {
+    if (contentType[0] === 'image' || ( contentType[0] === 'application' && contentType[1] === 'pdf') ) {
         filename += '.' + contentType[1];
     }else {
         return callback('err');
@@ -56,20 +56,21 @@ module.exports.upload = function (req, callback) {
     });
     req.pipe(writeStream);
 };
-module.exports.download = function (req, callback) {
+module.exports.download = function (req, res, callback) {
     const readFileStream = req;
     if(!readFileStream || !readFileStream.pipe || typeof readFileStream.pipe !== "function"){
         callback(new Error("Something wrong happened"));
         return;
     }
-
-    const folder = req.params.folder;
-    const filename = req.params.fileId;
+    const folder = Buffer.from(req.params.filepath, 'base64').toString().replace('\n', '');
+    
     const completeFolderPath = path.join( rootFolder, folder );
-    const filePath = path.join(completeFolderPath, filename);
-
-    if (fs.existsSync(filePath)) {
-        const fileToSend = fs.createReadStream(filePath);
+    if (folder.includes('..')){
+        return callback('err');
+    }
+    if (fs.existsSync(completeFolderPath)) {
+        const fileToSend = fs.createReadStream(completeFolderPath);
+        res.setHeader('Content-Type', `image/${folder.split('.')[1]}`);
         return callback(null, fileToSend);
     }
     else {
