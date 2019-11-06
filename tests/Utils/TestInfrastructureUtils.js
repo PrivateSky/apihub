@@ -74,7 +74,7 @@ function RequestFactory(hostname, port){
         };
 
         const req = http.request(options, callback);
-        req.setHeader("signature", signature);
+        req.setHeader("x-signature", signature);
         req.end();
     }
 
@@ -87,7 +87,7 @@ function RequestFactory(hostname, port){
         };
 
         const req = http.request(options, callback);
-        req.setHeader("signature", signature);
+        req.setHeader("x-signature", signature);
 
         let pack = SwarmPacker.pack(message);
 
@@ -112,7 +112,7 @@ function RequestFactory(hostname, port){
                 callback(err, res, (message && Buffer.isBuffer(message)) ? SwarmPacker.unpack(message.buffer) : message);
             });
         });
-        req.setHeader("signature", signature);
+        req.setHeader("x-signature", signature);
         req.end();
     }
 

@@ -26,7 +26,7 @@ function mainTest(api, finishTest){
         }
 
         let timer = setInterval(()=>{
-            if(messagesSent.length>howMany){
+            if(messagesSent.length >= howMany){
                 return clearInterval(timer);
             }
             oneByOne();
