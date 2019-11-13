@@ -35,7 +35,6 @@ function ChannelsManager(server){
         baseDir = path.join(process.cwd(), __dirname);
     }
 
-    // const zeromqNode = require("./zeromqintegration/pingpongFork").fork(path.join(baseDir,"zeromqintegration","bin","zeromqProxy.js"));
 
     const forwarder = integration.getForwarderInstance(process.env.vmq_zeromq_forward_address);
 
