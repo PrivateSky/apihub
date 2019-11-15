@@ -326,6 +326,11 @@ module.exports.createVirtualMQ = function(port, folder, sslConfig, callback){
 };
 
 module.exports.VirtualMQ = VirtualMQ;
+module.exports.getVMQRequestFactory = function(virtualMQAddress, zeroMQAddress) {
+	const VMQRequestFactory = require('./VMQRequestFactory');
+
+	return new VMQRequestFactory(virtualMQAddress, zeroMQAddress);
+};
 
 module.exports.getHttpWrapper = function() {
 	return require('./libs/http-wrapper');
