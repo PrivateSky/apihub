@@ -56,7 +56,13 @@ function Server(sslOptions) {
                return target[prop];
            }
 
-           return server[prop];
+           if(typeof server[prop] === "function") {
+               return function(...args) {
+                   server[prop](...args);
+               }
+           } else {
+               return server[prop];
+           }
        }
     });
 }

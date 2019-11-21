@@ -25,8 +25,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			return;
 		}
 
-		console.log("Listening on port:", port);
-
 		this.close = server.close;
 		$$.flow.start("BricksManager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
 			if (err) {
@@ -43,7 +41,17 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		});
 	};
 
-	const server = new Server(sslConfig).listen(port, bindFinish);
+	const server = new Server(sslConfig);
+	server.listen(port, (err) => {
+		if(err){
+			console.log(err);
+			if(callback){
+				callback(err);
+			}
+		}
+	});
+
+	server.on('listening', bindFinish);
 
 	function registerEndpoints() {
 		const router = new Router(server);
