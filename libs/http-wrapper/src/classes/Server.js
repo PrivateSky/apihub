@@ -7,26 +7,6 @@ function Server(sslOptions) {
     const server = _initServer(sslOptions);
 
 
-    this.listen = function listen(port, callback) {
-        server.listen(port, ()=>{
-            if(callback){
-                callback(null);
-            }
-        });
-
-        server.on("error", (err)=>{
-            console.log(err);
-            if (err.code === 'EADDRINUSE') {
-                server.close();
-                if(callback){
-                    callback(err);
-                }
-            }
-        });
-
-        return this;
-    };
-
     this.use = function use(url, callback) {
         //TODO: find a better way
         if (arguments.length >= 2) {
@@ -38,9 +18,6 @@ function Server(sslOptions) {
 
     };
 
-    this.close = function (callback) {
-        server.close(callback);
-    };
 
     this.get = function getReq(reqUrl, reqResolver) {
         middleware.use("GET", reqUrl, reqResolver);
@@ -72,6 +49,22 @@ function Server(sslOptions) {
             return http.createServer(middleware.go);
         }
     }
+
+    return new Proxy(this, {
+       get(target, prop, receiver) {
+           if(typeof target[prop] !== "undefined") {
+               return target[prop];
+           }
+
+           if(typeof server[prop] === "function") {
+               return function(...args) {
+                   server[prop](...args);
+               }
+           } else {
+               return server[prop];
+           }
+       }
+    });
 }
 
 module.exports = Server;
