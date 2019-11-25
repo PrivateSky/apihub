@@ -76,6 +76,36 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
             });
         });
 
+		//folder can be userId/tripId/...
+		server.post('/files/upload/:folder', function (req,res) {
+			let fileManager = require('./fileManager');
+			fileManager.upload(req, (err, result)=>{
+				if(err){
+					res.statusCode = 500;
+					res.end();
+				}else{
+					res.statusCode = 200;
+					res.end(JSON.stringify(result));
+				}
+			})
+		});
+
+		server.get('/files/download/:filepath', function (req,res) {
+			let fileManager = require('./fileManager');
+			fileManager.download(req, res, (err, result)=>{
+				if(err){
+					res.statusCode = 404;
+					res.end();
+				}else{
+					res.statusCode = 200;
+					result.pipe(res);
+					result.on('finish', () => {
+						res.end();
+					})
+				}
+			})
+		});
+
 
 		server.options('/*', function (req, res) {
 			const headers = {};
