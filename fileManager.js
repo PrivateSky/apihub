@@ -7,12 +7,12 @@ rootFolder = path.resolve(rootFolder);
 guid = function() {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000)
-        .toString(16)
-        .substring(1);
+            .toString(16)
+            .substring(1);
     }
-  
+
     return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
-  };
+};
 
 module.exports.upload = function (req, callback) {
     const readFileStream = req;
@@ -31,7 +31,7 @@ module.exports.upload = function (req, callback) {
     }
     const completeFolderPath = path.join( rootFolder, folder );
 
-    contentType = req.headers['content-type'].split('/');
+    const contentType = req.headers['content-type'].split('/');
 
     if (contentType[0] === 'image' || ( contentType[0] === 'application' && contentType[1] === 'pdf') ) {
         filename += '.' + contentType[1];
@@ -56,6 +56,7 @@ module.exports.upload = function (req, callback) {
     });
     req.pipe(writeStream);
 };
+
 module.exports.download = function (req, res, callback) {
     const readFileStream = req;
     if(!readFileStream || !readFileStream.pipe || typeof readFileStream.pipe !== "function"){
@@ -63,7 +64,7 @@ module.exports.download = function (req, res, callback) {
         return;
     }
     const folder = Buffer.from(req.params.filepath, 'base64').toString().replace('\n', '');
-    
+
     const completeFolderPath = path.join( rootFolder, folder );
     if (folder.includes('..')){
         return callback('err');
