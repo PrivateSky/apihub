@@ -1,1 +1,1 @@
-var server = require("./../VirtualMQ").createVirtualMQ(9080, "../../../tmp");
+var server = require("../index").createVirtualMQ(9080, "../../../tmp");
