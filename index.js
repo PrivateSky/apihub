@@ -1,6 +1,6 @@
 const path = require("path");
 const httpWrapper = require('./libs/http-wrapper');
-const EDFSMiddleware = require("edfs").getEDFSMiddleware();
+const EDFSMiddleware = require("edfs-middleware").getEDFSMiddleware();
 const Server = httpWrapper.Server;
 const Router = httpWrapper.Router;
 const TokenBucket = require('./libs/TokenBucket');
