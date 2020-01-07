@@ -1,4 +1,5 @@
-const zmq = require("zeromq");
+const zeroMQModuleName = "zeromq";
+const zmq = require(zeroMQModuleName);
 
 const pubsAddress = "tcp://127.0.0.1:7000";
 const subsAddress = "tcp://127.0.0.1:7001";
