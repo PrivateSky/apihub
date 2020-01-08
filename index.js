@@ -56,7 +56,7 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		server.use(function (req, res, next) {
 			res.setHeader('Access-Control-Allow-Origin', req.headers.origin || req.headers.host);
 			res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-			res.setHeader('Access-Control-Allow-Headers', `Content-Type, Access-Control-Allow-Origin, ${signatureHeaderName}`);
+			res.setHeader('Access-Control-Allow-Headers', `Content-Type, Content-Length, Access-Control-Allow-Origin, ${signatureHeaderName}`);
 			res.setHeader('Access-Control-Allow-Credentials', true);
 			next();
 		});
@@ -122,7 +122,7 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
 			headers["Access-Control-Allow-Credentials"] = true;
 			headers["Access-Control-Max-Age"] = '3600'; //one hour
-			headers["Access-Control-Allow-Headers"] = `Content-Type, Access-Control-Allow-Origin, User-Agent, ${signatureHeaderName}`;
+			headers["Access-Control-Allow-Headers"] = `Content-Type, Content-Length, Access-Control-Allow-Origin, User-Agent, ${signatureHeaderName}`;
 			res.writeHead(200, headers);
 			res.end();
 		});
