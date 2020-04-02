@@ -21,7 +21,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			return;
 		}
 
-		this.close = server.close;
 		$$.flow.start("BricksManager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
 			if (err) {
 				throw err;
@@ -134,6 +133,8 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			res.end();
 		});
 	}
+
+	return server;
 }
 
 module.exports.createVirtualMQ = function(port, folder, sslConfig, callback){
