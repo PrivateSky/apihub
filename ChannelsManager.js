@@ -77,7 +77,12 @@ function ChannelsManager(server){
         }else{
             fs.readFile(path.join(rootFolder, channelName, channelKeyFileName), (err, res)=>{
                 if(res){
-                    channelKeys[channelName] = JSON.parse(res);
+                    try{
+                        channelKeys[channelName] = JSON.parse(res);
+                    }catch(e){
+                        console.log(e);
+                        return callback(e);
+                    }
                 }
                 callback(err, channelKeys[channelName]);
             });
