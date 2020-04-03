@@ -128,10 +128,14 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 
 		require("./ChannelsManager.js")(server);
 
-		server.use(function (req, res) {
-			res.statusCode = 404;
-			res.end();
-		});
+		setTimeout(function(){
+			//allow other endpoints registration before registering fallback handler
+			server.use(function (req, res) {
+				res.statusCode = 404;
+				res.end();
+			});
+		}, 100);
+
 	}
 
 	return server;
