@@ -21,7 +21,12 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			return;
 		}
 
-		$$.flow.start("BricksManager").init(path.join(rootFolder, CSB_storage_folder), function (err, result) {
+		let storageFolder = path.join(rootFolder, CSB_storage_folder);
+		if(typeof process.env.EDFS_BRICK_STORAGE_FOLDER !== "undefined"){
+			storageFolder = process.env.EDFS_BRICK_STORAGE_FOLDER;
+		}
+
+		$$.flow.start("BricksManager").init(storageFolder, function (err, result) {
 			if (err) {
 				throw err;
 			} else {
@@ -47,10 +52,7 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 	server.on('listening', bindFinish);
 
 	function registerEndpoints() {
-		const router = new Router(server);
-		router.use("/EDFS", (newServer) => {
-			new EDFSMiddleware(newServer);
-		});
+
 
 		server.use(function (req, res, next) {
 			res.setHeader('Access-Control-Allow-Origin', req.headers.origin || req.headers.host);
@@ -82,6 +84,26 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
             });
         });
 
+		server.options('/*', function (req, res) {
+			const headers = {};
+			// IE8 does not allow domains to be specified, just the *
+			headers["Access-Control-Allow-Origin"] = req.headers.origin;
+			// headers["Access-Control-Allow-Origin"] = "*";
+			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
+			headers["Access-Control-Allow-Credentials"] = true;
+			headers["Access-Control-Max-Age"] = '3600'; //one hour
+			headers["Access-Control-Allow-Headers"] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${signatureHeaderName}`;
+			res.writeHead(200, headers);
+			res.end();
+		});
+
+		require("./ChannelsManager.js")(server);
+
+		const router = new Router(server);
+		router.use("/EDFS", (newServer) => {
+			new EDFSMiddleware(newServer);
+		});
+
 		//folder can be userId/tripId/...
 		server.post('/files/upload/:folder', function (req,res) {
 			let fileManager = require('./fileManager');
@@ -112,22 +134,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 			})
 		});
 
-
-		server.options('/*', function (req, res) {
-			const headers = {};
-			// IE8 does not allow domains to be specified, just the *
-			headers["Access-Control-Allow-Origin"] = req.headers.origin;
-			// headers["Access-Control-Allow-Origin"] = "*";
-			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
-			headers["Access-Control-Allow-Credentials"] = true;
-			headers["Access-Control-Max-Age"] = '3600'; //one hour
-			headers["Access-Control-Allow-Headers"] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${signatureHeaderName}`;
-			res.writeHead(200, headers);
-			res.end();
-		});
-
-		require("./ChannelsManager.js")(server);
-
 		setTimeout(function(){
 			//allow other endpoints registration before registering fallback handler
 			server.use(function (req, res) {
@@ -135,9 +141,7 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 				res.end();
 			});
 		}, 100);
-
 	}
-
 	return server;
 }
 
