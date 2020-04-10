@@ -1,45 +1,17 @@
 const path = require("path");
 const httpWrapper = require('./libs/http-wrapper');
-const EDFSMiddleware = require("edfs-middleware").getEDFSMiddleware();
 const Server = httpWrapper.Server;
 const Router = httpWrapper.Router;
 const TokenBucket = require('./libs/TokenBucket');
 
 const signatureHeaderName = process.env.vmq_signature_header_name || 'x-signature';
 
-function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
+function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
 	const tokenBucket = new TokenBucket(600000, 1, 10);
-	const CSB_storage_folder = "uploads";
-
-	let bindFinish = (err)=>{
-		if(err){
-			console.log(err);
-			if(callback){
-				callback(err);
-			}
-			return;
-		}
-
-		let storageFolder = path.join(rootFolder, CSB_storage_folder);
-		if(typeof process.env.EDFS_BRICK_STORAGE_FOLDER !== "undefined"){
-			storageFolder = process.env.EDFS_BRICK_STORAGE_FOLDER;
-		}
-
-		$$.flow.start("BricksManager").init(storageFolder, function (err, result) {
-			if (err) {
-				throw err;
-			} else {
-				console.log("BricksManager is using folder", result);
-				registerEndpoints();
-				if (callback) {
-					callback();
-				}
-			}
-		});
-	};
 
 	const server = new Server(sslConfig);
+	server.rootFolder = rootFolder;
 	server.listen(port, (err) => {
 		if(err){
 			console.log(err);
@@ -49,11 +21,21 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		}
 	});
 
-	server.on('listening', bindFinish);
+	server.on('listening', bindFinished);
 
-	function registerEndpoints() {
+	function bindFinished(err){
+		if(err) {
+			console.log(err);
+			if (callback) {
+				callback(err);
+			}
+			return;
+		}
 
+		registerEndpoints(callback);
+	}
 
+	function registerEndpoints(callback) {
 		server.use(function (req, res, next) {
 			res.setHeader('Access-Control-Allow-Origin', req.headers.origin || req.headers.host);
 			res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -64,7 +46,6 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 
         server.use(function (req, res, next) {
             const ip = res.socket.remoteAddress;
-
             tokenBucket.takeToken(ip, tokenBucket.COST_MEDIUM, function(err, remainedTokens) {
             	res.setHeader('X-RateLimit-Limit', tokenBucket.getLimitByCost(tokenBucket.COST_MEDIUM));
             	res.setHeader('X-RateLimit-Remaining', tokenBucket.getRemainingTokenByCost(remainedTokens, tokenBucket.COST_MEDIUM));
@@ -98,41 +79,8 @@ function VirtualMQ({listeningPort, rootFolder, sslConfig}, callback) {
 		});
 
 		require("./ChannelsManager.js")(server);
-
-		const router = new Router(server);
-		router.use("/EDFS", (newServer) => {
-			new EDFSMiddleware(newServer);
-		});
-
-		//folder can be userId/tripId/...
-		server.post('/files/upload/:folder', function (req,res) {
-			let fileManager = require('./fileManager');
-			fileManager.upload(req, (err, result)=>{
-				if(err){
-					res.statusCode = 500;
-					res.end();
-				}else{
-					res.statusCode = 200;
-					res.end(JSON.stringify(result));
-				}
-			})
-		});
-
-		server.get('/files/download/:filepath', function (req,res) {
-			let fileManager = require('./fileManager');
-			fileManager.download(req, res, (err, result)=>{
-				if(err){
-					res.statusCode = 404;
-					res.end();
-				}else{
-					res.statusCode = 200;
-					result.pipe(res);
-					result.on('finish', () => {
-						res.end();
-					})
-				}
-			})
-		});
+		require("./FilesManager.js")(server);
+		require("edfs-middleware").getEDFSMiddleware(server);
 
 		setTimeout(function(){
 			//allow other endpoints registration before registering fallback handler
@@ -151,7 +99,7 @@ module.exports.createVirtualMQ = function(port, folder, sslConfig, callback){
 		sslConfig = undefined;
 	}
 
-	return new VirtualMQ({listeningPort:port, rootFolder:folder, sslConfig}, callback);
+	return new HttpServer({listeningPort:port, rootFolder:folder, sslConfig}, callback);
 };
 
 module.exports.getVMQRequestFactory = function(virtualMQAddress, zeroMQAddress) {

@@ -4,7 +4,7 @@ const tokenSize = process.env.vmq_token_size || 48;
 const tokenHeaderName = process.env.vmq_token_header_name || "x-tokenHeader";
 const signatureHeaderName = process.env.vmq_signature_header_name || "x-signature";
 
-const channelsFolderName = "channels";
+const channelsFolderName = process.env.PSK_VIRTUAL_MQ_CHANNEL_FOLDER_NAME || "channels";
 const channelKeyFileName = "channel_key";
 
 const path = require("path");
