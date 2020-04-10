@@ -140,6 +140,13 @@ function FilesManager(server) {
 					function send() {
 						res.statusCode = 200;
 						res.setHeader('Content-Type', "application/json");
+						//let's clean some empty objects
+						for(let prop in summary){
+							if(Object.keys(summary[prop]).length===0){
+								delete summary[prop];
+							}
+						}
+
 						res.write(JSON.stringify(summary));
 						res.end();
 					}
