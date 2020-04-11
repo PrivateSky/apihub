@@ -220,9 +220,10 @@ function FilesManager(server) {
 						return;
 					}
 					if (stats.isDirectory()) {
-						if (req.url[req.length - 1] !== "/") {
+						let url = req.url;
+						if (url[url.length - 1] !== "/") {
 							res.writeHead(302, {
-								'Location': req.url + "/"
+								'Location': url + "/"
 							});
 							res.end();
 							return;
