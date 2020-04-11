@@ -8,7 +8,7 @@ const signatureHeaderName = process.env.vmq_signature_header_name || 'x-signatur
 
 function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
-	const tokenBucket = new TokenBucket(600000, 1, 10);
+	const tokenBucket = new TokenBucket(6000000, 1, 10);
 
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
