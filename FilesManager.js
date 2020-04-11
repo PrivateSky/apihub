@@ -141,8 +141,8 @@ function FilesManager(server) {
 						res.statusCode = 200;
 						res.setHeader('Content-Type', "application/json");
 						//let's clean some empty objects
-						for(let prop in summary){
-							if(Object.keys(summary[prop]).length===0){
+						for (let prop in summary) {
+							if (Object.keys(summary[prop]).length === 0) {
 								delete summary[prop];
 							}
 						}
@@ -158,7 +158,7 @@ function FilesManager(server) {
 						directories[currentPath] = -1;
 						let summaryId = currentPath.replace(targetPath, "");
 						summaryId = summaryId.split(path.sep).join("/");
-						if(summaryId === ""){
+						if (summaryId === "") {
 							summaryId = "/";
 						}
 						//summaryId = path.basename(summaryId);
@@ -220,24 +220,42 @@ function FilesManager(server) {
 						return;
 					}
 					if (stats.isDirectory()) {
-						//we don't support yet directory serving or default files like index.html
-						res.statusCode = 403;
-						res.end();
-					} else {
-						let stream = fs.createReadStream(targetPath);
-						const mimes = require("./MimeType");
-						let ext = path.extname(targetPath);
-						if (ext !== "") {
-							ext = ext.replace(".", "");
-							res.setHeader('Content-Type', mimes.getMimeTypeFromExtension(ext).name);
-						} else {
-							res.setHeader('Content-Type', "application/octet-stream");
+						if (req.url[req.length - 1] !== "/") {
+							res.writeHead(302, {
+								'Location': req.url + "/"
+							});
+							res.end();
+							return;
 						}
-						return sendResult(res, stream);
+						const defaultFileName = "index.html";
+						const defaultPath = path.join(targetPath, defaultFileName);
+						fs.stat(defaultPath, function (err) {
+							if (err) {
+								res.statusCode = 403;
+								res.end();
+								return;
+							}
+							return sendFile(res, defaultPath);
+						});
+					} else {
+						return sendFile(res, targetPath);
 					}
 				});
 			});
 		});
+
+		function sendFile(res, file) {
+			let stream = fs.createReadStream(file);
+			const mimes = require("./MimeType");
+			let ext = path.extname(file);
+			if (ext !== "") {
+				ext = ext.replace(".", "");
+				res.setHeader('Content-Type', mimes.getMimeTypeFromExtension(ext).name);
+			} else {
+				res.setHeader('Content-Type', "application/octet-stream");
+			}
+			return sendResult(res, stream);
+		}
 
 		function requestValidation(req, method, urlPrefix, callback) {
 			if (typeof urlPrefix === "function") {
