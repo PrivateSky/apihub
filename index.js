@@ -3,12 +3,13 @@ const httpWrapper = require('./libs/http-wrapper');
 const Server = httpWrapper.Server;
 const Router = httpWrapper.Router;
 const TokenBucket = require('./libs/TokenBucket');
+const START_TOKENS = 6000000;
 
 const signatureHeaderName = process.env.vmq_signature_header_name || 'x-signature';
 
 function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
-	const tokenBucket = new TokenBucket(6000000, 1, 10);
+	const tokenBucket = new TokenBucket(START_TOKENS, 1, 10);
 
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
