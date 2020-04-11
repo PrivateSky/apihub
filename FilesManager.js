@@ -156,9 +156,12 @@ function FilesManager(server) {
 
 					function extractContent(currentPath) {
 						directories[currentPath] = -1;
-						let summaryId = currentPath.replace(server.rootFolder, "");
+						let summaryId = currentPath.replace(targetPath, "");
 						summaryId = summaryId.split(path.sep).join("/");
-						summaryId = path.basename(summaryId);
+						if(summaryId === ""){
+							summaryId = "/";
+						}
+						//summaryId = path.basename(summaryId);
 						summary[summaryId] = {};
 
 						fs.readdir(currentPath, function (err, files) {
