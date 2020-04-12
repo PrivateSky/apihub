@@ -89,6 +89,9 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 				res.statusCode = 404;
 				res.end();
 			});
+			if(callback){
+				return callback();
+			}
 		}, 100);
 	}
 	return server;
