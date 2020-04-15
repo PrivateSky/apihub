@@ -36,7 +36,10 @@ function ChannelsManager(server){
     }
 
 
-    const forwarder = integration.getForwarderInstance(process.env.vmq_zeromq_forward_address);
+    let forwarder;
+    if(integration.testIfAvailable()){
+        forwarder = integration.getForwarderInstance(process.env.vmq_zeromq_forward_address);
+    }
 
     function generateToken(){
         let buffer = crypto.randomBytes(tokenSize);
@@ -118,11 +121,11 @@ function ChannelsManager(server){
         });
 
         req.on("end", ()=>{
-           callback(null, data);
+            callback(null, data);
         });
 
         req.on("error", (err)=>{
-           callback(err);
+            callback(err);
         });
     }
 
@@ -167,7 +170,9 @@ function ChannelsManager(server){
     }
 
     function enableForwarderHandler(req, res){
-
+        if(integration.testIfAvailable() === false){
+            return sendStatus(res, 417);
+        }
         readBody(req, (err, message)=>{
             const {enable} = message;
             const channelName = req.params.channelName;
@@ -308,7 +313,7 @@ function ChannelsManager(server){
 
                         //TODO: to all checks based on message header
 
-                        if(details.forward){
+                        if(integration.testIfAvailable() && details.forward){
                             //console.log("Forwarding message <", message, "> on channel", channelName);
                             forwarder.send(channelName, message);
                         }else{
