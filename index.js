@@ -82,6 +82,7 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 		require("./ChannelsManager.js")(server);
 		require("./FilesManager.js")(server);
 		require("edfs-middleware").getEDFSMiddleware(server);
+		require("dossier-wizard").getDossierWizardMiddleware(server);
 
 		setTimeout(function(){
 			//allow other endpoints registration before registering fallback handler
