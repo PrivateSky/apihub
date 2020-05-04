@@ -50,4 +50,25 @@ function readMessageBufferFromHTTPStream(reqORres, callback){
     }
 }
 
-module.exports.readMessageBufferFromStream = readMessageBufferFromHTTPStream;
+let serverConf;
+const ServerConfig = require("./ServerConfig");
+function getServerConfig() {
+    if (typeof serverConf === "undefined") {
+        const fs = require("fs");
+        const path = require("path")
+        const pskRootInstallFolder = path.resolve("." + __dirname + "/../..");
+        try {
+            serverConf = fs.readFileSync(path.join(pskRootInstallFolder, "conf", "server.json"));
+            serverConf = JSON.parse(config.toString());
+        } catch (e) {
+            serverConf = undefined;
+        }
+    }
+
+    return new ServerConfig(serverConf);
+}
+
+module.exports = {
+    readMessageBufferFromHTTPStream,
+    getServerConfig
+};

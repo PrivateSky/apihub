@@ -1,12 +1,3 @@
-const storageFolder = process.env.vmq_channel_storage || "../tmp";
-const maxQueueSize = process.env.vmq_max_queue_size || 100;
-const tokenSize = process.env.vmq_token_size || 48;
-const tokenHeaderName = process.env.vmq_token_header_name || "x-tokenHeader";
-const signatureHeaderName = process.env.vmq_signature_header_name || "x-signature";
-
-const channelsFolderName = process.env.PSK_VIRTUAL_MQ_CHANNEL_FOLDER_NAME || "channels";
-const channelKeyFileName = "channel_key";
-
 const path = require("path");
 const fs = require("fs");
 const crypto = require('crypto');
@@ -16,16 +7,16 @@ const Queue = require("swarmutils").Queue;
 const SwarmPacker = require("swarmutils").SwarmPacker;
 
 function ChannelsManager(server){
+    const utils = require("./utils");
+    const config = utils.getServerConfig();
+    const channelKeyFileName = "channel_key";
 
-    const rootFolder = path.join(storageFolder, channelsFolderName);
+    const rootFolder = path.join(config.getStorage(), config.getChannelsFolderName());
     fs.mkdirSync(rootFolder, {recursive: true});
 
     const channelKeys = {};
     const queues = {};
     const subscribers = {};
-
-
-    process.env.enable_signature_check = true;
 
     let baseDir = __dirname;
 
@@ -38,11 +29,11 @@ function ChannelsManager(server){
 
     let forwarder;
     if(integration.testIfAvailable()){
-        forwarder = integration.getForwarderInstance(process.env.vmq_zeromq_forward_address);
+        forwarder = integration.getForwarderInstance(config.getZeromqForwardAddress());
     }
 
     function generateToken(){
-        let buffer = crypto.randomBytes(tokenSize);
+        let buffer = crypto.randomBytes(config.getTokenSize());
         return buffer.toString('hex');
     }
 
@@ -147,7 +138,7 @@ function ChannelsManager(server){
 
             createChannel(channelName, publicKey, (err, token)=>{
                 if(!err){
-                    res.setHeader('Cookie', [`${tokenHeaderName}=${token}`]);
+                    res.setHeader('Cookie', [`${config.getTokenSize()}=${token}`]);
                 }
                 handler(err, res);
             });
@@ -176,7 +167,7 @@ function ChannelsManager(server){
         readBody(req, (err, message)=>{
             const {enable} = message;
             const channelName = req.params.channelName;
-            const signature = req.headers[signatureHeaderName];
+            const signature = req.headers[config.getSignatureHeaderName()];
 
             if(typeof channelName !== "string" || typeof signature !== "string"){
                 return sendStatus(res, 400);
@@ -324,7 +315,7 @@ function ChannelsManager(server){
                                 dispatched = writeMessage(subscribers, message);
                             }
                             if(!dispatched) {
-                                if(queue.length < maxQueueSize){
+                                if(queue.length < config.getMaxQueueSize()){
                                     queue.push(message);
                                 }else{
                                     //queue is full

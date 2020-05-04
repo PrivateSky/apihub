@@ -1,16 +1,15 @@
-const path = require("path");
 const httpWrapper = require('./libs/http-wrapper');
 const Server = httpWrapper.Server;
-const Router = httpWrapper.Router;
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
-
 const signatureHeaderName = process.env.vmq_signature_header_name || 'x-signature';
 
 function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
 	const tokenBucket = new TokenBucket(START_TOKENS, 1, 10);
 
+	const utils = require("./utils");
+	const conf = utils.getServerConfig();
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
 	server.listen(port, (err) => {
@@ -74,15 +73,33 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
 			headers["Access-Control-Allow-Credentials"] = true;
 			headers["Access-Control-Max-Age"] = '3600'; //one hour
-			headers["Access-Control-Allow-Headers"] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${signatureHeaderName}`;
+			headers["Access-Control-Allow-Headers"] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${signatureHeaderName}}`;
 			res.writeHead(200, headers);
 			res.end();
 		});
 
-		require("./ChannelsManager.js")(server);
-		require("./FilesManager.js")(server);
-		require("edfs-middleware").getEDFSMiddleware(server);
-		require("dossier-wizard").getDossierWizardMiddleware(server);
+		const middlewareList = conf.getEnabledMiddlewareList();
+		middlewareList.forEach(middleware => {
+			switch(middleware){
+				case "virtualMQ":
+					require("./ChannelsManager.js")(server);
+					break;
+
+				case "staticServer":
+					require("./StaticServer")(server);
+					break;
+
+				case "edfs":
+					require("edfs-middleware")(server);
+					break;
+
+				case "dossierWizard":
+					require("dossier-wizard")(server);
+					break;
+
+				default:
+			}
+		});
 
 		setTimeout(function(){
 			//allow other endpoints registration before registering fallback handler
@@ -115,4 +132,9 @@ module.exports.getVMQRequestFactory = function(virtualMQAddress, zeroMQAddress) 
 
 module.exports.getHttpWrapper = function() {
 	return require('./libs/http-wrapper');
+};
+
+module.exports.getServerConfig = function () {
+	const utils = require("./utils");
+	return utils.getServerConfig();
 };
