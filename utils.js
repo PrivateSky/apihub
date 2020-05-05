@@ -57,7 +57,6 @@ function getServerConfig() {
         const fs = require("fs");
         const path = require("path");
         const pskRootInstallFolder = path.resolve("." + __dirname + "/../..");
-        console.log("psk root install folder", pskRootInstallFolder);
         try {
             serverConf = fs.readFileSync(path.join(pskRootInstallFolder, "conf", "server.json"));
             serverConf = JSON.parse(serverConf.toString());
