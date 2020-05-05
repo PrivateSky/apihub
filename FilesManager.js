@@ -53,7 +53,7 @@ function FilesManager(server) {
 		if (filename.split('.').length > 1) {
 			return callback('err');
 		}
-		const completeFolderPath = path.join(serverConf.getStorage(), folder);
+		const completeFolderPath = path.join(serverConf.storage, folder);
 
 		const contentType = req.headers['content-type'].split('/');
 
@@ -89,7 +89,7 @@ function FilesManager(server) {
 		}
 		const folder = Buffer.from(req.params.filepath, 'base64').toString().replace('\n', '');
 
-		const completeFolderPath = path.join(serverConf.getStorage(), folder);
+		const completeFolderPath = path.join(serverConf.storage, folder);
 		if (folder.includes('..')) {
 			return callback(new Error("invalidPath"));
 		}

@@ -11,7 +11,7 @@ function ChannelsManager(server){
     const config = utils.getServerConfig();
     const channelKeyFileName = "channel_key";
 
-    const rootFolder = path.join(config.getStorage(), config.getChannelsFolderName());
+    const rootFolder = path.join(config.storage, config.endpointsConfig.virtualMQ.channelsFolderName);
     fs.mkdirSync(rootFolder, {recursive: true});
 
     const channelKeys = {};
@@ -29,11 +29,11 @@ function ChannelsManager(server){
 
     let forwarder;
     if(integration.testIfAvailable()){
-        forwarder = integration.getForwarderInstance(config.getZeromqForwardAddress());
+        forwarder = integration.getForwarderInstance(config.zeromqForwardAddress);
     }
 
     function generateToken(){
-        let buffer = crypto.randomBytes(config.getTokenSize());
+        let buffer = crypto.randomBytes(config.endpointsConfig.virtualMQ.tokenSize);
         return buffer.toString('hex');
     }
 
@@ -65,7 +65,7 @@ function ChannelsManager(server){
         });
     }
 
-    function retriveChannelDetails(channelName, callback){
+    function retrieveChannelDetails(channelName, callback){
         if(typeof channelKeys[channelName] !== "undefined"){
             return callback(null, channelKeys[channelName]);
         }else{
@@ -138,7 +138,7 @@ function ChannelsManager(server){
 
             createChannel(channelName, publicKey, (err, token)=>{
                 if(!err){
-                    res.setHeader('Cookie', [`${config.getTokenSize()}=${token}`]);
+                    res.setHeader('Cookie', [`${config.endpointsConfig.virtualMQ.tokenSize}=${token}`]);
                 }
                 handler(err, res);
             });
@@ -167,13 +167,13 @@ function ChannelsManager(server){
         readBody(req, (err, message)=>{
             const {enable} = message;
             const channelName = req.params.channelName;
-            const signature = req.headers[config.getSignatureHeaderName()];
+            const signature = req.headers[config.endpointsConfig.virtualMQ.signatureHeaderName];
 
             if(typeof channelName !== "string" || typeof signature !== "string"){
                 return sendStatus(res, 400);
             }
 
-            retriveChannelDetails(channelName, (err, details)=>{
+            retrieveChannelDetails(channelName, (err, details)=>{
                 if(err){
                     return sendStatus(res, 500);
                 }else{
@@ -198,7 +198,7 @@ function ChannelsManager(server){
     }
 
     function checkIfChannelExist(channelName, callback){
-        retriveChannelDetails(channelName, (err, details)=>{
+        retrieveChannelDetails(channelName, (err, details)=>{
             callback(null, err ? false : true);
         });
     }
@@ -286,7 +286,7 @@ function ChannelsManager(server){
             if(!exists){
                 return sendStatus(res, 403);
             }else{
-                retriveChannelDetails(channelName, (err, details)=>{
+                retrieveChannelDetails(channelName, (err, details)=>{
                     //we choose to read the body of request only after we know that we recognize the destination channel
                     readSendMessageBody(req, (err, message)=>{
                         if(err){
@@ -315,7 +315,7 @@ function ChannelsManager(server){
                                 dispatched = writeMessage(subscribers, message);
                             }
                             if(!dispatched) {
-                                if(queue.length < config.getMaxQueueSize()){
+                                if(queue.length < config.endpointsConfig.virtualMQ.maxSize){
                                     queue.push(message);
                                 }else{
                                     //queue is full
@@ -387,7 +387,7 @@ function ChannelsManager(server){
             if(!exists){
                 return sendStatus(res, 403);
             }else{
-                retriveChannelDetails(channelName, (err, details)=>{
+                retrieveChannelDetails(channelName, (err, details)=>{
                     if(err){
                         return sendStatus(res, 500);
                     }

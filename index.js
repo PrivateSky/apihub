@@ -2,7 +2,6 @@ const httpWrapper = require('./libs/http-wrapper');
 const Server = httpWrapper.Server;
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
-const signatureHeaderName = process.env.vmq_signature_header_name || 'x-signature';
 
 function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
@@ -39,7 +38,7 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 		server.use(function (req, res, next) {
 			res.setHeader('Access-Control-Allow-Origin', req.headers.origin || req.headers.host);
 			res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-			res.setHeader('Access-Control-Allow-Headers', `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, ${signatureHeaderName}`);
+			res.setHeader('Access-Control-Allow-Headers', `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, ${conf.endpointsConfig.virtualMQ.signatureHeaderName}`);
 			res.setHeader('Access-Control-Allow-Credentials', true);
 			next();
 		});
@@ -73,12 +72,12 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
 			headers["Access-Control-Allow-Credentials"] = true;
 			headers["Access-Control-Max-Age"] = '3600'; //one hour
-			headers["Access-Control-Allow-Headers"] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${signatureHeaderName}}`;
+			headers["Access-Control-Allow-Headers"] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${conf.endpointsConfig.virtualMQ.signatureHeaderName}}`;
 			res.writeHead(200, headers);
 			res.end();
 		});
 
-		const middlewareList = conf.getEnabledMiddlewareList();
+		const middlewareList = conf.endpoints;
 		middlewareList.forEach(middleware => {
 			switch(middleware){
 				case "virtualMQ":
