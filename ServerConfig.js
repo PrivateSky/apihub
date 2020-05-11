@@ -4,7 +4,7 @@ function ServerConfig(conf) {
         storage: path.join(path.resolve("." + __dirname + "/../.."), "tmp"),
         "port": 8080,
         "zeromqForwardAddress": "tcp://127.0.0.1:5001",
-        "endpoints":["virtualMQ", "staticServer", "edfs", "filesManager", "dossierWizard"],
+        "endpoints":["virtualMQ", "edfs", "filesManager", "dossierWizard"],
         "endpointsConfig": {
             "virtualMQ": {
                 "channelsFolderName": "channels",
