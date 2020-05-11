@@ -21,6 +21,17 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	});
 
 	server.on('listening', bindFinished);
+	server.on('error', bindErrorHandler);
+
+	function bindErrorHandler(error) {
+		if (error.code === 'EADDRINUSE') {
+			server.close();
+			if(callback){
+				return callback(error);
+			}
+			throw error;
+		}
+	}
 
 	function bindFinished(err){
 		if(err) {
@@ -43,26 +54,30 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 			next();
 		});
 
-        server.use(function (req, res, next) {
-            const ip = res.socket.remoteAddress;
-            tokenBucket.takeToken(ip, tokenBucket.COST_MEDIUM, function(err, remainedTokens) {
-            	res.setHeader('X-RateLimit-Limit', tokenBucket.getLimitByCost(tokenBucket.COST_MEDIUM));
-            	res.setHeader('X-RateLimit-Remaining', tokenBucket.getRemainingTokenByCost(remainedTokens, tokenBucket.COST_MEDIUM));
+		if(conf.preventRateLimit !== true){
+			server.use(function (req, res, next) {
+				const ip = res.socket.remoteAddress;
+				tokenBucket.takeToken(ip, tokenBucket.COST_MEDIUM, function(err, remainedTokens) {
+					res.setHeader('X-RateLimit-Limit', tokenBucket.getLimitByCost(tokenBucket.COST_MEDIUM));
+					res.setHeader('X-RateLimit-Remaining', tokenBucket.getRemainingTokenByCost(remainedTokens, tokenBucket.COST_MEDIUM));
 
-            	if(err) {
-            		if (err === TokenBucket.ERROR_LIMIT_EXCEEDED) {
-						res.statusCode = 429;
-					} else {
-						res.statusCode = 500;
+					if(err) {
+						if (err === TokenBucket.ERROR_LIMIT_EXCEEDED) {
+							res.statusCode = 429;
+						} else {
+							res.statusCode = 500;
+						}
+
+						res.end();
+						return;
 					}
 
-            		res.end();
-            		return;
-            	}
-
-            	next();
-            });
-        });
+					next();
+				});
+			});
+		}else{
+			console.log("Rate limit mechanism disabled!");
+		}
 
 		server.options('/*', function (req, res) {
 			const headers = {};
