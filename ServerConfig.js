@@ -5,7 +5,7 @@ function ServerConfig(conf) {
         "port": 8080,
         "zeromqForwardAddress": "tcp://127.0.0.1:5001",
         "preventRateLimit": false,
-        "endpoints":["virtualMQ", "staticServer", "edfs", "filesManager", "dossierWizard"],
+        "endpoints":["virtualMQ", "edfs", "filesManager", "dossierWizard"],
         "endpointsConfig": {
             "virtualMQ": {
                 "channelsFolderName": "channels",
