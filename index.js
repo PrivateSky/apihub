@@ -92,29 +92,23 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 			res.end();
 		});
 
-		const middlewareList = conf.endpoints;
-		middlewareList.forEach(middleware => {
-			switch(middleware){
-				case "virtualMQ":
-					require("./ChannelsManager.js")(server);
-					break;
+		function addMiddlewares(){
+			const middlewareList = conf.endpoints;
+			const path = require("path");
+			middlewareList.forEach(middleware => {
+				const middlewareConfig = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);
+				if (middlewareConfig) {
+					let middlewarePath = conf.endpointsConfig[middlewareConfig].path;
+					if (middlewarePath.startsWith(".")) {
+						middlewarePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath);
+					}
+					require(middlewarePath)(server);
+				}
+			})
 
-				case "staticServer":
-					require("./StaticServer")(server);
-					break;
+		}
 
-				case "edfs":
-					require("edfs-middleware")(server);
-					break;
-
-				case "dossierWizard":
-					require("dossier-wizard")(server);
-					break;
-
-				default:
-			}
-		});
-
+		addMiddlewares();
 		setTimeout(function(){
 			//allow other endpoints registration before registering fallback handler
 			server.use(function (req, res) {
