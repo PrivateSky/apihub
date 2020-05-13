@@ -4,7 +4,8 @@ function FilesManager(server) {
 	const utils = require("./utils");
 	const serverConf = utils.getServerConfig();
 	//folder can be userId/tripId/...
-	server.post('/files/upload/:folder', function (req, res) {
+
+	function uploadFile(req, res) {
 		upload(req, (err, result) => {
 			if (err) {
 				res.statusCode = 500;
@@ -14,9 +15,9 @@ function FilesManager(server) {
 				res.end(JSON.stringify(result));
 			}
 		})
-	});
+	}
 
-	server.get('/files/download/:filepath', function (req, res) {
+	function downloadFile(req, res) {
 		download(req, res, (err, result) => {
 			if (err) {
 				res.statusCode = 404;
@@ -25,8 +26,7 @@ function FilesManager(server) {
 				sendResult(res, result);
 			}
 		});
-	});
-
+	}
 
 	guid = function () {
 		function s4() {
@@ -110,6 +110,9 @@ function FilesManager(server) {
 		});
 	}
 
+
+	server.post('/files/upload/:folder', uploadFile);
+	server.get('/files/download/:filepath', downloadFile);
 }
 
 module.exports = FilesManager;

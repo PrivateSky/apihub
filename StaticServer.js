@@ -2,7 +2,8 @@ function StaticServer(server) {
     const lockedPathsPrefixes = ["/EDFS", "/receive-message"];
     const fs = require("fs");
     const path = require("path");
-    server.use("*", function (req, res, next) {
+
+    function sendFiles(req, res, next) {
         const prefix = "/directory-summary/";
         requestValidation(req, "GET", prefix, function (notOurResponsibility, targetPath) {
             if (notOurResponsibility) {
@@ -94,46 +95,7 @@ function StaticServer(server) {
             })
         }
 
-    });
-
-    server.use("*", function (req, res, next) {
-        requestValidation(req, "GET", function (notOurResponsibility, targetPath) {
-            if (notOurResponsibility) {
-                return next();
-            }
-            //from now on we mean to resolve the url
-            fs.stat(targetPath, function (err, stats) {
-                if (err) {
-                    res.statusCode = 404;
-                    res.end();
-                    return;
-                }
-                if (stats.isDirectory()) {
-                    let url = req.url;
-                    if (url[url.length - 1] !== "/") {
-                        res.writeHead(302, {
-                            'Location': url + "/"
-                        });
-                        res.end();
-                        return;
-                    }
-                    const defaultFileName = "index.html";
-                    const defaultPath = path.join(targetPath, defaultFileName);
-                    fs.stat(defaultPath, function (err) {
-                        if (err) {
-                            res.statusCode = 403;
-                            res.end();
-                            return;
-                        }
-                        return sendFile(res, defaultPath);
-                    });
-                } else {
-                    return sendFile(res, targetPath);
-                }
-            });
-        });
-    });
-
+    }
     function sendFile(res, file) {
         let stream = fs.createReadStream(file);
         const mimes = require("./MimeType");
@@ -188,6 +150,47 @@ function StaticServer(server) {
         }
         callback(false, targetPath);
     }
+
+    function redirect(req, res, next) {
+        requestValidation(req, "GET", function (notOurResponsibility, targetPath) {
+            if (notOurResponsibility) {
+                return next();
+            }
+            //from now on we mean to resolve the url
+            fs.stat(targetPath, function (err, stats) {
+                if (err) {
+                    res.statusCode = 404;
+                    res.end();
+                    return;
+                }
+                if (stats.isDirectory()) {
+                    let url = req.url;
+                    if (url[url.length - 1] !== "/") {
+                        res.writeHead(302, {
+                            'Location': url + "/"
+                        });
+                        res.end();
+                        return;
+                    }
+                    const defaultFileName = "index.html";
+                    const defaultPath = path.join(targetPath, defaultFileName);
+                    fs.stat(defaultPath, function (err) {
+                        if (err) {
+                            res.statusCode = 403;
+                            res.end();
+                            return;
+                        }
+                        return sendFile(res, defaultPath);
+                    });
+                } else {
+                    return sendFile(res, targetPath);
+                }
+            });
+        });
+    }
+
+    server.use("*", sendFiles);
+    server.use("*", redirect);
 }
 
 module.exports = StaticServer;
