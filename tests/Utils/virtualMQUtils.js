@@ -40,7 +40,7 @@ module.exports.createTestFolder = function () {
 
 };
 module.exports.createServer = function (callback) {
-    var server = VirtualMQ.createVirtualMQ(port, folder, undefined, (err, res) => {
+    var server = VirtualMQ.createPskWebServer(port, folder, undefined, (err, res) => {
         if (err) {
             console.log("Failed to create VirtualMQ server on port ", port);
             console.log("Trying again...");

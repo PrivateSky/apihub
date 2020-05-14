@@ -25,7 +25,7 @@ const swarmDefinition = {
 };
 
 function createServer(callback) {
-    var server = VirtualMQ.createVirtualMQ(PORT, tempFolder, undefined, (err, res) => {
+    var server = VirtualMQ.createPskWebServer(PORT, tempFolder, undefined, (err, res) => {
         if (err) {
             console.log("Failed to create VirtualMQ server on port ", PORT);
 			console.log("Trying again...");

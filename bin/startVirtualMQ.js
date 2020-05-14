@@ -1,1 +1,1 @@
-var server = require("../index").createVirtualMQ(9080, "../../../tmp");
+var server = require("../index").createPskWebServer(9080, "../../../tmp");

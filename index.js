@@ -123,7 +123,7 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	return server;
 }
 
-module.exports.createVirtualMQ = function(port, folder, sslConfig, callback){
+module.exports.createPskWebServer = function(port, folder, sslConfig, callback){
 	if(typeof sslConfig === 'function') {
 		callback = sslConfig;
 		sslConfig = undefined;

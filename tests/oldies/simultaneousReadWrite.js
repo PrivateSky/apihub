@@ -23,7 +23,7 @@ const flow = $$.flow.describe('simultaneousReadWrite', {
 
 		fileStateManager.saveState([tempFolder], (err) => {
 			// assert.false(err, 'Saving state has failed');
-			this.virtualMq = VirtualMQ.createVirtualMQ(PORT, tempFolder, () => {
+			this.virtualMq = VirtualMQ.createPskWebServer(PORT, tempFolder, () => {
 				this.sendSwarms();
 				this.getSwarms();
 				setTimeout(this.checkResults, 6500);
