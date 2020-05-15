@@ -2,6 +2,7 @@ function StaticServer(server) {
     const lockedPathsPrefixes = ["/EDFS", "/receive-message"];
     const fs = require("fs");
     const path = require("path");
+    const MimeType = require("./MimeType");
 
     function sendFiles(req, res, next) {
         const prefix = "/directory-summary/";
@@ -70,7 +71,15 @@ function StaticServer(server) {
                                     extractContent(fileName);
                                 } else {
                                     let fileContent = fs.readFileSync(fileName);
-                                    summary[summaryId][file] = fileContent.toString();
+                                    let fileExtension = fileName.substring(fileName.lastIndexOf(".")+1);
+                                    let mimeType = MimeType.getMimeTypeFromExtension(fileExtension);
+                                    if(mimeType.binary){
+										summary[summaryId][file] = Array.from(fileContent);
+                                    }
+                                    else{
+										summary[summaryId][file] = fileContent.toString();
+                                    }
+
                                 }
                                 directories[currentPath]--;
                             }
