@@ -1,11 +1,12 @@
 function ServerConfig(conf) {
     const path = require("path");
     const defaultConf = {
-        storage: path.join(path.resolve("." + __dirname + "/../.."), "tmp"),
+        "storage": path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "tmp"),
+        "sslFolder": path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "conf", "ssl"),
         "port": 8080,
         "zeromqForwardAddress": "tcp://127.0.0.1:5001",
         "preventRateLimit": false,
-        "endpoints": ["virtualMQ", "filesManager", "edfs", "dossier-wizard"],
+        "endpoints": ["virtualMQ", "filesManager", "anchoring", "edfs", "dossier-wizard"],
         "endpointsConfig": {
             "virtualMQ": {
                 "path": "./modules/psk-webserver/ChannelsManager.js",
@@ -24,6 +25,9 @@ function ServerConfig(conf) {
             },
             "filesManager": {
                 "path": "./modules/psk-webserver/FilesManager.js"
+            },
+            "anchoring": {
+                "path": "./modules/psk-webserver/AnchoringService.js"
             }
         }
     };
@@ -59,6 +63,7 @@ function ServerConfig(conf) {
     }
 
     conf = createConfig(conf, defaultConf);
+    console.log("Config", conf);
     return conf;
 }
 
