@@ -93,7 +93,7 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 		});
 
 		function addMiddlewares(){
-			const middlewareList = conf.endpoints;
+			const middlewareList = conf.activeEndpoints;
 			const path = require("path");
 			middlewareList.forEach(middleware => {
 				const middlewareConfig = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);

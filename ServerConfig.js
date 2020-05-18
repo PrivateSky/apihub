@@ -6,7 +6,7 @@ function ServerConfig(conf) {
         "port": 8080,
         "zeromqForwardAddress": "tcp://127.0.0.1:5001",
         "preventRateLimit": false,
-        "endpoints": ["virtualMQ", "filesManager", "anchoring", "edfs", "dossier-wizard"],
+        "activeEndpoints": ["virtualMQ", "filesManager", "anchoring", "edfs", "dossier-wizard"],
         "endpointsConfig": {
             "virtualMQ": {
                 "path": "./modules/psk-webserver/ChannelsManager.js",
