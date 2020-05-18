@@ -7,7 +7,6 @@ function AnchoringService(server) {
     let storageFolder = path.join(server.rootFolder, anchorsStorage);
     $$.flow.start("AnchorsManager").init(storageFolder);
 
-    console.log("Loaded Anchoring Service ======================================================================");
     function setHeaders(req, res, next) {
         res.setHeader('Access-Control-Allow-Origin', '*');
 

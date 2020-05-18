@@ -63,7 +63,6 @@ function ServerConfig(conf) {
     }
 
     conf = createConfig(conf, defaultConf);
-    console.log("Config", conf);
     return conf;
 }
 
