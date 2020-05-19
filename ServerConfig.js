@@ -6,10 +6,10 @@ function ServerConfig(conf) {
         "port": 8080,
         "zeromqForwardAddress": "tcp://127.0.0.1:5001",
         "preventRateLimit": false,
-        "activeEndpoints": ["virtualMQ", "filesManager", "staticServer", "anchoring", "edfs", "dossier-wizard"],
+        "activeEndpoints": ["virtualMQ", "filesManager", "anchoring", "edfs", "dossier-wizard", "staticServer"],
         "endpointsConfig": {
             "virtualMQ": {
-                "path": "./modules/psk-webserver/ChannelsManager.js",
+                "path": "./ChannelsManager.js",
                 "channelsFolderName": "channels",
                 "maxSize": 100,
                 "tokenSize": 48,
@@ -24,13 +24,13 @@ function ServerConfig(conf) {
                 "path": "edfs-middleware"
             },
             "filesManager": {
-                "path": "./modules/psk-webserver/FilesManager.js"
+                "path": "./FilesManager.js"
             },
             "anchoring": {
-                "path": "./modules/psk-webserver/AnchoringService.js"
+                "path": "./AnchoringService.js"
             },
             "staticServer": {
-                "path": "./modules/psk-webserver/StaticServer.js"
+                "path": "./StaticServer.js"
             }
         }
     };

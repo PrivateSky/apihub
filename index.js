@@ -2,6 +2,12 @@ const httpWrapper = require('./libs/http-wrapper');
 const Server = httpWrapper.Server;
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
+//next require lines are only for browserify build purpose
+require("./ChannelsManager.js");
+require("./FilesManager.js");
+require("./AnchoringService.js");
+require("./StaticServer.js");
+//end
 
 function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	const port = listeningPort || 8080;
@@ -99,9 +105,7 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 				const middlewareConfig = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);
 				if (middlewareConfig) {
 					let middlewarePath = conf.endpointsConfig[middlewareConfig].path;
-					if (middlewarePath.startsWith(".")) {
-						middlewarePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath);
-					}
+					console.log(`Preparing to register middleware from path ${middlewarePath}`);
 					require(middlewarePath)(server);
 				}
 			})
