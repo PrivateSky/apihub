@@ -1,9 +1,8 @@
 function StaticServer(server) {
-    const lockedPathsPrefixes = ["/EDFS", "/receive-message"];
+    const lockedPathsPrefixes = ["/anchoring", "/EDFS", "/receive-message"];
     const fs = require("fs");
     const path = require("path");
     const MimeType = require("./MimeType");
-
     function sendFiles(req, res, next) {
         const prefix = "/directory-summary/";
         requestValidation(req, "GET", prefix, function (notOurResponsibility, targetPath) {
