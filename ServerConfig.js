@@ -66,6 +66,7 @@ function ServerConfig(conf) {
     }
 
     conf = createConfig(conf, defaultConf);
+    conf.defaultEndpoints = defaultConf.activeEndpoints;
     return conf;
 }
 

@@ -103,8 +103,12 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 			const path = require("path");
 			middlewareList.forEach(middleware => {
 				const middlewareConfig = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);
+				let middlewarePath;
 				if (middlewareConfig) {
-					let middlewarePath = conf.endpointsConfig[middlewareConfig].path;
+					middlewarePath = conf.endpointsConfig[middlewareConfig].path;
+					if (middlewarePath.startsWith(".") && conf.defaultEndpoints.indexOf(middleware) === -1) {
+						middlewarePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath);
+					}
 					console.log(`Preparing to register middleware from path ${middlewarePath}`);
 					require(middlewarePath)(server);
 				}
