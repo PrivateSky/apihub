@@ -58,7 +58,7 @@ function getServerConfig() {
         const fs = require("fs");
         const path = require("path");
         try {
-            serverConf = fs.readFileSync(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "conf", "server.json"));
+            serverConf = fs.readFileSync(path.join(process.env.PSK_CONFIG_LOCATION, "server.json"));
             serverConf = JSON.parse(serverConf.toString());
         } catch (e) {
             serverConf = undefined;
