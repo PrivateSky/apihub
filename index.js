@@ -17,7 +17,7 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	const conf = utils.getServerConfig();
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
-	server.listen(port, (err) => {
+	server.listen(port, conf.host, (err) => {
 		if(err){
 			console.log(err);
 			if(callback){
