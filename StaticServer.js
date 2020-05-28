@@ -157,6 +157,8 @@ function StaticServer(server) {
                 return next();
             }
             //from now on we mean to resolve the url
+            //remove existing query params
+            targetPath = targetPath.split("?")[0];
             fs.stat(targetPath, function (err, stats) {
                 if (err) {
                     res.statusCode = 404;
@@ -165,6 +167,7 @@ function StaticServer(server) {
                 }
                 if (stats.isDirectory()) {
                     let url = req.url;
+                    url = url.split("?")[0];
                     if (url[url.length - 1] !== "/") {
                         res.writeHead(302, {
                             'Location': url + "/"
