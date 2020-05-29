@@ -2,7 +2,7 @@ const URL_PREFIX = "/anchoring";
 const anchorsStorage = "anchors";
 function AnchoringService(server) {
     const path = require("path");
-    require("./libs/flows/AnchorsManager");
+    const AnchorsManager = require("./libs/flows/AnchorsManager");
 
     let storageFolder = path.join(server.rootFolder, anchorsStorage);
     $$.flow.start("AnchorsManager").init(storageFolder);
@@ -26,6 +26,10 @@ function AnchoringService(server) {
 
                 if (err.code === 'EACCES') {
                     res.statusCode = 409;
+                }
+
+                if (err.code === AnchorsManager.ALIAS_SYNC_ERR_CODE) {
+                    res.statusCode = 428; // see: https://tools.ietf.org/html/rfc6585#section-3
                 }
             }
             res.end();

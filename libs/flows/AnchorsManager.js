@@ -5,6 +5,9 @@ const fs = require(fsModule);
 const osModule = "os";
 const endOfLine = require(osModule).EOL;
 let anchorsFolders;
+
+const ALIAS_SYNC_ERR_CODE = 'sync-error';
+
 $$.flow.describe("AnchorsManager", {
     init: function (rootFolder) {
         rootFolder = path.resolve(rootFolder);
@@ -96,7 +99,10 @@ $$.flow.describe("AnchorsManager", {
                 const lastHash = hashes[hashes.length - 1];
 
                 if (lastHash !== options.lastHash) {
-                    return callback(new Error("Unable to add alias: the last hash doesn't match."));
+                    return callback({
+                        code: ALIAS_OUT_OF_SYNC_ERROR,
+                        message: "Unable to add alias: versions out of sync."
+                    });
                 }
 
                 fs.write(fd, hash + endOfLine, options.fileSize, (err) => {
@@ -123,3 +129,7 @@ $$.flow.describe("AnchorsManager", {
         readStream.on("error", callback);
     }
 });
+
+module.exports = {
+    ALIAS_SYNC_ERR_CODE
+}
