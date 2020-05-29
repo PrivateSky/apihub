@@ -16,7 +16,7 @@ $$.flow.describe("AnchorsManager", {
         }
     },
 
-    addAlias: function (fileHash, readStream, callback) {
+    addAlias: function (fileHash, lastHash, readStream, callback) {
         if (!fileHash || typeof fileHash !== "string") {
             return callback(new Error("No fileId specified."));
         }
@@ -30,12 +30,16 @@ $$.flow.describe("AnchorsManager", {
             }
 
             const filePath = path.join(anchorsFolders, alias);
-            fs.access(filePath, (err) => {
+            fs.stat(filePath, (err, stats) => {
                 if (err) {
                     fs.writeFile(filePath, fileHash + endOfLine, callback);
-                } else {
-                    fs.appendFile(filePath, fileHash + endOfLine, callback);
+                    return;
                 }
+
+                this.__appendHash(filePath, fileHash, {
+                    lastHash,
+                    fileSize: stats.size
+                }, callback);
             });
 
         });
@@ -53,6 +57,59 @@ $$.flow.describe("AnchorsManager", {
             callback(undefined, fileHashes.toString().trimEnd().split(endOfLine));
         });
     },
+
+    /**
+     * Append `hash` to file only
+     * if the `lastHash` is the last hash in the file
+     * 
+     * @param {string} path 
+     * @param {string} hash 
+     * @param {object} options
+     * @param {string|undefined} options.lastHash 
+     * @param {number} options.fileSize 
+     * @param {callback} callback 
+     */
+    __appendHash: function (path, hash, options, callback) {
+        if (!options.lastHash) {
+            return fs.appendFile(path, hash + endOfLine, callback);
+        }
+
+        fs.open(path, fs.constants.O_RDWR, (err, fd) => {
+            if (err) {
+                return callback(err);
+            }
+
+            const readOptions = {
+                buffer: Buffer.alloc(options.fileSize),
+                offset: 0,
+                length: options.fileSize,
+                position: null
+            };
+            fs.read(fd, Buffer.alloc(options.fileSize), 0, options.fileSize, null, (err, bytesRead, buffer) => {
+                if (err) {
+                    return callback(err);
+                }
+
+                // compare the last hash in the file with the one received in the request
+                // if they are not the same, exit with error
+                const hashes = buffer.toString().trimEnd().split(endOfLine);
+                const lastHash = hashes[hashes.length - 1];
+
+                if (lastHash !== options.lastHash) {
+                    return callback(new Error("Unable to add alias: the last hash doesn't match."));
+                }
+
+                fs.write(fd, hash + endOfLine, options.fileSize, (err) => {
+                    if (err) {
+                        return callback(err);
+                    }
+
+                    fs.close(fd, callback);
+                });
+            });
+        });
+    },
+
     __streamToString: function (readStream, callback) {
         let str = '';
         readStream.on("data", (chunk) => {

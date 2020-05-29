@@ -19,7 +19,7 @@ function AnchoringService(server) {
     }
 
     function attachHashToAlias(req, res) {
-        $$.flow.start("AnchorsManager").addAlias(req.params.fileId, req, (err, result) => {
+        $$.flow.start("AnchorsManager").addAlias(req.params.fileId, req.params.lastHash, req, (err, result) => {
             res.statusCode = 201;
             if (err) {
                 res.statusCode = 500;
@@ -45,6 +45,7 @@ function AnchoringService(server) {
     }
 
     server.use(`${URL_PREFIX}/*`, setHeaders);
+    server.post(`${URL_PREFIX}/attachHashToAlias/:fileId/:lastHash`, attachHashToAlias);
     server.post(`${URL_PREFIX}/attachHashToAlias/:fileId`, attachHashToAlias);
     server.get(`${URL_PREFIX}/getVersions/:alias`, getVersions);
 }
