@@ -100,7 +100,7 @@ $$.flow.describe("AnchorsManager", {
 
                 if (lastHash !== options.lastHash) {
                     return callback({
-                        code: ALIAS_OUT_OF_SYNC_ERROR,
+                        code: ALIAS_SYNC_ERR_CODE,
                         message: "Unable to add alias: versions out of sync."
                     });
                 }
