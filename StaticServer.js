@@ -166,7 +166,9 @@ function StaticServer(server) {
                     return;
                 }
                 if (stats.isDirectory()) {
-					let url = new URL(req.url, `http://${req.headers.host}`);
+
+					let protocol = req.socket.encrypted ? "https" : "http";
+					let url = new URL(req.url, `${protocol}://${req.headers.host}`);
 
                     if (url.pathname[url.pathname.length - 1] !== "/") {
                         res.writeHead(302, {
