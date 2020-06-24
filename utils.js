@@ -1,3 +1,18 @@
+function readStringFromStream(stream, callback){
+    let data = "";
+    stream.on("data", (messagePart)=>{
+        data += messagePart;
+    });
+
+    stream.on("end", ()=>{
+        callback(null, data);
+    });
+
+    stream.on("error", (err)=>{
+        callback(err);
+    });
+}
+
 function readMessageBufferFromHTTPStream(reqORres, callback) {
     const contentType = reqORres.headers['content-type'];
 
@@ -70,5 +85,6 @@ function getServerConfig() {
 
 module.exports = {
     readMessageBufferFromHTTPStream,
+    readStringFromStream,
     getServerConfig
 };

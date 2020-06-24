@@ -8,6 +8,7 @@ const SwarmPacker = require("swarmutils").SwarmPacker;
 
 function ChannelsManager(server){
     const utils = require("./utils");
+    const readBody = utils.readStringFromStream;
     const config = utils.getServerConfig();
     const channelKeyFileName = "channel_key";
 
@@ -102,21 +103,6 @@ function ChannelsManager(server){
                     callback(err, ...args);
                 });
             }
-        });
-    }
-
-    function readBody(req, callback){
-        let data = "";
-        req.on("data", (messagePart)=>{
-            data += messagePart;
-        });
-
-        req.on("end", ()=>{
-            callback(null, data);
-        });
-
-        req.on("error", (err)=>{
-            callback(err);
         });
     }
 

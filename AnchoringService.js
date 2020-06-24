@@ -1,10 +1,23 @@
 const URL_PREFIX = "/anchoring";
 const anchorsStorage = "anchors";
+
 function AnchoringService(server) {
     const path = require("path");
+    const fs = require("fs");
+
     const AnchorsManager = require("./libs/flows/AnchorsManager");
+    const readBody = require("./utils").readStringFromStream;
 
     let storageFolder = path.join(server.rootFolder, anchorsStorage);
+
+    let storageNotAccessible = false;
+    try{
+        fs.mkdirSync(storageFolder, {recursive: true});
+    }catch(err){
+        storageNotAccessible = true;
+    }
+
+
     $$.flow.start("AnchorsManager").init(storageFolder);
 
     function setHeaders(req, res, next) {
@@ -48,7 +61,134 @@ function AnchoringService(server) {
         });
     }
 
-    server.use(`${URL_PREFIX}/*`, setHeaders);
+    function publishHandler(req, res){
+        const channelIdentifier = req.params.channelsIdentifier;
+        const lastMessage = req.params.lastMessage;
+
+        readBody(req, function(err, newAnchor){
+            if(newAnchor === ""){
+                //no anchor found in body
+                res.statusCode = 428;
+                return res.send("");
+            }
+
+            readChannel(channelIdentifier, function(err, anchors){
+                if(err && typeof lastMessage === "undefined"){
+                    // this is a new anchor
+                    return publishToChannel(channelIdentifier, newAnchor, function(err){
+                        if(err){
+                            res.statusCode = 500;
+                            return res.send();
+                        }
+                        res.statusCode = 201;
+                        res.send();
+                    });
+                }
+
+                if(lastMessage !== anchors.pop()){
+                    res.statusCode = 403;
+                    return res.send();
+                }
+
+                return publishToChannel(channelIdentifier, newAnchor, function(err){
+                    if(err){
+                        res.statusCode = 500;
+                        return res.send();
+                    }
+                    res.statusCode = 201;
+                    res.send();
+                });
+            });
+        });
+    }
+
+    function readChannel(name, callback){
+        const fs = require("fs");
+        const path = require("path");
+
+        fs.readFile(path.join(storageFolder, name), callback);
+    }
+
+    function publishToChannel(name, message, callback){
+        const fs = require("fs");
+        const path = require("path");
+
+        fs.appendFile(path.join(storageFolder, name), message, function(err){
+            if(typeof err === "undefined"){
+                //if everything went ok then try to resolve pending requests for that channel
+                tryToResolvePendingRequests(name, message);
+            }
+            return callback(err);
+        });
+    }
+
+    function tryToResolvePendingRequests(channelIdentifier, message){
+        let pending = pendingRequests[channelIdentifier];
+        if(typeof  pending === "undefined" || pending.length === 0){
+            // no pending requests
+            return;
+        }
+
+        for(let i=0; i<pending.length; i++){
+            let requestPair = pending[i];
+            try{
+                requestPair.res.statusCode = 200;
+                requestPair.res.send(message);
+            }catch(err){
+                // a pending request can already be resolved as timeout
+            }
+        }
+    }
+
+    let pendingRequests = {};
+    function readHandler(req, res){
+        const channelIdentifier = req.params.channelsIdentifier;
+        const lastMessageKnown = req.params.lastMessage;
+
+        readChannel(channelIdentifier, function(err, anchors){
+            if(err){
+                if(err.code === "EPERM"){
+                    res.statusCode = 500;
+                }else{
+                    res.statusCode = 404;
+                }
+                return res.send();
+            }
+            let knownIndex = anchors.indexOf(lastMessageKnown);
+            if(knownIndex !== -1){
+                anchors = anchors.slice(knownIndex+1);
+            }
+            if(anchors.length === 0){
+                if(typeof pendingRequests[channelIdentifier] === "undefined"){
+                    pendingRequests[channelIdentifier] = [];
+                }
+                pendingRequests[channelIdentifier].push({req, res});
+            }else{
+                res.statusCode = 200;
+                return res.send(anchors);
+            }
+        });
+    }
+
+    function storageNotAccessibleHandler(req, res, next){
+        if(storageNotAccessible){
+            res.statusCode = 500;
+            return res.send("");
+        }
+        next();
+    }
+
+    //don't need to have this middleware registration because is resolved in psk-webserver/index.js already
+    //server.use(`${URL_PREFIX}/*`, setHeaders);
+
+    //new API
+    server.use(`${URL_PREFIX}/*`, storageNotAccessibleHandler);
+    //we need this handler (without lastMessage) to catch request for new anchors
+    server.post(`${URL_PREFIX}/publish/:channelIdentifier/`, publishHandler);
+    server.post(`${URL_PREFIX}/publish/:channelIdentifier/:lastMessage`, publishHandler);
+    server.get(`${URL_PREFIX}/read/:channelIdentifier`, readHandler);
+
+    //to become obsolete soon
     server.post(`${URL_PREFIX}/attachHashToAlias/:fileId/:lastHash`, attachHashToAlias);
     server.post(`${URL_PREFIX}/attachHashToAlias/:fileId`, attachHashToAlias);
     server.get(`${URL_PREFIX}/getVersions/:alias`, getVersions);
