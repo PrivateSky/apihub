@@ -106,7 +106,13 @@ function AnchoringService(server) {
         const fs = require("fs");
         const path = require("path");
 
-        fs.readFile(path.join(storageFolder, name), callback);
+        fs.readFile(path.join(storageFolder, name), function(err, content){
+            let anchors;
+            if(!err){
+                anchors = content.split("\m");
+            }
+            callback(err, anchors);
+        });
     }
 
     function publishToChannel(name, message, callback){
