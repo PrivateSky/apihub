@@ -17,14 +17,23 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	const conf = utils.getServerConfig();
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
-	server.listen(port, conf.host, (err) => {
-		if(err){
-			console.log(err);
-			if(callback){
-				callback(err);
+	const http = require("http");
+	let protocol = "http:";
+	if (typeof sslConfig !== "undefined") {
+		protocol = "https:";
+	}
+	http.request({port, protocol}, (res) => {
+		throw Error(`Another server uses the port ${port}.`)
+	}).on("error", (err => {
+		server.listen(port, conf.host, (err) => {
+			if (err) {
+				console.log(err);
+				if (callback) {
+					callback(err);
+				}
 			}
-		}
-	});
+		});
+	}));
 
 	server.on('listening', bindFinished);
 	server.on('error', bindErrorHandler);
