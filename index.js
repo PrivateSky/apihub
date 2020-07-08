@@ -37,11 +37,11 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	server.on('error', bindErrorHandler);
 
 	function checkPortInUse(port, sslConfig, callback){
-		let http = require("http");
+		let commType = "http";
 		if (typeof sslConfig !== "undefined") {
-			http = require("https");
+			commType += 's';
 		}
-		http.request({port}, (res) => {
+		require(commType).request({port}, (res) => {
 			callback(undefined, true);
 		}).on("error", (err) => {
 			callback(undefined, false);
