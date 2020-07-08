@@ -17,13 +17,12 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	const conf = utils.getServerConfig();
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
-	let http = require("http");
-	if (typeof sslConfig !== "undefined" || sslConfig === '') {
-		http = require("https");
-	}
-	http.request({port}, (res) => {
-		throw Error(`Another server uses the port ${port}.`)
-	}).on("error", (err => {
+
+	checkPortInUse(port, sslConfig, (err, status) => {
+		if (status === true) {
+			throw Error(`Port ${port} is used by another server.`);
+		}
+
 		server.listen(port, conf.host, (err) => {
 			if (err) {
 				console.log(err);
@@ -32,10 +31,22 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 				}
 			}
 		});
-	}));
+	});
 
 	server.on('listening', bindFinished);
 	server.on('error', bindErrorHandler);
+
+	function checkPortInUse(port, sslConfig, callback){
+		let http = require("http");
+		if (typeof sslConfig !== "undefined") {
+			http = require("https");
+		}
+		http.request({port}, (res) => {
+			callback(undefined, true);
+		}).on("error", (err) => {
+			callback(undefined, false);
+		});
+	}
 
 	function bindErrorHandler(error) {
 		if (error.code === 'EADDRINUSE') {
