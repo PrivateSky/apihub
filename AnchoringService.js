@@ -184,7 +184,7 @@ function AnchoringService(server) {
         next();
     }
 
-    //don't need to have this middleware registration because is resolved in psk-webserver/index.js already
+    //don't need to have this middleware registration because is resolved in psk-apihub/index.js already
     //server.use(`${URL_PREFIX}/*`, setHeaders);
 
     //new API
