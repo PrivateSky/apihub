@@ -5,7 +5,7 @@ const START_TOKENS = 6000000;
 //next require lines are only for browserify build purpose
 require("./ChannelsManager.js");
 require("./FilesManager.js");
-require("./AnchoringService.js");
+require("../edfs-middleware/lib/AnchoringMiddleware.js");
 require("./StaticServer.js");
 //end
 
@@ -121,15 +121,21 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 			const middlewareList = conf.activeEndpoints;
 			const path = require("path");
 			middlewareList.forEach(middleware => {
-				const middlewareConfig = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);
+				const middlewareConfigName = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);
+				const middlewareConfig = conf.endpointsConfig[middlewareConfigName];
 				let middlewarePath;
-				if (middlewareConfig) {
-					middlewarePath = conf.endpointsConfig[middlewareConfig].path;
+				if (middlewareConfigName) {
+					middlewarePath = middlewareConfig.path;
 					if (middlewarePath.startsWith(".") && conf.defaultEndpoints.indexOf(middleware) === -1) {
 						middlewarePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath);
 					}
 					console.log(`Preparing to register middleware from path ${middlewarePath}`);
-					require(middlewarePath)(server);
+					let middlewareImplementation = require(middlewarePath);
+					if (typeof middlewareConfig.handler !== "undefined") {
+						middlewareImplementation[middlewareConfig.handler](server);
+					}else{
+						middlewareImplementation(server);
+					}
 				}
 			})
 

@@ -22,13 +22,15 @@ function ServerConfig(conf) {
                 "path": "dossier-wizard"
             },
             "edfs": {
-                "path": "edfs-middleware"
+                "path": "edfs-middleware",
+                "handler": "BrickStorageMiddleware"
             },
             "filesManager": {
                 "path": "./FilesManager.js"
             },
             "anchoring": {
-                "path": "./AnchoringService.js"
+                "path": "edfs-middleware",
+                "handler": "AnchoringMiddleware"
             },
             "staticServer": {
                 "path": "./StaticServer.js"
