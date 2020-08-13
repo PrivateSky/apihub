@@ -7,8 +7,17 @@ function ServerConfig(conf) {
         "host": "0.0.0.0",
         "zeromqForwardAddress": "tcp://127.0.0.1:5001",
         "preventRateLimit": false,
-        "activeEndpoints": ["virtualMQ", "filesManager", "anchoring", "edfs", "dossier-wizard", "staticServer"],
+        "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "anchoring", "edfs", "dossier-wizard", "staticServer"],
         "endpointsConfig": {
+            "messaging":{
+                path: "./libs/MQManager.js",
+                workingDirPath:"./messaging",
+                storageDirPath:"./messaging/storage"
+            },
+            "notifications":{
+                path: "./libs/KeySSINotificationsManager.js",
+                workingDirPath:"./notifications"
+            },
             "virtualMQ": {
                 "path": "./ChannelsManager.js",
                 "channelsFolderName": "channels",

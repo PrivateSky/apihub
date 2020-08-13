@@ -2,6 +2,10 @@ function MQManager(server){
 
 	let notificationManager;
 	const utils = require("./../utils");
+	const config = utils.getServerConfig();
+	const workingDirPath = config.endpointsConfig.messaging.workingDirPath;
+	const storageDirPath = config.endpointsConfig.messaging.storageDirPath;
+
 	const readBody = utils.readStringFromStream;
 
 	function sendStatus(res, reasonCode){
@@ -11,7 +15,7 @@ function MQManager(server){
 
 	function createChannel(req, res){
 		let anchorId = req.params.anchorId;
-		let SSI = req.getHeader('ssi');
+		let SSI = req.headers['ssi'];
 		if(typeof SSI === "undefined" || typeof anchorId === "undefined"){
 			return sendStatus(res, 400);
 		}

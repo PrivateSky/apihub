@@ -7,6 +7,8 @@ require("./ChannelsManager.js");
 require("./FilesManager.js");
 require("../edfs-middleware/lib/AnchoringMiddleware.js");
 require("./StaticServer.js");
+require("./libs/MQManager.js");
+require("./libs/KeySSINotificationsManager.js");
 //end
 
 function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {

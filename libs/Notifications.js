@@ -145,9 +145,11 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 			return callback(err);
 		}
 
-		for(let i=0; i<state.queues.length; i++){
-			let queueName = state.queues[i];
-			createQueue(queueName, state.timeouts[queueName]);
+		if(typeof state !== "undefined"){
+			for(let i=0; i<state.queues.length; i++){
+				let queueName = state.queues[i];
+				createQueue(queueName, state.timeouts[queueName]);
+			}
 		}
 
 		callback(undefined, state);
@@ -180,6 +182,11 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 			//if it's the first time we need to ensure that the storage folder exists
 			fs.mkdirSync(storageFolderPath, {recursive: true});
 
+			//if is our first boot using a specific folder there is no state to be loaded
+			if(typeof state === "undefined"){
+				return callback();
+			}
+
 			for(let i=0; i<state.queues.length; i++){
 				let queueName = state.queues[i];
 				let queueStoragePath = path.join(storageFolderPath, queueName);
@@ -205,9 +212,13 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 
 module.exports = {
 	getManagerInstance: function(workingFolderPath, storageFolderPath, callback){
-		 let manager = new NotificationsManager(workingFolderPath, storageFolderPath);
-		 manager.initialize((err)=>{
+		if(typeof storageFolderPath === "function"){
+			callback = storageFolderPath;
+			storageFolderPath = undefined;
+		}
+		let manager = new NotificationsManager(workingFolderPath, storageFolderPath);
+		manager.initialize((err)=>{
 			callback(err, manager);
-		 });
+		});
 	}
 };
