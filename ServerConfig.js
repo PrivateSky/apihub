@@ -68,10 +68,6 @@ const defaultConfig = {
                     "function": "commandsMock2"
                 }
             }
-        },
-        // TODO: Remove mock
-        "mock": {
-            "module": './commands.mock.js'
         }
     }
 };
