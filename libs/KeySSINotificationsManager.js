@@ -19,18 +19,31 @@ function KeySSINotificationsManager(server){
 			if (err) {
 				return sendStatus(res, 400);
 			}
-			notificationManager.sendMessage(anchorId, message, function(err, counter){
-				if(err){
-					return sendStatus(res, 500);
+
+			notificationManager.createQueue(anchorId, function(err) {
+				if (err) {
+					if (err.statusCode) {
+						if (err.statusCode !== 409) {
+							return sendStatus(res, err.statusCode);
+						}
+					} else {
+						return sendStatus(res, 500);
+					}
 				}
 
-				if(counter > 0){
-					res.write(`Message delivered to ${counter} subscribers.`);
-				}else{
-					res.write(`Message was added to queue and will be delivered later.`);
-				}
+				notificationManager.sendMessage(anchorId, message, function(err, counter){
+					if(err){
+						return sendStatus(res, 500);
+					}
 
-				return sendStatus(res, 200);
+					if(counter > 0){
+						res.write(`Message delivered to ${counter} subscribers.`);
+					}else{
+						res.write(`Message was added to queue and will be delivered later.`);
+					}
+
+					return sendStatus(res, 200);
+				});
 			});
 		});
 	}
