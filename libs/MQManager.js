@@ -1,11 +1,12 @@
 function MQManager(server) {
 
 	let notificationManager;
-	const { serverConfig: serverConfigUtils } = require('./utils');
+	const utils = require("./../utils");
+    const readBody = utils.streams.readStringFromStream;
+    const serverConfigUtils = utils.serverConfig;
 	const workingDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
 	const storageDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'storageDirPath');
 
-	const readBody = utils.readStringFromStream;
 
 	function sendStatus(res, reasonCode) {
 		res.statusCode = reasonCode;

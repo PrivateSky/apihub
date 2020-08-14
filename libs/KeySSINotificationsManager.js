@@ -1,25 +1,25 @@
-function KeySSINotificationsManager(server){
+function KeySSINotificationsManager(server) {
 
 	let notificationManager;
-	const { serverConfig: serverConfigUtils } = require('./utils');
+	const utils = require("./../utils");
+	const readBody = utils.streams.readStringFromStream;
+	const serverConfigUtils = utils.serverConfig;
 	const workingDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
 
-	const readBody = utils.readStringFromStream;
-
-	function sendStatus(res, reasonCode){
+	function sendStatus(res, reasonCode) {
 		res.statusCode = reasonCode;
 		res.end();
 	}
 
-	function publish(req, res){
+	function publish(req, res) {
 		let anchorId = req.params.anchorId;
 
-		readBody(req, (err, message)=> {
+		readBody(req, (err, message) => {
 			if (err) {
 				return sendStatus(res, 400);
 			}
 
-			notificationManager.createQueue(anchorId, function(err) {
+			notificationManager.createQueue(anchorId, function (err) {
 				if (err) {
 					if (err.statusCode) {
 						if (err.statusCode !== 409) {
@@ -30,14 +30,14 @@ function KeySSINotificationsManager(server){
 					}
 				}
 
-				notificationManager.sendMessage(anchorId, message, function(err, counter){
-					if(err){
+				notificationManager.sendMessage(anchorId, message, function (err, counter) {
+					if (err) {
 						return sendStatus(res, 500);
 					}
 
-					if(counter > 0){
+					if (counter > 0) {
 						res.write(`Message delivered to ${counter} subscribers.`);
-					}else{
+					} else {
 						res.write(`Message was added to queue and will be delivered later.`);
 					}
 
@@ -47,32 +47,32 @@ function KeySSINotificationsManager(server){
 		});
 	}
 
-	function subscribe(req, res){
+	function subscribe(req, res) {
 		let anchorId = req.params.anchorId;
 
-		notificationManager.createQueue(anchorId, function(err){
-			if(err){
-				if(err.statusCode){
-					if(err.statusCode !== 409){
+		notificationManager.createQueue(anchorId, function (err) {
+			if (err) {
+				if (err.statusCode) {
+					if (err.statusCode !== 409) {
 						return sendStatus(res, err.statusCode);
 					}
-				}else{
+				} else {
 					return sendStatus(res, 500);
 				}
 			}
 
-			notificationManager.readMessage(anchorId, function(err, message){
-				try{
-					if(err){
-						if(err.statusCode){
+			notificationManager.readMessage(anchorId, function (err, message) {
+				try {
+					if (err) {
+						if (err.statusCode) {
 							return sendStatus(res, err.statusCode);
-						}else{
+						} else {
 							return sendStatus(res, 500);
 						}
 					}
 					res.write(message);
 					sendStatus(res, 200);
-				}catch(err){
+				} catch (err) {
 					//here we expect to get errors when a connection has reached timeout
 					console.log(err);
 				}
@@ -80,13 +80,13 @@ function KeySSINotificationsManager(server){
 		});
 	}
 
-	function unsubscribe(req, res){
+	function unsubscribe(req, res) {
 		//to be implemented later
 		sendStatus(res, 503);
 	}
 
-	require("./Notifications").getManagerInstance(workingDirPath, function(err, instance){
-		if(err){
+	require("./Notifications").getManagerInstance(workingDirPath, function (err, instance) {
+		if (err) {
 			return console.log(err);
 		}
 

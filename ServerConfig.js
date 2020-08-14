@@ -12,13 +12,13 @@ const defaultConfig = {
     "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "worldStateManagerStrategy", "brickFabricStorage", "mock", "anchoring", "edfs", "dossier-wizard", "staticServer"],
     "endpointsConfig": {
         "messaging": {
-            path: "./libs/MQManager.js",
-            workingDirPath: "./messaging",
-            storageDirPath: "./messaging/storage"
+            "module": "./libs/MQManager.js",
+            "workingDirPath": "./messaging",
+            "storageDirPath": "./messaging/storage"
         },
         "notifications": {
-            path: "./libs/KeySSINotificationsManager.js",
-            workingDirPath: "./notifications"
+            "module": "./libs/KeySSINotificationsManager.js",
+            "workingDirPath": "./notifications"
         },
         "virtualMQ": {
             "module": "./ChannelsManager.js",
@@ -48,6 +48,7 @@ const defaultConfig = {
         },
         "worldStateManagerStrategy": {
             "module": "./WorldStateManagerStrategy.js",
+            "brickStorage": "http://localhost:8080/bricks",
             "commands": {
                 "testurl": {
                     "url": "http://localhost:8080/test",

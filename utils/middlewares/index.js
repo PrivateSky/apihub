@@ -13,7 +13,7 @@ function requestBodyJSONMiddleware(request, response, next) {
     });
 
     request.on('end', () => {
-        request.body = JSON.parse(data);
+        request.body = data.length ? JSON.parse(data) : {};
         next();
     });
 }

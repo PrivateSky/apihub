@@ -2,9 +2,10 @@
 require('./commands.mock2.js');
 
 function WorldStateManagerStrategy(server) {
-	const { serverConfig: serverConfigUtils, makeRequest } = require('./utils');
+	const { serverConfig: serverConfigUtils } = require('./utils');
+	const { makeRequest } = require('./utils').requests;
 	const { responseModifierMiddleware, requestBodyJSONMiddleware } = require('./utils/middlewares');
-
+	const BrickFabricStorage = require('./BrickFabricStorage')
 
 	async function commandDispatcher(request, response, next) {
 		const command = serverConfigUtils.getConfig('endpointsConfig', 'worldStateManagerStrategy', 'commands', request.params.commandType);
@@ -16,10 +17,10 @@ function WorldStateManagerStrategy(server) {
 		let commandResponse;
 
 		if (command.url) {
-			const URL = new URL(command.url);
+			const myURL = new URL(command.url);
 			const options = {
-				hostname: URL.host,
-				path: URL.pathname,
+				hostname: myURL.host,
+				path: myURL.pathname,
 				method: 'POST'
 			};
 
@@ -41,31 +42,12 @@ function WorldStateManagerStrategy(server) {
 
 		response.send(commandResponse.statusCode, commandResponse.body);
 
-		return commandToBrick(request.params.commandType, request.body, commandResponse, next);
+		return BrickFabricStorage(request.params.commandType, request.body, next);
 	}
 
 	server.put('/command/:commandType', responseModifierMiddleware);
 	server.put('/command/:commandType', requestBodyJSONMiddleware);
 	server.put('/command/:commandType', commandDispatcher);
-}
-
-function commandToBrick(commandType, requestBody, commandResponse, callback) {
-	console.log('====');
-	console.log(commandType, requestBody, commandResponse);
-	callback();
-
-	// command json is the body of the request
-	// bfs => {get n commands and PUT a brick}
-	// if genesis generate an initial brick -> all bricks refer to the previous bricks (store previous brick reference)
-	// brick storage/ get -> if valid ok (previous) if not genesis
-
-	// fs.appendFile('temp-brickstorage.json', JSON.stringify({commandType, requestBody, commandResponse}), function (err) {
-	// 	if (err) {
-	// 		return callback();
-	// 	};
-	// 	callback();
-	// });
-
 }
 
 function invalidCommand(command) {
