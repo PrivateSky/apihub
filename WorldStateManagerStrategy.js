@@ -17,14 +17,9 @@ function WorldStateManagerStrategy(server) {
 		let commandResponse;
 
 		if (command.url) {
-			const myURL = new URL(command.url);
-			const options = {
-				hostname: myURL.host,
-				path: myURL.pathname,
-				method: 'POST'
-			};
-
-			commandResponse = await makeRequest(options, request.body);
+			commandResponse = await makeRequest(command.url, 'POST', request.body).catch((err) => {
+				return response.send(err.statusCode || 400, err.body || 'Bad request', () => response.end())
+			});
 		} else if (command.module) {
 			let module;
 

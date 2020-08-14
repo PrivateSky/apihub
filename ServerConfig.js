@@ -48,7 +48,10 @@ const defaultConfig = {
         },
         "worldStateManagerStrategy": {
             "module": "./WorldStateManagerStrategy.js",
-            "brickStorage": "http://localhost:8080/bricks",
+            "brickFabric": {
+                "url": "http://localhost:8080/bricks",
+                "size": 2
+            },
             "commands": {
                 "testurl": {
                     "url": "http://localhost:8080/test",
