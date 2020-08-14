@@ -1,9 +1,8 @@
 function KeySSINotificationsManager(server){
 
 	let notificationManager;
-	const utils = require("./../utils");
-	const config = utils.getServerConfig();
-	const workingDirPath = config.endpointsConfig.notifications.workingDirPath;
+	const { serverConfig: serverConfigUtils } = require('./utils');
+	const workingDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
 
 	const readBody = utils.readStringFromStream;
 

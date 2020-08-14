@@ -1,9 +1,9 @@
-const Middleware = require('./Middleware');
+const MiddlewareRegistry = require('./MiddlewareRegistry');
 const http = require('http');
 const https = require('https');
 
 function Server(sslOptions) {
-    const middleware = new Middleware();
+    const middleware = new MiddlewareRegistry();
     const server = _initServer(sslOptions);
 
 

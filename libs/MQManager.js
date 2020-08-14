@@ -1,31 +1,30 @@
-function MQManager(server){
+function MQManager(server) {
 
 	let notificationManager;
-	const utils = require("./../utils");
-	const config = utils.getServerConfig();
-	const workingDirPath = config.endpointsConfig.messaging.workingDirPath;
-	const storageDirPath = config.endpointsConfig.messaging.storageDirPath;
+	const { serverConfig: serverConfigUtils } = require('./utils');
+	const workingDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
+	const storageDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'storageDirPath');
 
 	const readBody = utils.readStringFromStream;
 
-	function sendStatus(res, reasonCode){
+	function sendStatus(res, reasonCode) {
 		res.statusCode = reasonCode;
 		res.end();
 	}
 
-	function createChannel(req, res){
+	function createChannel(req, res) {
 		let anchorId = req.params.anchorId;
 		let SSI = req.headers['ssi'];
-		if(typeof SSI === "undefined" || typeof anchorId === "undefined"){
+		if (typeof SSI === "undefined" || typeof anchorId === "undefined") {
 			return sendStatus(res, 400);
 		}
 
-		notificationManager.createQueue(anchorId, function(err){
-			if(err){
-				if(err.statusCode){
+		notificationManager.createQueue(anchorId, function (err) {
+			if (err) {
+				if (err.statusCode) {
 					res.write(err.message);
 					return sendStatus(res, err.statusCode);
-				}else{
+				} else {
 					return sendStatus(res, 500);
 				}
 			}
@@ -36,23 +35,23 @@ function MQManager(server){
 		});
 	}
 
-	function sendMessage(req, res){
+	function sendMessage(req, res) {
 		let anchorId = req.params.anchorId;
-		if(typeof anchorId === "undefined"){
+		if (typeof anchorId === "undefined") {
 			return sendStatus(res, 400);
 		}
-		readBody(req, (err, message)=> {
+		readBody(req, (err, message) => {
 			if (err) {
 				return sendStatus(res, 400);
 			}
-			notificationManager.sendMessage(anchorId, message, function(err, counter){
-				if(err){
+			notificationManager.sendMessage(anchorId, message, function (err, counter) {
+				if (err) {
 					return sendStatus(res, 500);
 				}
 
-				if(counter > 0){
+				if (counter > 0) {
 					res.write(`Message delivered to ${counter} subscribers.`);
-				}else{
+				} else {
 					res.write(`Message was added to queue and will be delivered later.`);
 				}
 
@@ -61,34 +60,34 @@ function MQManager(server){
 		});
 	}
 
-	function receiveMessage(req, res){
+	function receiveMessage(req, res) {
 		let anchorId = req.params.anchorId;
-		if(typeof anchorId === "undefined"){
+		if (typeof anchorId === "undefined") {
 			return sendStatus(res, 400);
 		}
 
 		//check tokens before delivering a message
 
-		notificationManager.readMessage(anchorId, function(err, message){
-			try{
-				if(err){
-					if(err.statusCode){
+		notificationManager.readMessage(anchorId, function (err, message) {
+			try {
+				if (err) {
+					if (err.statusCode) {
 						return sendStatus(res, err.statusCode);
-					}else{
+					} else {
 						return sendStatus(res, 500);
 					}
 				}
 				res.write(message);
 				sendStatus(res, 200);
-			}catch(err){
+			} catch (err) {
 				//here we expect to get errors when a connection has reached timeout
 				console.log(err);
 			}
 		});
 	}
 
-	require("./Notifications").getManagerInstance(workingDirPath, storageDirPath, function(err, instance){
-		if(err){
+	require("./Notifications").getManagerInstance(workingDirPath, storageDirPath, function (err, instance) {
+		if (err) {
 			return console.log(err);
 		}
 

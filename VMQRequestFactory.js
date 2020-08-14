@@ -64,7 +64,7 @@ function RequestFactory(virtualMQAddress, zeroMQAddress) {
         };
 
         const req = http.request(virtualMQAddress, options, function (res) {
-            const utils = require("./utils");
+            const utils = require("./utils").streams;
             utils.readMessageBufferFromStream(res, function (err, message) {
 
                 callback(err, res, (message && Buffer.isBuffer(message)) ? SwarmPacker.unpack(message.buffer) : message);

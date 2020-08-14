@@ -1,8 +1,8 @@
 function FilesManager(server) {
 	const fs = require('fs');
 	const path = require('path');
-	const utils = require("./utils");
-	const serverConf = utils.getServerConfig();
+	const { serverConfig: serverConfigUtils } = require('./utils');
+
 	//folder can be userId/tripId/...
 
 	function uploadFile(req, res) {
@@ -46,14 +46,18 @@ function FilesManager(server) {
 		}
 
 		const folder = Buffer.from(req.params.folder, 'base64').toString().replace('\n', '');
+		
 		if (folder.includes('..')) {
 			return callback('err');
 		}
+
 		let filename = guid();
+
 		if (filename.split('.').length > 1) {
 			return callback('err');
 		}
-		const completeFolderPath = path.join(serverConf.storage, folder);
+
+		const completeFolderPath = path.join(serverConfigUtils.getConfig('storage'), folder);
 
 		const contentType = req.headers['content-type'].split('/');
 
@@ -62,16 +66,18 @@ function FilesManager(server) {
 		} else {
 			return callback('err');
 		}
+
 		try {
-			fs.mkdirSync(completeFolderPath, {recursive: true});
+			fs.mkdirSync(completeFolderPath, { recursive: true });
 		} catch (e) {
 			return callback(e);
 		}
+
 		const writeStream = fs.createWriteStream(path.join(completeFolderPath, filename));
 
 		writeStream.on('finish', () => {
 			writeStream.close();
-			return callback(null, {'path': path.posix.join(folder, filename)});
+			return callback(null, { 'path': path.posix.join(folder, filename) });
 		});
 
 		writeStream.on('error', (err) => {
@@ -87,12 +93,14 @@ function FilesManager(server) {
 			callback(new Error("Something wrong happened"));
 			return;
 		}
+		
 		const folder = Buffer.from(req.params.filepath, 'base64').toString().replace('\n', '');
-
-		const completeFolderPath = path.join(serverConf.storage, folder);
+		const completeFolderPath = path.join(serverConfigUtils.getConfig('storage'), folder);
+		
 		if (folder.includes('..')) {
 			return callback(new Error("invalidPath"));
 		}
+
 		if (fs.existsSync(completeFolderPath)) {
 			const fileToSend = fs.createReadStream(completeFolderPath);
 			res.setHeader('Content-Type', `image/${folder.split('.')[1]}`);

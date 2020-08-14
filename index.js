@@ -3,20 +3,23 @@ const Server = httpWrapper.Server;
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
 //next require lines are only for browserify build purpose
+// Remove mock
+require("./commands.mock.js");
 require("./ChannelsManager.js");
 require("./FilesManager.js");
-require("../edfs-middleware/lib/AnchoringMiddleware.js");
+require("./WorldStateManagerStrategy.js");
+require("./../edfs-middleware/lib/AnchoringMiddleware.js")
 require("./StaticServer.js");
 require("./libs/MQManager.js");
 require("./libs/KeySSINotificationsManager.js");
 //end
 
-function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
+function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	const port = listeningPort || 8080;
 	const tokenBucket = new TokenBucket(START_TOKENS, 1, 10);
 
-	const utils = require("./utils");
-	const conf = utils.getServerConfig();
+	const serverConfigUtils = require("./utils").serverConfig;
+	const conf = serverConfigUtils.getConfig();
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
 
@@ -38,12 +41,12 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	server.on('listening', bindFinished);
 	server.on('error', bindErrorHandler);
 
-	function checkPortInUse(port, sslConfig, callback){
+	function checkPortInUse(port, sslConfig, callback) {
 		let commType = "http";
 		if (typeof sslConfig !== "undefined") {
 			commType += 's';
 		}
-		require(commType).request({port}, (res) => {
+		require(commType).request({ port }, (res) => {
 			callback(undefined, true);
 		}).on("error", (err) => {
 			callback(undefined, false);
@@ -53,15 +56,15 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	function bindErrorHandler(error) {
 		if (error.code === 'EADDRINUSE') {
 			server.close();
-			if(callback){
+			if (callback) {
 				return callback(error);
 			}
 			throw error;
 		}
 	}
 
-	function bindFinished(err){
-		if(err) {
+	function bindFinished(err) {
+		if (err) {
 			console.log(err);
 			if (callback) {
 				callback(err);
@@ -81,14 +84,14 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 			next();
 		});
 
-		if(conf.preventRateLimit !== true){
+		if (conf.preventRateLimit !== true) {
 			server.use(function (req, res, next) {
 				const ip = res.socket.remoteAddress;
-				tokenBucket.takeToken(ip, tokenBucket.COST_MEDIUM, function(err, remainedTokens) {
+				tokenBucket.takeToken(ip, tokenBucket.COST_MEDIUM, function (err, remainedTokens) {
 					res.setHeader('X-RateLimit-Limit', tokenBucket.getLimitByCost(tokenBucket.COST_MEDIUM));
 					res.setHeader('X-RateLimit-Remaining', tokenBucket.getRemainingTokenByCost(remainedTokens, tokenBucket.COST_MEDIUM));
 
-					if(err) {
+					if (err) {
 						if (err === TokenBucket.ERROR_LIMIT_EXCEEDED) {
 							res.statusCode = 429;
 						} else {
@@ -102,7 +105,7 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 					next();
 				});
 			});
-		}else{
+		} else {
 			console.log("Rate limit mechanism disabled!");
 		}
 
@@ -119,7 +122,7 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 			res.end();
 		});
 
-		function addMiddlewares(){
+		function addMiddlewares() {
 			const middlewareList = conf.activeEndpoints;
 			const path = require("path");
 			middlewareList.forEach(middleware => {
@@ -127,15 +130,16 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 				const middlewareConfig = conf.endpointsConfig[middlewareConfigName];
 				let middlewarePath;
 				if (middlewareConfigName) {
-					middlewarePath = middlewareConfig.path;
+					middlewarePath = middlewareConfig.module;
+					console.log(middlewareConfig, middlewarePath)
 					if (middlewarePath.startsWith(".") && conf.defaultEndpoints.indexOf(middleware) === -1) {
 						middlewarePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath);
 					}
 					console.log(`Preparing to register middleware from path ${middlewarePath}`);
 					let middlewareImplementation = require(middlewarePath);
-					if (typeof middlewareConfig.handler !== "undefined") {
-						middlewareImplementation[middlewareConfig.handler](server);
-					}else{
+					if (typeof middlewareConfig.function !== "undefined") {
+						middlewareImplementation[middlewareConfig.function](server);
+					} else {
 						middlewareImplementation(server);
 					}
 				}
@@ -144,13 +148,13 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 		}
 
 		addMiddlewares();
-		setTimeout(function(){
+		setTimeout(function () {
 			//allow other endpoints registration before registering fallback handler
 			server.use(function (req, res) {
 				res.statusCode = 404;
 				res.end();
 			});
-			if(callback){
+			if (callback) {
 				return callback();
 			}
 		}, 100);
@@ -158,26 +162,26 @@ function HttpServer({listeningPort, rootFolder, sslConfig}, callback) {
 	return server;
 }
 
-module.exports.createPskWebServer = function(port, folder, sslConfig, callback){
-	if(typeof sslConfig === 'function') {
+module.exports.createPskWebServer = function (port, folder, sslConfig, callback) {
+	if (typeof sslConfig === 'function') {
 		callback = sslConfig;
 		sslConfig = undefined;
 	}
 
-	return new HttpServer({listeningPort:port, rootFolder:folder, sslConfig}, callback);
+	return new HttpServer({ listeningPort: port, rootFolder: folder, sslConfig }, callback);
 };
 
-module.exports.getVMQRequestFactory = function(virtualMQAddress, zeroMQAddress) {
+module.exports.getVMQRequestFactory = function (virtualMQAddress, zeroMQAddress) {
 	const VMQRequestFactory = require('./VMQRequestFactory');
 
 	return new VMQRequestFactory(virtualMQAddress, zeroMQAddress);
 };
 
-module.exports.getHttpWrapper = function() {
+module.exports.getHttpWrapper = function () {
 	return require('./libs/http-wrapper');
 };
 
 module.exports.getServerConfig = function () {
-	const utils = require("./utils");
-	return utils.getServerConfig();
+	const utils = require("./utils").serverConfig;
+	return utils.getConfig();
 };
