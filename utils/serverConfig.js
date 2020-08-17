@@ -1,5 +1,5 @@
 const path = require('path');
-const defaultConfig = require('../ServerConfig');
+const defaultConfig = require('../config/server');
 
 let serverConfig;
 

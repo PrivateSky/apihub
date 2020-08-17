@@ -9,7 +9,7 @@ const defaultConfig = {
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "worldStateManagerStrategy", "brickFabricStorage", "mock", "anchoring", "edfs", "dossier-wizard", "staticServer"],
+    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "worldStateManager", "brickFabricStorage", "mock", "anchoring", "edfs", "dossier-wizard", "staticServer"],
     "endpointsConfig": {
         "messaging": {
             "module": "./libs/MQManager.js",
@@ -21,7 +21,7 @@ const defaultConfig = {
             "workingDirPath": "./notifications"
         },
         "virtualMQ": {
-            "module": "./ChannelsManager.js",
+            "module": "./components/channelManager",
             "channelsFolderName": "channels",
             "maxSize": 100,
             "tokenSize": 48,
@@ -37,17 +37,17 @@ const defaultConfig = {
             "function": "BrickStorageMiddleware"
         },
         "filesManager": {
-            "module": "./FilesManager.js"
+            "module": "./components/fileManager"
         },
         "anchoring": {
             "module": "edfs-middleware",
             "function": "AnchoringMiddleware"
         },
         "staticServer": {
-            "module": "./StaticServer.js"
+            "module": "./components/staticServer"
         },
-        "worldStateManagerStrategy": {
-            "module": "./WorldStateManagerStrategy.js",
+        "worldStateManager": {
+            "module": "./components/worldStateManager",
             "brickFabric": {
                 "url": "http://localhost:8080/bricks",
                 "size": 2

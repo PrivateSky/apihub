@@ -5,11 +5,11 @@ const START_TOKENS = 6000000;
 //next require lines are only for browserify build purpose
 // Remove mock
 require("./commands.mock.js");
-require("./ChannelsManager.js");
-require("./FilesManager.js");
-require("./WorldStateManagerStrategy.js");
+require("./components/channelManager");
+require("./components/fileManager");
+require("./components/worldStateManager");
 require("./../edfs-middleware/lib/AnchoringMiddleware.js")
-require("./StaticServer.js");
+require("./components/staticServer");
 require("./libs/MQManager.js");
 require("./libs/KeySSINotificationsManager.js");
 //end
@@ -172,7 +172,7 @@ module.exports.createPskWebServer = function (port, folder, sslConfig, callback)
 };
 
 module.exports.getVMQRequestFactory = function (virtualMQAddress, zeroMQAddress) {
-	const VMQRequestFactory = require('./VMQRequestFactory');
+	const VMQRequestFactory = require('./components/vmq/requestFactory');
 
 	return new VMQRequestFactory(virtualMQAddress, zeroMQAddress);
 };

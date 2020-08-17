@@ -262,7 +262,7 @@ const defaultMimeType = {
     name: "text/plain",
     binary: false
 };
-module.exports.getMimeTypeFromExtension = function (extension) {
+module.exports = function (extension) {
     if (typeof extensionsMimeTypes[extension] !== "undefined") {
         return extensionsMimeTypes[extension];
     }

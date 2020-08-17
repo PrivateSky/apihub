@@ -32,7 +32,6 @@ function createServer(folder, callback) {
     });
 }
 
-
 module.exports.createInfrastructureTest = function(name, time2Expire, hostname, callback){
     assert.callback(name, (finish)=>{
         doubleCheck.createTestFolder("vmq", (err, folder)=>{
@@ -48,4 +47,3 @@ module.exports.createInfrastructureTest = function(name, time2Expire, hostname, 
         });
     }, time2Expire || 10000);
 };
-

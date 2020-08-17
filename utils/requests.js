@@ -59,4 +59,4 @@ function getHeaders(data, headers) {
     return Object.assign({}, { 'Content-Type': 'application/json' }, dataString ? { 'Content-Length': dataString.length } : null, headers);
 };
 
-module.exports = { makeRequest };
+module.exports = makeRequest;

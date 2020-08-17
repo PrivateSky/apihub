@@ -1,7 +1,7 @@
 function StaticServer(server) {
     const fs = require("fs");
     const path = require("path");
-    const MimeType = require("./MimeType");
+    const utils = require("../../utils");
 
     function sendFiles(req, res, next) {
         const prefix = "/directory-summary/";
@@ -71,7 +71,7 @@ function StaticServer(server) {
                                 } else {
                                     let fileContent = fs.readFileSync(fileName);
                                     let fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
-                                    let mimeType = MimeType.getMimeTypeFromExtension(fileExtension);
+                                    let mimeType = utils.getMimeTypeFromExtension(fileExtension);
                                     if (mimeType.binary) {
                                         summary[summaryId][file] = Array.from(fileContent);
                                     } else {
@@ -106,14 +106,15 @@ function StaticServer(server) {
 
     function sendFile(res, file) {
         let stream = fs.createReadStream(file);
-        const mimes = require("./MimeType");
         let ext = path.extname(file);
+
         if (ext !== "") {
             ext = ext.replace(".", "");
-            res.setHeader('Content-Type', mimes.getMimeTypeFromExtension(ext).name);
+            res.setHeader('Content-Type', utils.getMimeTypeFromExtension(ext).name);
         } else {
             res.setHeader('Content-Type', "application/octet-stream");
         }
+
         res.statusCode = 200;
         stream.pipe(res);
         stream.on('finish', () => {
@@ -126,6 +127,7 @@ function StaticServer(server) {
             callback = urlPrefix;
             urlPrefix = undefined;
         }
+
         if (req.method !== method) {
             //we resolve only GET requests
             return callback(true);
@@ -146,9 +148,11 @@ function StaticServer(server) {
         }
         let targetPath = path.resolve(path.join(rootFolder, requestedUrlPathname));
         //if we detect tricks that tries to make us go above our rootFolder to don't resolve it!!!!
+       
         if (targetPath.indexOf(rootFolder) !== 0) {
             return callback(true);
         }
+       
         callback(false, targetPath);
     }
 
@@ -165,6 +169,7 @@ function StaticServer(server) {
                     res.end();
                     return;
                 }
+                
                 if (stats.isDirectory()) {
 
 					let protocol = req.socket.encrypted ? "https" : "http";
@@ -177,6 +182,7 @@ function StaticServer(server) {
                         res.end();
                         return;
                     }
+                    
                     const defaultFileName = "index.html";
                     const defaultPath = path.join(targetPath, defaultFileName);
                     fs.stat(defaultPath, function (err) {
@@ -185,6 +191,7 @@ function StaticServer(server) {
                             res.end();
                             return;
                         }
+                        
                         return sendFile(res, defaultPath);
                     });
                 } else {

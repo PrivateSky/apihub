@@ -1,11 +1,12 @@
 const fs = require('fs');
 const fileName = './bfs.json';
-const { makeRequest } = require('./utils').requests;
-const serverConfigUtils = require('./utils').serverConfig;
+const { makeRequest } = require('../../utils').requests;
+const serverConfigUtils = require('../../utils').serverConfig;
+
 const brickURL = serverConfigUtils.getConfig('endpointsConfig', 'worldStateManagerStrategy', 'brickFabric', 'url');
 const fabricSize = serverConfigUtils.getConfig('endpointsConfig', 'worldStateManagerStrategy', 'brickFabric', 'size');
 
-async function BrickFabricStorage(commandType, comamndBody, callback) {
+async function brickFabricStorage(commandType, comamndBody) {
     const tempBrick = {
         previousBrick: '',
         commands: []
@@ -36,7 +37,7 @@ async function BrickFabricStorage(commandType, comamndBody, callback) {
         throw err;
     });
 
-    callback();
+   return;
 }
 
 function writeToFile(data) {
@@ -71,4 +72,4 @@ async function addBrick(brickData) {
     return brickHash;
 }
 
-module.exports = BrickFabricStorage;
+module.exports.brickFabricStorage = brickFabricStorage;
