@@ -5,6 +5,4 @@ function bricksLedger(server) {
 	worldStateManager(server);
 }
 
-
-
 module.exports = bricksLedger;

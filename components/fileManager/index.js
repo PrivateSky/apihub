@@ -1,9 +1,10 @@
 function filesManager(server) {
 
-	const controllers=  require('./controllers');
-	
-	server.post('/files/upload/:folder', controllers.uploadFile);
-	server.get('/files/download/:filepath', controllers.downloadFile);
+	const uploadFile = require('./controllers/uploadFile');
+	const downloadFile = require('./controllers/downloadFile');
+
+	server.post('/files/upload/:folder', uploadFile);
+	server.get('/files/download/:filepath', downloadFile);
 }
 
 module.exports = filesManager;

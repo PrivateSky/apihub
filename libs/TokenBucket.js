@@ -20,15 +20,12 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
         throw new Error('All parameters must be bigger than 0');
     }
 
-
     TokenBucket.prototype.COST_LOW    = 10;  // equivalent to 10op/s with default values
     TokenBucket.prototype.COST_MEDIUM = 100; // equivalent to 1op/s with default values
     TokenBucket.prototype.COST_HIGH   = 500; // equivalent to 12op/minute with default values
 
     TokenBucket.ERROR_LIMIT_EXCEEDED  = 'error_limit_exceeded';
     TokenBucket.ERROR_BAD_ARGUMENT    = 'error_bad_argument';
-
-
 
     const limits = {};
 
@@ -45,8 +42,6 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
             userBucket.tokens -= cost;
 
             userBucket.timestamp = Date.now();
-
-
 
             if (userBucket.tokens < 0) {
                 userBucket.tokens = 0;

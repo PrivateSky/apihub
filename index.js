@@ -4,7 +4,6 @@ const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
 //next require lines are only for browserify build purpose
 // Remove mock
-require("./commands.mock.js");
 require("./components/channelManager");
 require("./components/fileManager");
 require("./components/bricksLedger");

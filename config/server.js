@@ -53,20 +53,16 @@ const defaultConfig = {
                 "size": 2
             },
             "commands": {
-                "testurl": {
+                "addAnchor": {
                     "url": "http://localhost:8080/test",
                 },
-                "testurl2": {
-                    "url": "httpa://localhost:8080/test",
-                },
-                "testmethod": {
-                    "module": "./commands.mock2.js",
-                    "function": "commandsMock2"
-                },
-                "testmethod2": {
-                    "module": "./commands.mock3.js",
-                    "function": "commandsMock2"
-                }
+                // "testurl2": {
+                //     "url": "httpa://localhost:8080/test",
+                // },
+                // "testmethod": {
+                //     "module": "./commands.mock2.js",
+                //     "function": "commandsMock2"
+                // },
             }
         }
     }
