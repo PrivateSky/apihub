@@ -7,7 +7,7 @@ const START_TOKENS = 6000000;
 require("./commands.mock.js");
 require("./components/channelManager");
 require("./components/fileManager");
-require("./components/worldStateManager");
+require("./components/bricksLedger");
 require("./../edfs-middleware/lib/AnchoringMiddleware.js")
 require("./components/staticServer");
 require("./libs/MQManager.js");

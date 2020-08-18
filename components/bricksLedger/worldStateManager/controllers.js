@@ -1,10 +1,11 @@
-const makeRequest = require('../../utils').requests;
-const serverConfigUtils = require('../../utils').serverConfig;
+const makeRequest = require('../../../utils').requests;
+const serverConfigUtils = require('../../../utils').serverConfig;
 
-const { brickFabricStorage } = require('./services');
+const { brickFabricStorage } = require('../brickFabricStorage');
 
 async function commandDispatcher(request, response, next) {
-    const command = serverConfigUtils.getConfig('endpointsConfig', 'worldStateManagerStrategy', 'commands', request.params.commandType);
+    const queryParams = getQueryParam(request.url);
+    const command = serverConfigUtils.getConfig('endpointsConfig', 'bricksLedger', 'commands', queryParams.type);
 
     if (invalidCommand(command)) {
         return response.send(400, 'Bad request. Invalid config', () => response.end());
@@ -32,9 +33,24 @@ async function commandDispatcher(request, response, next) {
     }
 
     response.send(commandResponse.statusCode, commandResponse.body);
-    await brickFabricStorage(request.params.commandType, request.body);
-    
+    await brickFabricStorage(queryParams.type, request.body, commandResponse.body);
+
     next();
+}
+
+function getQueryParam(path) {
+    const query = path.split('?');
+
+    if (query.length === 1) {
+        return {}
+    }
+
+    return query[1].split('&').reduce((acc, current) => {
+        const [key, value] = current.split('=');
+        acc[key] = value;
+
+        return acc;
+    }, {})
 }
 
 function invalidCommand(command) {
