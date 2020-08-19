@@ -1,7 +1,7 @@
 const makeRequest = require('../../../utils').requests;
 const serverConfigUtils = require('../../../utils').serverConfig;
 
-const { brickFabricStorage } = require('../brickFabricStorage');
+const { brickFabricStorageService } = require('../brickFabricStorage/services');
 
 async function commandDispatcher(request, response, next) {
     const queryParams = getQueryParam(request.url);
@@ -33,7 +33,7 @@ async function commandDispatcher(request, response, next) {
     }
 
     response.send(commandResponse.statusCode, commandResponse.body);
-    await brickFabricStorage(queryParams.type, request.body, commandResponse.body);
+    await brickFabricStorageService(queryParams.type, request.body, commandResponse.body);
 
     next();
 }

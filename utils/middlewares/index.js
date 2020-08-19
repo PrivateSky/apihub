@@ -21,8 +21,11 @@ function requestBodyJSONMiddleware(request, response, next) {
 function responseModifierMiddleware(request, response, next) {
     response.send = (statusCode, body, callback = () => { }) => {
         response.statusCode = statusCode;
-        response.write(responseWrapper(body));
 
+        if (body) {
+            response.write(responseWrapper(body));
+        }
+        
         callback();
     };
 
