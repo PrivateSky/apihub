@@ -17,12 +17,13 @@ function makeRequest(url, method = 'GET', requestData, requestOptions = {}) {
 
         const request = (options.protocol === 'https:' ? https : http).request(options, (response) => {
             let data = [];
+            
             response.on('data', (chunk) => {
                 data.push(chunk);
             });
 
             response.on('end', () => {
-                const stringData = data.toString()
+                const stringData = data.map((item) => item.toString()).join('')
 
                 return resolve({
                     statusCode: response.statusCode,
