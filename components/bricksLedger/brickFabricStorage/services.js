@@ -7,10 +7,11 @@ const fabricSize = serverConfigUtils.getConfig('endpointsConfig', 'bricksLedger'
 
 const fs = require('fs');
 const fileName = './bfs.json';
+const pskCrypto = require('../../../../pskcrypto');
 
 async function brickFabricStorageService(commandType, comamndBody, commandResponse) {
     const tempBrick = {
-        previousBrick: '',
+        previousBrick: { brickHash: '', password: '' },
         commands: []
     };
 
@@ -20,7 +21,7 @@ async function brickFabricStorageService(commandType, comamndBody, commandRespon
             id: $$.uidGenerator.safe_uuid()
         };
 
-        tempBrick.previousBrick = await addBrick(mockGenesisBrick);
+        tempBrick.previousBrick.brickHash = await addBrick(mockGenesisBrick);
     } else {
         const { previousBrick, commands } = await readFromFile();
 
@@ -28,7 +29,10 @@ async function brickFabricStorageService(commandType, comamndBody, commandRespon
         tempBrick.commands = commands;
 
         if (tempBrick.commands.length === fabricSize) {
-            tempBrick.previousBrick = await addBrick(tempBrick)
+            tempBrick.previousBrick.brickHash.password = pskCrypto.randomBytes();
+            const encryptedBrick = pskCrypto.privateEncrypt(tempBrick.previousBrick.brickHash.password, brickData);
+
+            tempBrick.previousBrick.brickHash = await addBrick(encryptedBrick);
             tempBrick.commands = [];
         }
     }
@@ -39,7 +43,7 @@ async function brickFabricStorageService(commandType, comamndBody, commandRespon
         throw err;
     });
 
-   return;
+    return;
 }
 
 function writeToFile(data) {
@@ -67,7 +71,7 @@ function readFromFile() {
 }
 
 async function addBrick(brickData) {
-    const { body: brickHash } = await makeRequest(brickURL, 'POST', brickData).catch((err) => {
+    const { body: brickHash } = await makeRequest(brickURL, 'POST', encrypted).catch((err) => {
         throw err;
     });
 
