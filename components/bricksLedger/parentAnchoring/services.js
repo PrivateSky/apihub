@@ -1,5 +1,4 @@
 const fs = require('fs');
-const { resolve } = require('path');
 
 function addAnchor(anchorId) {
     return new Promise((resolve, reject) => {

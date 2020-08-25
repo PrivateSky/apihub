@@ -8,7 +8,6 @@ const fabricSize = serverConfigUtils.getConfig('endpointsConfig', 'bricksLedger'
 const fs = require('fs');
 const fileName = './bfs.json';
 const pskCrypto = require('../../../../pskcrypto');
-const { addAnchor } = require('../parentAnchoring/services');
 
 async function brickFabricStorageService(commandType, comamndBody, commandResponse) {
     const tempBrick = {
@@ -76,8 +75,6 @@ async function addBrick(brickData) {
         throw err;
     });
     
-    await addAnchor(brickHash);
-
     return brickHash;
 }
 

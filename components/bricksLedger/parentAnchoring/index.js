@@ -1,9 +1,11 @@
-const anchoringService = require('./services');
 
 function ParentAnchoring(server) {
-    server.put('/bricks-ledger/pas/anchor/:hashLink', (request, response, next) => {
-        await anchoringService.addAnchor(hashLink).catch(err=> response.send(400, err.message || 'Something went wrong'));
-        
+    const { URL_PREFIX } = require('./constants');
+    const anchoringService = require('./services');
+    
+    server.put(`${URL_PREFIX}/pas/anchor/:hashLink`, async (request, response, next) => {
+        await anchoringService.addAnchor(hashLink).catch((err) => response.send(400, err.message || 'Something went wrong'));
+
         next();
     });
 }
