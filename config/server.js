@@ -17,7 +17,7 @@ const defaultConfig = {
             "storageDirPath": "./messaging/storage"
         },
         "notifications": {
-            "module": "./libs/KeySSINotificationsManager.js",
+            "module": "./components/keySsiNotifications.js",
             "workingDirPath": "./notifications"
         },
         "virtualMQ": {

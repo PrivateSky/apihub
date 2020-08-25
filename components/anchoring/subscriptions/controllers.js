@@ -2,7 +2,6 @@ let pendingRequests = {};
 
 const readBody = require("../../../utils").readStringFromStream;
 
-
 function readHandler(req, res, next) {
     const channelIdentifier = req.params.channelsIdentifier;
     const lastMessageKnown = req.params.lastMessage;

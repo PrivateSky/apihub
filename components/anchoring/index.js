@@ -1,6 +1,8 @@
 const { URL_PREFIX } = require('./../constants');
 
 function Anchoring(server) {
+    require("../../flows/AnchorsManager");
+
     const AnchorSubrscriptions = require('./subscriptions');
     const { addAnchor } = require('./controllers');
     const { responseModifierMiddleware } = require('../../utils/middlewares');

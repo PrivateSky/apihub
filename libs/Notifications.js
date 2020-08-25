@@ -1,19 +1,19 @@
-const stateStorageFileName = "queues.json";
+const stateStorageFileName = 'queues.json';
 
 function NotificationsManager(workingFolderPath, storageFolderPath){
 	const queues = {};
 	const queueMessageLifeTimers = {};
 	const subscribers = {};
-	const swarmUtils = require("swarmutils");
+	const swarmUtils = require('swarmutils');
 
 	this.createQueue = function(queueName, timeout, callback){
-		if(typeof timeout === "function"){
+		if(typeof timeout === 'function'){
 			callback = timeout;
 			timeout = 30*1000; //number of seconds * ms
 		}
 
 		if(typeof queues[queueName] !== undefined){
-			return callback({message: "Queue already exists.", statusCode: 409});
+			return callback({message: 'Queue already exists.', statusCode: 409});
 		}
 
 		createQueue(queueName, timeout, (err)=>{
@@ -23,7 +23,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 
 			try{
 				if(typeof storageFolderPath !== undefined){
-					require("fs").mkdirSync(getQueueStoragePath(queueName), {recursive: true});
+					require('fs').mkdirSync(getQueueStoragePath(queueName), {recursive: true});
 				}
 			}catch(err){
 				return callback(err);
@@ -55,7 +55,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 				counter++;
 			}catch(err){
 				//we should not get any errors here but lets log it
-				console.log("We weren't expecting for this", err);
+				console.log('We weren\'t expecting for this', err);
 			}
 		}
 		callback(undefined, counter);
@@ -64,7 +64,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 	function storeMessage(queueName, message, callback){
 		let path = swarmUtils.path;
 		let fileName = path.join(getQueueStoragePath(queueName), new Date().getTime());
-		require("fs").writeFile(fileName, message, (err)=>{
+		require('fs').writeFile(fileName, message, (err)=>{
 			if(err){
 				return callback(err);
 			}
@@ -103,7 +103,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 
 	this.sendMessage = function(queueName, message, callback){
 		let subs = subscribers[queueName];
-		if(typeof subs === "undefined" || subs.length > 0){
+		if(typeof subs === 'undefined' || subs.length > 0){
 			return deliverMessage(subs, message, callback);
 		}
 		return addMessageToQueue(queueName, message, callback);
@@ -111,22 +111,22 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 
 	this.readMessage = function(queueName, callback){
 		let subs = subscribers[queueName];
-		if(typeof subs !== "undefined"){
+		if(typeof subs !== 'undefined'){
 			subs.push(callback);
 		}
 		let notificationObject = queues[queueName].pop();
-		if(typeof notificationObject !== "undefined"){
+		if(typeof notificationObject !== 'undefined'){
 			deliverMessage(subs, notificationObject.message, (err, counter)=>{
 				if(counter > 0){
 					//message delivered... let's check if has a timer waiting to persist it
-					if(typeof notificationObject.timeout !== "undefined"){
+					if(typeof notificationObject.timeout !== 'undefined'){
 						clearTimeout(notificationObject.timeout);
 						return;
 					}
 					//message delivered... let's remove from storage if it was persisted
-					if(typeof notificationObject.filename !== "undefined"){
+					if(typeof notificationObject.filename !== 'undefined'){
 						try{
-							require("fs").unlinkSync(notificationObject.filename);
+							require('fs').unlinkSync(notificationObject.filename);
 						}catch(err){
 							console.log(err);
 						}
@@ -145,7 +145,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 			return callback(err);
 		}
 
-		if(typeof state !== "undefined"){
+		if(typeof state !== 'undefined'){
 			for(let i=0; i<state.queues.length; i++){
 				let queueName = state.queues[i];
 				createQueue(queueName, state.timeouts[queueName]);
@@ -161,21 +161,21 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 			queues: Object.keys(queues)
 		}
 
-		let fs = require("fs");
+		let fs = require('fs');
 		let path = swarmUtils.path;
 
 		fs.writeFile(path.join(workingFolderPath, stateStorageFileName), JSON.stringify(state, null, 4), callback);
 	}
 
 	this.initialize = function(callback){
-		let fs = require("fs");
+		let fs = require('fs');
 		let path = swarmUtils.path;
 
 		//if it's the first time we need to ensure that the working folder exists
 		fs.mkdirSync(workingFolderPath, {recursive: true});
 
 		loadState((err, state)=>{
-			if(typeof storageFolderPath === "undefined"){
+			if(typeof storageFolderPath === 'undefined'){
 				return callback();
 			}
 
@@ -183,7 +183,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 			fs.mkdirSync(storageFolderPath, {recursive: true});
 
 			//if is our first boot using a specific folder there is no state to be loaded
-			if(typeof state === "undefined"){
+			if(typeof state === 'undefined'){
 				return callback();
 			}
 
@@ -212,10 +212,11 @@ function NotificationsManager(workingFolderPath, storageFolderPath){
 
 module.exports = {
 	getManagerInstance: function(workingFolderPath, storageFolderPath, callback){
-		if(typeof storageFolderPath === "function"){
+		if(typeof storageFolderPath === 'function'){
 			callback = storageFolderPath;
 			storageFolderPath = undefined;
 		}
+		
 		let manager = new NotificationsManager(workingFolderPath, storageFolderPath);
 		manager.initialize((err)=>{
 			callback(err, manager);

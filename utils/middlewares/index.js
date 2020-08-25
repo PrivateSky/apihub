@@ -34,4 +34,15 @@ function responseModifierMiddleware(request, response, next) {
     next();
 }
 
-module.exports = { requestBodyJSONMiddleware, responseModifierMiddleware };
+function headersMiddleware(req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+
+    // Request headers you wish to allow
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Content-Length, X-Content-Length');
+    next();
+}
+
+module.exports = { requestBodyJSONMiddleware, responseModifierMiddleware, headersMiddleware };
