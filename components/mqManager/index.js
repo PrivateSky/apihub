@@ -1,6 +1,6 @@
-function MQManager(server) {
+function mqManager(server) {
 	let notificationManager;
-	const utils = require('../../utils');
+	const utils = require('./../../utils');
 	const { URL_PREFIX } = require('./constants');
 	const readBody = utils.streams.readStringFromStream;
 	const serverConfigUtils = utils.serverConfig;
@@ -87,7 +87,7 @@ function MQManager(server) {
 		});
 	}
 
-	require('../../libs/Notifications').getManagerInstance(workingDirPath, storageDirPath, (err, instance) => {
+	require('./../../libs/Notifications').getManagerInstance(workingDirPath, storageDirPath, (err, instance) => {
 		if (err) {
 			return console.log(err);
 		}
@@ -101,4 +101,4 @@ function MQManager(server) {
 	});
 }
 
-module.exports = MQManager;
+module.exports = mqManager;

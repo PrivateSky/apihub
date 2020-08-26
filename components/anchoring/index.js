@@ -2,7 +2,9 @@
 function Anchoring(server) {
     require("../../flows/AnchorsManager");
 
-    const { URL_PREFIX } = require('./../constants');
+    const fs = require('fs');
+    const path = require('path');
+    const { URL_PREFIX } = require('./constants');
     const AnchorSubrscriptions = require('./subscriptions');
     const AnchorVersions = require('./versions');
     const { addAnchor } = require('./controllers');

@@ -1,10 +1,10 @@
 
-function BrickStorageMiddleware(server) {
+function Bricks(server) {
     require('../../flows/BricksManager');
     
     const path = require('path');
     const bricks_storage_folder = 'brick-storage';
-    const { URL_PREFIX } = require('./../constants');
+    const { URL_PREFIX } = require('./constants');
     const { headersMiddleware, responseModifierMiddleware } = require('../../utils/middlewares');
     const { downloadBrick, downloadMultipleBricks, uploadBrick } = require('./controllers');
 
@@ -25,4 +25,4 @@ function BrickStorageMiddleware(server) {
     server.get(`${URL_PREFIX}/:hashLink`, downloadBrick);
 }
 
-module.exports = BrickStorageMiddleware;
+module.exports = Bricks;

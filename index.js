@@ -4,20 +4,21 @@ const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
 //next require lines are only for browserify build purpose
 // Remove mock
-require("./components/channelManager");
-require("./components/fileManager");
-require("./components/bricksLedger");
-require("./../edfs-middleware/lib/AnchoringMiddleware.js")
-require("./components/staticServer");
-require("./libs/MQManager.js");
-require("./libs/KeySSINotificationsManager.js");
+require('./components/channelManager');
+require('./components/fileManager');
+require('./components/bricksLedger');
+require('./components/anchoring');
+require('./components/bricks');
+require('./components/staticServer');
+require('./components/mqManager');
+require('./components/keySsiNotifications');
 //end
 
 function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	const port = listeningPort || 8080;
 	const tokenBucket = new TokenBucket(START_TOKENS, 1, 10);
 
-	const serverConfigUtils = require("./utils").serverConfig;
+	const serverConfigUtils = require('./utils').serverConfig;
 	const conf = serverConfigUtils.getConfig();
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
@@ -41,13 +42,13 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	server.on('error', bindErrorHandler);
 
 	function checkPortInUse(port, sslConfig, callback) {
-		let commType = "http";
-		if (typeof sslConfig !== "undefined") {
+		let commType = 'http';
+		if (typeof sslConfig !== 'undefined') {
 			commType += 's';
 		}
 		require(commType).request({ port }, (res) => {
 			callback(undefined, true);
-		}).on("error", (err) => {
+		}).on('error', (err) => {
 			callback(undefined, false);
 		});
 	}
@@ -105,25 +106,25 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 				});
 			});
 		} else {
-			console.log("Rate limit mechanism disabled!");
+			console.log('Rate limit mechanism disabled!');
 		}
 
 		server.options('/*', function (req, res) {
 			const headers = {};
 			// IE8 does not allow domains to be specified, just the *
-			headers["Access-Control-Allow-Origin"] = req.headers.origin;
-			// headers["Access-Control-Allow-Origin"] = "*";
-			headers["Access-Control-Allow-Methods"] = "POST, GET, PUT, DELETE, OPTIONS";
-			headers["Access-Control-Allow-Credentials"] = true;
-			headers["Access-Control-Max-Age"] = '3600'; //one hour
-			headers["Access-Control-Allow-Headers"] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${conf.endpointsConfig.virtualMQ.signatureHeaderName}}`;
+			headers['Access-Control-Allow-Origin'] = req.headers.origin;
+			// headers['Access-Control-Allow-Origin'] = '*';
+			headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, DELETE, OPTIONS';
+			headers['Access-Control-Allow-Credentials'] = true;
+			headers['Access-Control-Max-Age'] = '3600'; //one hour
+			headers['Access-Control-Allow-Headers'] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${conf.endpointsConfig.virtualMQ.signatureHeaderName}}`;
 			res.writeHead(200, headers);
 			res.end();
 		});
 
 		function addMiddlewares() {
 			const middlewareList = conf.activeEndpoints;
-			const path = require("path");
+			const path = require('path');
 			middlewareList.forEach(middleware => {
 				const middlewareConfigName = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);
 				const middlewareConfig = conf.endpointsConfig[middlewareConfigName];
@@ -131,12 +132,12 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 				if (middlewareConfigName) {
 					middlewarePath = middlewareConfig.module;
 					console.log(middlewareConfig, middlewarePath)
-					if (middlewarePath.startsWith(".") && conf.defaultEndpoints.indexOf(middleware) === -1) {
+					if (middlewarePath.startsWith('.') && conf.defaultEndpoints.indexOf(middleware) === -1) {
 						middlewarePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath);
 					}
 					console.log(`Preparing to register middleware from path ${middlewarePath}`);
 					let middlewareImplementation = require(middlewarePath);
-					if (typeof middlewareConfig.function !== "undefined") {
+					if (typeof middlewareConfig.function !== 'undefined') {
 						middlewareImplementation[middlewareConfig.function](server);
 					} else {
 						middlewareImplementation(server);
@@ -181,6 +182,6 @@ module.exports.getHttpWrapper = function () {
 };
 
 module.exports.getServerConfig = function () {
-	const utils = require("./utils").serverConfig;
+	const utils = require('./utils').serverConfig;
 	return utils.getConfig();
 };

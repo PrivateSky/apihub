@@ -1,6 +1,6 @@
 
 function ParentAnchoring(server) {
-    const { URL_PREFIX } = require('./constants');
+    const { URL_PREFIX } = require('./../constants');
     const anchoringService = require('./services');
     
     server.put(`${URL_PREFIX}/pas/anchor/:hashLink`, async (request, response, next) => {

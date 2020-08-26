@@ -3,7 +3,7 @@ function KeySSINotifications(server) {
 	const utils = require('../../utils');
 	const readBody = utils.streams.readStringFromStream;
 	const serverConfigUtils = utils.serverConfig;
-	const { responseModifierMiddleware } = require('../../utils/middlewares');
+	const { responseModifierMiddleware } = require('./../../utils/middlewares');
 	const { URL_PREFIX } = require('./constants');
 	const workingDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
 
@@ -80,7 +80,7 @@ function KeySSINotifications(server) {
 		response.send(503);
 	}
 
-	require('../../libs/Notifications').getManagerInstance(workingDirPath, (err, instance) => {
+	require('./../../libs/Notifications').getManagerInstance(workingDirPath, (err, instance) => {
 		if (err) {
 			return console.log(err);
 		}
