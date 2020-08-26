@@ -1,9 +1,9 @@
 function MQManager(server) {
-
 	let notificationManager;
-	const utils = require("./../utils");
-    const readBody = utils.streams.readStringFromStream;
-    const serverConfigUtils = utils.serverConfig;
+	const utils = require('../../utils');
+	const { URL_PREFIX } = require('./constants');
+	const readBody = utils.streams.readStringFromStream;
+	const serverConfigUtils = utils.serverConfig;
 	const workingDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
 	const storageDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'storageDirPath');
 
@@ -16,7 +16,7 @@ function MQManager(server) {
 	function createChannel(req, res) {
 		let anchorId = req.params.anchorId;
 		let SSI = req.headers['ssi'];
-		if (typeof SSI === "undefined" || typeof anchorId === "undefined") {
+		if (typeof SSI === 'undefined' || typeof anchorId === 'undefined') {
 			return sendStatus(res, 400);
 		}
 
@@ -38,7 +38,7 @@ function MQManager(server) {
 
 	function sendMessage(req, res) {
 		let anchorId = req.params.anchorId;
-		if (typeof anchorId === "undefined") {
+		if (typeof anchorId === 'undefined') {
 			return sendStatus(res, 400);
 		}
 		readBody(req, (err, message) => {
@@ -63,7 +63,7 @@ function MQManager(server) {
 
 	function receiveMessage(req, res) {
 		let anchorId = req.params.anchorId;
-		if (typeof anchorId === "undefined") {
+		if (typeof anchorId === 'undefined') {
 			return sendStatus(res, 400);
 		}
 
@@ -87,16 +87,17 @@ function MQManager(server) {
 		});
 	}
 
-	require("./Notifications").getManagerInstance(workingDirPath, storageDirPath, function (err, instance) {
+	require('../../libs/Notifications').getManagerInstance(workingDirPath, storageDirPath, (err, instance) => {
 		if (err) {
 			return console.log(err);
 		}
 
 		notificationManager = instance;
 
-		server.post("/mq/create-channel/:anchorId", createChannel);
-		server.post("/mq/send-message/:anchorId", sendMessage);
-		server.get("/mq/receive-message/:anchorId", receiveMessage);
+		// Proposed
+		server.post(`${URL_PREFIX}/channel/:anchorId`, createChannel);
+		server.post(`${URL_PREFIX}/message/:anchorId`, sendMessage);
+		server.get(`${URL_PREFIX}/message/:anchorId`, receiveMessage);
 	});
 }
 

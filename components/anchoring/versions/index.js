@@ -1,6 +1,6 @@
-const { URL_PREFIX } = require('./../constants');
-
 function AnchorVersions(server) {
+    const { URL_PREFIX } = require('./../constants');
+
     server.get(`${URL_PREFIX}/subscribe/:anchorId`, (request, response, next) => {
         $$.flow.start('AnchorsManager').readVersions(request.params.anchorId, (err, fileHashes) => {
             if (err) {

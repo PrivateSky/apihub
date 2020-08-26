@@ -1,6 +1,5 @@
-const { URL_PREFIX } = require('./../constants');
-
 function AnchorSubrscriptions(server) {
+    const { URL_PREFIX } = require('./../constants');
     const { publishHandler } = require('./controllers');
 
     server.get(`${URL_PREFIX}/subscribe/:anchorId`, publishHandler);

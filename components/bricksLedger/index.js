@@ -8,6 +8,7 @@ function bricksLedger(server) {
 	
 	server.use(`${URL_PREFIX}/*`, responseModifierMiddleware);
 	server.use(`${URL_PREFIX}/*`, requestBodyJSONMiddleware);
+	
 	server.get(`${URL_PREFIX}`, (req, res) => {
 
 		server.get('/testion', (req, res) => {

@@ -9,12 +9,12 @@ function KeySSINotifications(server) {
 
 	function publish(request, response, next) {
 		let anchorId = request.params.anchorId;
-	
+
 		readBody(req, (err, message) => {
 			if (err) {
 				return response.send(400);
 			}
-	
+
 			notificationManager.createQueue(anchorId, function (err) {
 				if (err) {
 					if (err.statusCode) {
@@ -25,29 +25,29 @@ function KeySSINotifications(server) {
 						return response.send(500, null, next);
 					}
 				}
-	
+
 				notificationManager.sendMessage(anchorId, message, function (err, counter) {
 					if (err) {
 						return response.send(500, null, next);
 					}
-	
-					let message ;
-	
+
+					let message;
+
 					if (counter > 0) {
 						message = `Message delivered to ${counter} subscribers.`;
 					} else {
 						message = `Message was added to queue and will be delivered later.`;
 					}
-	
-					return response.send(200 , body, next);
+
+					return response.send(200, body, next);
 				});
 			});
 		});
 	}
-	
+
 	function subscribe(request, response, next) {
 		let anchorId = request.params.anchorId;
-	
+
 		notificationManager.createQueue(anchorId, function (err) {
 			if (err) {
 				if (err.statusCode) {
@@ -58,13 +58,13 @@ function KeySSINotifications(server) {
 					return response.send(500, null, next);
 				}
 			}
-	
+
 			notificationManager.readMessage(anchorId, function (err, message) {
 				try {
 					if (err) {
 						return response.send(err.statusCode || 500, message || null, next);
 					}
-	
+
 					response.send(200, message, next);
 				} catch (err) {
 					//here we expect to get errors when a connection has reached timeout
@@ -74,20 +74,20 @@ function KeySSINotifications(server) {
 			});
 		});
 	}
-	
+
 	function unsubscribe(request, response) {
 		//to be implemented later
 		response.send(503);
 	}
 
-	require('../../libs/Notifications').getManagerInstance(workingDirPath, function (err, instance) {
+	require('../../libs/Notifications').getManagerInstance(workingDirPath, (err, instance) => {
 		if (err) {
 			return console.log(err);
 		}
 
 		notificationManager = instance;
 		server.use(`${URL_PREFIX}/*`, responseModifierMiddleware)
-		
+
 		server.post(`${URL_PREFIX}/subscribe/:anchorId`, subscribe);
 		server.delete(`${URL_PREFIX}/subscribe/:anchorId`, unsubscribe);
 		server.put(`${URL_PREFIX}/publish/:anchorId`, publish);

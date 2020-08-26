@@ -1,9 +1,10 @@
-const { URL_PREFIX } = require('./../constants');
 
 function Anchoring(server) {
     require("../../flows/AnchorsManager");
 
+    const { URL_PREFIX } = require('./../constants');
     const AnchorSubrscriptions = require('./subscriptions');
+    const AnchorVersions = require('./versions');
     const { addAnchor } = require('./controllers');
     const { responseModifierMiddleware } = require('../../utils/middlewares');
 
@@ -24,6 +25,7 @@ function Anchoring(server) {
     // if the method is POST why add additinal verb do describe action
     server.post(`${URL_PREFIX}`, addAnchor);
 
+    AnchorVersions(server);
     AnchorSubrscriptions(server);
 }
 
