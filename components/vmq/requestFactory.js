@@ -1,10 +1,10 @@
 const http = require('http');
-const {URL} = require('url');
+const { URL } = require('url');
 const swarmUtils = require('swarmutils');
 const SwarmPacker = swarmUtils.SwarmPacker;
 const signatureHeaderName = process.env.vmq_signature_header_name || "x-signature";
 
-function RequestFactory(virtualMQAddress, zeroMQAddress) {
+function requestFactory(virtualMQAddress, zeroMQAddress) {
     function createChannel(channelName, publicKey, callback) {
         const options = {
             path: `/create-channel/${channelName}`,
@@ -64,7 +64,7 @@ function RequestFactory(virtualMQAddress, zeroMQAddress) {
         };
 
         const req = http.request(virtualMQAddress, options, function (res) {
-            const utils = require("./utils");
+            const utils = require("../../utils").streams;
             utils.readMessageBufferFromStream(res, function (err, message) {
 
                 callback(err, res, (message && Buffer.isBuffer(message)) ? SwarmPacker.unpack(message.buffer) : message);
@@ -92,9 +92,9 @@ function RequestFactory(virtualMQAddress, zeroMQAddress) {
         });
     }
 
-    function generateMessage(swarmName, swarmPhase, args, targetAgent, returnAddress){
+    function generateMessage(swarmName, swarmPhase, args, targetAgent, returnAddress) {
         return {
-            meta:{
+            meta: {
                 swarmId: swarmUtils.generateUid(32).toString("hex"),
                 requestId: swarmUtils.generateUid(32).toString("hex"),
                 swarmTypeName: swarmName || "testSwarmType",
@@ -103,14 +103,15 @@ function RequestFactory(virtualMQAddress, zeroMQAddress) {
                 command: "executeSwarmPhase",
                 target: targetAgent || "agentURL",
                 homeSecurityContext: returnAddress || "no_home_no_return"
-            }};
+            }
+        };
     }
 
     function getPort() {
         try {
             return new URL(virtualMQAddress).port;
         } catch (e) {
-          console.error(e);
+            console.error(e);
         }
     }
 
@@ -123,10 +124,10 @@ function RequestFactory(virtualMQAddress, zeroMQAddress) {
     this.receiveMessageFromZMQ = receiveMessageFromZMQ;
 
     // utils for testing
-    if(!process.env.NODE_ENV || (process.env.NODE_ENV && !process.env.NODE_ENV.startsWith('prod'))) { // if NODE_ENV does not exist or if it exists and is not set to production
+    if (!process.env.NODE_ENV || (process.env.NODE_ENV && !process.env.NODE_ENV.startsWith('prod'))) { // if NODE_ENV does not exist or if it exists and is not set to production
         this.getPort = getPort;
         this.generateMessage = generateMessage;
     }
 }
 
-module.exports = RequestFactory;
+module.exports = requestFactory;

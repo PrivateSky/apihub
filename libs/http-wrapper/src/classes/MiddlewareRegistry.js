@@ -54,7 +54,7 @@ function methodMatch(pattern, method) {
     return pattern === method;
 }
 
-function Middleware() {
+function MiddlewareRegistry() {
     const registeredMiddlewareFunctions = [];
 
     function use(method, url, fn) {
@@ -170,4 +170,4 @@ function Middleware() {
     }
 }
 
-module.exports = Middleware;
+module.exports = MiddlewareRegistry;

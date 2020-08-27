@@ -5,35 +5,35 @@
  * @param unitOfTime - for each "unitOfTime" (in milliseconds) passed "tokenValuePerTime" amount of tokens will be given back
  * @constructor
  */
+const config = require('./../config');
 
-function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 100) {
+function TokenBucket(startTokens = config.getConfig('tokenBucket', 'startTokens'),
+    tokenValuePerTime = config.getConfig('tokenBucket', 'tokenValuePerTime'),
+    unitOfTime = config.getConfig('tokenBucket', 'unitOfTime')) {
 
-    if(typeof startTokens !== 'number' || typeof  tokenValuePerTime !== 'number' || typeof unitOfTime !== 'number') {
+    if (typeof startTokens !== 'number' || typeof tokenValuePerTime !== 'number' || typeof unitOfTime !== 'number') {
         throw new Error('All parameters must be of type number');
     }
 
-    if(isNaN(startTokens) || isNaN(tokenValuePerTime) || isNaN(unitOfTime)) {
+    if (isNaN(startTokens) || isNaN(tokenValuePerTime) || isNaN(unitOfTime)) {
         throw new Error('All parameters must not be NaN');
     }
 
-    if(startTokens <= 0 || tokenValuePerTime <= 0 || unitOfTime <= 0) {
+    if (startTokens <= 0 || tokenValuePerTime <= 0 || unitOfTime <= 0) {
         throw new Error('All parameters must be bigger than 0');
     }
 
+    TokenBucket.prototype.COST_LOW = config.getConfig('tokenBucket', 'cost', 'low');  // equivalent to 10op/s with default values
+    TokenBucket.prototype.COST_MEDIUM = config.getConfig('tokenBucket', 'cost', 'medium'); // equivalent to 1op/s with default values
+    TokenBucket.prototype.COST_HIGH = config.getConfig('tokenBucket', 'cost', 'high'); // equivalent to 12op/minute with default values
 
-    TokenBucket.prototype.COST_LOW    = 10;  // equivalent to 10op/s with default values
-    TokenBucket.prototype.COST_MEDIUM = 100; // equivalent to 1op/s with default values
-    TokenBucket.prototype.COST_HIGH   = 500; // equivalent to 12op/minute with default values
-
-    TokenBucket.ERROR_LIMIT_EXCEEDED  = 'error_limit_exceeded';
-    TokenBucket.ERROR_BAD_ARGUMENT    = 'error_bad_argument';
-
-
+    TokenBucket.ERROR_LIMIT_EXCEEDED = config.getConfig('tokenBucket', 'error', 'limitExceeded');
+    TokenBucket.ERROR_BAD_ARGUMENT = erverConfigUtils.getConfig('tokenBucket', 'error', 'badArgument');
 
     const limits = {};
 
-    function takeToken(userKey, cost, callback = () => {}) {
-        if(typeof cost !== 'number' || isNaN(cost) || cost <= 0 || cost === Infinity) {
+    function takeToken(userKey, cost, callback = () => { }) {
+        if (typeof cost !== 'number' || isNaN(cost) || cost <= 0 || cost === Infinity) {
             callback(TokenBucket.ERROR_BAD_ARGUMENT);
             return;
         }
@@ -45,8 +45,6 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
             userBucket.tokens -= cost;
 
             userBucket.timestamp = Date.now();
-
-
 
             if (userBucket.tokens < 0) {
                 userBucket.tokens = 0;
@@ -62,7 +60,7 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
     }
 
     function getLimitByCost(cost) {
-        if(startTokens === 0 || cost === 0) {
+        if (startTokens === 0 || cost === 0) {
             return 0;
         }
 
@@ -70,7 +68,7 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
     }
 
     function getRemainingTokenByCost(tokens, cost) {
-        if(tokens === 0 || cost === 0) {
+        if (tokens === 0 || cost === 0) {
             return 0;
         }
 
@@ -111,8 +109,8 @@ function TokenBucket(startTokens = 6000, tokenValuePerTime = 10, unitOfTime = 10
         return elapsedTime * tokenValuePerTime;
     }
 
-    this.takeToken               = takeToken;
-    this.getLimitByCost          = getLimitByCost;
+    this.takeToken = takeToken;
+    this.getLimitByCost = getLimitByCost;
     this.getRemainingTokenByCost = getRemainingTokenByCost;
 }
 

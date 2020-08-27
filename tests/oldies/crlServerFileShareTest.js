@@ -1,6 +1,6 @@
 require('launcher');
 const fs = require('fs');
-const path = require('path');
+const path = require('swarmutils').path;
 const crypto = require('crypto');
 const Client = require('../../libs/http-wrapper/src').Client;
 const FileShare = require('../libs/file-share');

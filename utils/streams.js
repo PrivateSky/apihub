@@ -48,6 +48,7 @@ function readMessageBufferFromHTTPStream(reqORres, callback) {
 
             write2Buffer(buffer, chunk, currentOffset);
             currentOffset = nextOffset;
+            
 
         });
         stream.on('end', function () {
@@ -65,26 +66,7 @@ function readMessageBufferFromHTTPStream(reqORres, callback) {
     }
 }
 
-let serverConf;
-const ServerConfig = require("./ServerConfig");
-
-function getServerConfig() {
-    if (typeof serverConf === "undefined") {
-        const fs = require("fs");
-        const path = require("path");
-        try {
-            serverConf = fs.readFileSync(path.join(process.env.PSK_CONFIG_LOCATION, "server.json"));
-            serverConf = JSON.parse(serverConf.toString());
-        } catch (e) {
-            serverConf = undefined;
-        }
-    }
-
-    return new ServerConfig(serverConf);
-}
-
 module.exports = {
-    readMessageBufferFromHTTPStream,
     readStringFromStream,
-    getServerConfig
-};
+    readMessageBufferFromHTTPStream
+}

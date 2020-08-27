@@ -1,4 +1,4 @@
-const path = require("path");
+const path =require('swarmutils').path;
 const fs = require("fs");
 const crypto = require('crypto');
 const integration = require("zmq_adapter");
@@ -6,10 +6,11 @@ const integration = require("zmq_adapter");
 const Queue = require("swarmutils").Queue;
 const SwarmPacker = require("swarmutils").SwarmPacker;
 
+// Code smaell 
 function ChannelsManager(server){
-    const utils = require("./utils");
-    const readBody = utils.readStringFromStream;
-    const config = utils.getServerConfig();
+    const utils = require("../../utils");
+    const readBody = utils.streams.readStringFromStream;
+    const config = require("../../config").getConfig();
     const channelKeyFileName = "channel_key";
 
     const rootFolder = path.join(config.storage, config.endpointsConfig.virtualMQ.channelsFolderName);
