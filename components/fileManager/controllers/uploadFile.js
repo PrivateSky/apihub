@@ -1,7 +1,7 @@
 
 const fs = require('fs');
-const path = require('path');
-const { serverConfig: serverConfigUtils } = require('../../../utils');
+const path = require('swarmutils').path;
+const config = require('../../../config');
 
 function guid() {
     function s4() {
@@ -43,7 +43,7 @@ function upload(req, callback) {
         return callback('err');
     }
 
-    const completeFolderPath = path.join(serverConfigUtils.getConfig('storage'), folder);
+    const completeFolderPath = path.join(config.getConfig('storage'), folder);
 
     const contentType = req.headers['content-type'].split('/');
 

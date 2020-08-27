@@ -5,12 +5,11 @@
  * @param unitOfTime - for each "unitOfTime" (in milliseconds) passed "tokenValuePerTime" amount of tokens will be given back
  * @constructor
  */
-const utils = require('../../utils');
-const serverConfigUtils = utils.serverConfig;
+const config = require('./../config');
 
-function TokenBucket(startTokens = serverConfigUtils.getConfig('tokenBucket', 'startTokens'),
-    tokenValuePerTime = serverConfigUtils.getConfig('tokenBucket', 'tokenValuePerTime'),
-    unitOfTime = serverConfigUtils.getConfig('tokenBucket', 'unitOfTime')) {
+function TokenBucket(startTokens = config.getConfig('tokenBucket', 'startTokens'),
+    tokenValuePerTime = config.getConfig('tokenBucket', 'tokenValuePerTime'),
+    unitOfTime = config.getConfig('tokenBucket', 'unitOfTime')) {
 
     if (typeof startTokens !== 'number' || typeof tokenValuePerTime !== 'number' || typeof unitOfTime !== 'number') {
         throw new Error('All parameters must be of type number');
@@ -24,11 +23,11 @@ function TokenBucket(startTokens = serverConfigUtils.getConfig('tokenBucket', 's
         throw new Error('All parameters must be bigger than 0');
     }
 
-    TokenBucket.prototype.COST_LOW = serverConfigUtils.getConfig('tokenBucket', 'cost', 'low');  // equivalent to 10op/s with default values
-    TokenBucket.prototype.COST_MEDIUM = serverConfigUtils.getConfig('tokenBucket', 'cost', 'medium'); // equivalent to 1op/s with default values
-    TokenBucket.prototype.COST_HIGH = serverConfigUtils.getConfig('tokenBucket', 'cost', 'high'); // equivalent to 12op/minute with default values
+    TokenBucket.prototype.COST_LOW = config.getConfig('tokenBucket', 'cost', 'low');  // equivalent to 10op/s with default values
+    TokenBucket.prototype.COST_MEDIUM = config.getConfig('tokenBucket', 'cost', 'medium'); // equivalent to 1op/s with default values
+    TokenBucket.prototype.COST_HIGH = config.getConfig('tokenBucket', 'cost', 'high'); // equivalent to 12op/minute with default values
 
-    TokenBucket.ERROR_LIMIT_EXCEEDED = serverConfigUtils.getConfig('tokenBucket', 'error', 'limitExceeded');
+    TokenBucket.ERROR_LIMIT_EXCEEDED = config.getConfig('tokenBucket', 'error', 'limitExceeded');
     TokenBucket.ERROR_BAD_ARGUMENT = erverConfigUtils.getConfig('tokenBucket', 'error', 'badArgument');
 
     const limits = {};

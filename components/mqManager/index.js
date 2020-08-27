@@ -3,9 +3,9 @@ function mqManager(server) {
 	const utils = require('./../../utils');
 	const { URL_PREFIX } = require('./constants');
 	const readBody = utils.streams.readStringFromStream;
-	const serverConfigUtils = utils.serverConfig;
-	const workingDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
-	const storageDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'storageDirPath');
+	const config = require('../../config');
+	const workingDirPath = config.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
+	const storageDirPath = config.getConfig('endpointsConfig', 'messaging', 'storageDirPath');
 
 
 	function sendStatus(res, reasonCode) {

@@ -1,9 +1,9 @@
 
 function Anchoring(server) {
-    require("../../flows/AnchorsManager");
+    require('./flows/AnchorsManager');
 
     const fs = require('fs');
-    const path = require('path');
+    const path = require('swarmutils').path;
     const { URL_PREFIX } = require('./constants');
     const AnchorSubrscriptions = require('./subscriptions');
     const AnchorVersions = require('./versions');
@@ -19,13 +19,13 @@ function Anchoring(server) {
         storageNotAccessible = true;
     }
 
-    $$.flow.start("AnchorsManager").init(storageFolder);
+    $$.flow.start('AnchorsManager').init(storageFolder);
 
 
     server.use(`${URL_PREFIX}/*`, responseModifierMiddleware);
 
     // if the method is POST why add additinal verb do describe action
-    server.post(`${URL_PREFIX}`, addAnchor);
+    server.post(`${URL_PREFIX}/add`, addAnchor);
 
     AnchorVersions(server);
     AnchorSubrscriptions(server);

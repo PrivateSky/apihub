@@ -2,10 +2,10 @@ function KeySSINotifications(server) {
 	let notificationManager;
 	const utils = require('../../utils');
 	const readBody = utils.streams.readStringFromStream;
-	const serverConfigUtils = utils.serverConfig;
+	const config = require('../../config');
 	const { responseModifierMiddleware } = require('./../../utils/middlewares');
 	const { URL_PREFIX } = require('./constants');
-	const workingDirPath = serverConfigUtils.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
+	const workingDirPath = config.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
 
 	function publish(request, response, next) {
 		let anchorId = request.params.anchorId;

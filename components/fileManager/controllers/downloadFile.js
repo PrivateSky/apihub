@@ -1,6 +1,6 @@
 const fs = require('fs');
-const path = require('path');
-const { serverConfig: serverConfigUtils } = require('../../../utils');
+const path = require('swarmutils').path;
+const config = require('../../../config');
 
 function sendResult(resHandler, resultStream) {
     resHandler.statusCode = 200;
@@ -30,7 +30,7 @@ function download(req, res, callback) {
     }
 
     const folder = Buffer.from(req.params.filepath, 'base64').toString().replace('\n', '');
-    const completeFolderPath = path.join(serverConfigUtils.getConfig('storage'), folder);
+    const completeFolderPath = path.join(config.getConfig('storage'), folder);
 
     if (folder.includes('..')) {
         return callback(new Error("invalidPath"));

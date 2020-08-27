@@ -1,9 +1,9 @@
 
 const { makeRequest } = require('../../../utils').requests;
-const serverConfigUtils = require('../../../utils').serverConfig;
+const config = require('../../../config');
 
-const brickURL = serverConfigUtils.getConfig('endpointsConfig', 'bricksLedger', 'brickFabric', 'url');
-const fabricSize = serverConfigUtils.getConfig('endpointsConfig', 'bricksLedger', 'brickFabric', 'size');
+const brickURL = config.getConfig('endpointsConfig', 'bricksLedger', 'brickFabric', 'url');
+const fabricSize = config.getConfig('endpointsConfig', 'bricksLedger', 'brickFabric', 'size');
 
 const fs = require('fs');
 const fileName = './bfs.json';

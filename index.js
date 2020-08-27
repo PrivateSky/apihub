@@ -18,8 +18,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	const port = listeningPort || 8080;
 	const tokenBucket = new TokenBucket(START_TOKENS, 1, 10);
 
-	const serverConfigUtils = require('./utils').serverConfig;
-	const conf = serverConfigUtils.getConfig();
+	const conf =  require('./config').getConfig();
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
 
@@ -124,7 +123,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
 		function addMiddlewares() {
 			const middlewareList = conf.activeEndpoints;
-			const path = require('path');
+			const path = require('swarmutils').path;
 			middlewareList.forEach(middleware => {
 				const middlewareConfigName = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);
 				const middlewareConfig = conf.endpointsConfig[middlewareConfigName];
@@ -182,6 +181,7 @@ module.exports.getHttpWrapper = function () {
 };
 
 module.exports.getServerConfig = function () {
-	const utils = require('./utils').serverConfig;
-	return utils.getConfig();
+	const config = require('./config');
+
+	return config.getConfig();
 };

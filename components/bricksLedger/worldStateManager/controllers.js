@@ -1,11 +1,11 @@
 const makeRequest = require('../../../utils').requests;
-const serverConfigUtils = require('../../../utils').serverConfig;
+const config= require('../../../config');
 
 const { brickFabricStorageService } = require('../brickFabricStorage/services');
 
 async function commandDispatcher(request, response, next) {
     const queryParams = getQueryParam(request.url);
-    const command = serverConfigUtils.getConfig('endpointsConfig', 'bricksLedger', 'commands', queryParams.type);
+    const command = config.getConfig('endpointsConfig', 'bricksLedger', 'commands', queryParams.type);
 
     if (invalidCommand(command)) {
         return response.send(400, 'Bad request. Invalid config', () => response.end());

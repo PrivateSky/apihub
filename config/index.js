@@ -1,5 +1,5 @@
-const path = require('path');
-const defaultConfig = require('../config/server');
+const path = require('swarmutils').path;
+const defaultConfig = require('./default');
 
 let serverConfig;
 
