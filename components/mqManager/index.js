@@ -95,9 +95,11 @@ function mqManager(server) {
 		notificationManager = instance;
 
 		// Proposed
-		server.post(`${URL_PREFIX}/channel/:anchorId`, createChannel);
-		server.post(`${URL_PREFIX}/message/:anchorId`, sendMessage);
-		server.get(`${URL_PREFIX}/message/:anchorId`, receiveMessage);
+		// server.get(`${URL_PREFIX}/channel/:anchorId/message`, createChannel);
+
+		server.post(`${URL_PREFIX}/create-channel/:anchorId`, createChannel);
+		server.post(`${URL_PREFIX}/send-message/:anchorId`, sendMessage);
+		server.get(`${URL_PREFIX}/receive-message/:anchorId`, receiveMessage);
 	});
 }
 

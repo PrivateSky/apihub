@@ -63,6 +63,20 @@ const defaultConfig = {
                 // },
             }
         }
+    },
+    "tokenBucket": {
+        "cost": {
+            "low": 10,
+            "medium": 100,
+            "high": 500
+        },
+        "error": {
+            "limitExceeded": "error_limit_exceeded",
+            "badArgument": "error_bad_argument"
+        },
+        "startTokens": 6000,
+        "tokenValuePerTime": 10,
+        "unitOfTime": 100
     }
 };
 

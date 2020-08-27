@@ -89,7 +89,7 @@ function KeySSINotifications(server) {
 		server.use(`${URL_PREFIX}/*`, responseModifierMiddleware)
 
 		server.post(`${URL_PREFIX}/subscribe/:anchorId`, subscribe);
-		server.delete(`${URL_PREFIX}/subscribe/:anchorId`, unsubscribe);
+		server.delete(`${URL_PREFIX}/unsubscribe/:anchorId`, unsubscribe);
 		server.put(`${URL_PREFIX}/publish/:anchorId`, publish);
 	});
 }
