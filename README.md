@@ -1,8 +1,8 @@
-# pskcommunication
-privatesky module that enables comunication (files transfer, notifications) between nodes
+# PSK API HUB
+PrivateSky module that enables communication between nodes (files transfer, notifications, bricks, brick ledger)
 
 ## How to use
-
-	git clone repo into PrivateSky module folder  
-
-	run bin/startNode.js
+Clone repo into 'modules' folder
+```bash
+git clone 
+```
