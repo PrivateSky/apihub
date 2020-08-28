@@ -4,12 +4,12 @@ function AnchorVersions(server) {
     server.get(`${URL_PREFIX}/versions/:anchorId`, (request, response, next) => {
         $$.flow.start('AnchorsManager').readVersions(request.params.anchorId, (err, fileHashes) => {
             if (err) {
-                return response.send(404, 'Anchor not found', next);
+                return response.send(404, 'Anchor not found');
             }
 
             response.setHeader('Content-Type', 'application/json');
 
-            return response.send(200, fileHashes, next);
+            return response.send(200, fileHashes);
         });
     });
 }

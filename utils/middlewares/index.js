@@ -20,14 +20,15 @@ function requestBodyJSONMiddleware(request, response, next) {
 
 function responseModifierMiddleware(request, response, next) {
     if (!response.hasOwnProperty('send')) {
-        response.send = (statusCode, body, callback = () => { }) => {
+        response.send = function (statusCode, body, callback = response.end) {
             response.statusCode = statusCode;
 
             if (body) {
                 response.write(responseWrapper(body));
             }
 
-            callback();
+            callback.call(response);
+            // callback();
         };
     }
 

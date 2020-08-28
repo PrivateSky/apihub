@@ -1,10 +1,10 @@
 function uploadBrick(request, response, next) {
     $$.flow.start('BricksManager').write(request, (err, result) => {
         if (err) {
-            return response.send(err.code === 'EACCES' ? 409 : 500, null, next);
+            return response.send(err.code === 'EACCES' ? 409 : 500);
         }
 
-        response.send(201, result, next);
+        response.send(201, result);
     });
 }
 
@@ -14,10 +14,10 @@ function downloadBrick(request, response, next) {
 
     $$.flow.start('BricksManager').read(request.params.hashLink, res, (err, result) => {
         if (err) {
-            return response.send(404, 'Brick not found', next);
+            return response.send(404, 'Brick not found');
         }
 
-        response.send(200, null, next);
+        response.send(200);
     });
 }
 
@@ -27,10 +27,10 @@ function downloadMultipleBricks(request, response, next) {
 
     $$.flow.start('BricksManager').readMultipleBricks(req.query.hashes, res, (err, result) => {
         if (err) {
-            return response.send(404, 'Brick not found', next);
+            return response.send(404, 'Brick not found');
         }
 
-        response.send(200, null, next);
+        response.send(200);
     });
 }
 

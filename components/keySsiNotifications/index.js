@@ -19,16 +19,16 @@ function KeySSINotifications(server) {
 				if (err) {
 					if (err.statusCode) {
 						if (err.statusCode !== 409) {
-							return response.send(err.statusCode, null, next);
+							return response.send(err.statusCode);
 						}
 					} else {
-						return response.send(500, null, next);
+						return response.send(500);
 					}
 				}
 
 				notificationManager.sendMessage(anchorId, message, function (err, counter) {
 					if (err) {
-						return response.send(500, null, next);
+						return response.send(500);
 					}
 
 					let message;
@@ -39,7 +39,7 @@ function KeySSINotifications(server) {
 						message = `Message was added to queue and will be delivered later.`;
 					}
 
-					return response.send(200, body, next);
+					return response.send(200, message);
 				});
 			});
 		});
@@ -52,20 +52,20 @@ function KeySSINotifications(server) {
 			if (err) {
 				if (err.statusCode) {
 					if (err.statusCode !== 409) {
-						return response.send(err.statusCode, null, next);
+						return response.send(err.statusCode);
 					}
 				} else {
-					return response.send(500, null, next);
+					return response.send(500);
 				}
 			}
 
 			notificationManager.readMessage(anchorId, function (err, message) {
 				try {
 					if (err) {
-						return response.send(err.statusCode || 500, message || null, next);
+						return response.send(err.statusCode || 500, message);
 					}
 
-					response.send(200, message, next);
+					response.send(200, message);
 				} catch (err) {
 					//here we expect to get errors when a connection has reached timeout
 					console.log(err);

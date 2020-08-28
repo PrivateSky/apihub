@@ -25,7 +25,8 @@ function Anchoring(server) {
     server.use(`${URL_PREFIX}/*`, responseModifierMiddleware);
 
     // if the method is POST why add additinal verb do describe action
-    server.post(`${URL_PREFIX}/add`, addAnchor);
+    server.post(`${URL_PREFIX}/add/:fileId/:lastHash`, addAnchor);
+    server.post(`${URL_PREFIX}/add/:fileId`, addAnchor);
 
     AnchorVersions(server);
     AnchorSubrscriptions(server);
