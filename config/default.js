@@ -1,5 +1,4 @@
-
-const path =require('swarmutils').path;
+const path = require("path");
 
 const defaultConfig = {
     "storage": path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "tmp"),
