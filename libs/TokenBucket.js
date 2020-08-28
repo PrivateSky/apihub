@@ -28,7 +28,7 @@ function TokenBucket(startTokens = config.getConfig('tokenBucket', 'startTokens'
     TokenBucket.prototype.COST_HIGH = config.getConfig('tokenBucket', 'cost', 'high'); // equivalent to 12op/minute with default values
 
     TokenBucket.ERROR_LIMIT_EXCEEDED = config.getConfig('tokenBucket', 'error', 'limitExceeded');
-    TokenBucket.ERROR_BAD_ARGUMENT = erverConfigUtils.getConfig('tokenBucket', 'error', 'badArgument');
+    TokenBucket.ERROR_BAD_ARGUMENT = config.getConfig('tokenBucket', 'error', 'badArgument');
 
     const limits = {};
 
