@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = require("path");
+const path = require("swarmutils").path;
 
 function setDataHandler(request, callback) {
     let bodyContent = '';

@@ -1,5 +1,5 @@
 const http = require("http");
-const path = require("path");
+const path = require("swarmutils").path;
 const crypto = require("crypto");
 
 require("../../../psknode/bundles/pskruntime");

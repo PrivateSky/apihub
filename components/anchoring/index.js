@@ -3,7 +3,7 @@ function Anchoring(server) {
     require('./flows/AnchorsManager');
 
     const fs = require('fs');
-    const path = require("path");
+    const path = require("swarmutils").path;
     const { URL_PREFIX } = require('./constants');
     const AnchorSubrscriptions = require('./subscriptions');
     const AnchorVersions = require('./versions');

@@ -1,5 +1,4 @@
-const pathModule = "path";
-const path = require(pathModule);
+const path = require("swarmutils").path;
 const fsModule = "fs";
 const fs = require(fsModule);
 const osModule = "os";

@@ -31,7 +31,7 @@ function readHandler(req, res, next) {
 
 function readChannel(name, callback) {
     const fs = require("fs");
-    const path = require("path");
+    const path = require("swarmutils").path;
 
     fs.readFile(path.join(storageFolder, name), function (err, content) {
         let anchors;
@@ -46,7 +46,7 @@ function readChannel(name, callback) {
 
 function publishToChannel(name, message, callback) {
     const fs = require("fs");
-    const path = require("path");
+    const path = require("swarmutils").path;
 
     fs.appendFile(path.join(storageFolder, name), message, function (err) {
         if (typeof err === "undefined") {

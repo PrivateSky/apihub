@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = require('path');
+const path = require('swarmutils').path;
 const Client = require('../../libs/http-wrapper/src').Client;
 const httpUtils = require('../../libs/http-wrapper/src').httpUtils;
 const CrlServer = require('../CrlServer');

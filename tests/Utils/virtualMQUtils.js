@@ -5,7 +5,7 @@ const http = require("http");
 
 const VirtualMQ = require('virtualmq');
 const CHANNEL_NAME = Buffer.from('mychannel').toString('base64');
-const path = require("path");
+const path = require("swarmutils").path;
 const fs = require('fs');
 let port = 8089;
 let serverURL = `http://localhost:${port}/${CHANNEL_NAME}`;

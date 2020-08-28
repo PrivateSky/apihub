@@ -1,4 +1,4 @@
-const path = require("path");
+const path = require("swarmutils").path;
 
 require("../../../../psknode/bundles/pskruntime");
 require("../../../../psknode/bundles/virtualMQ");

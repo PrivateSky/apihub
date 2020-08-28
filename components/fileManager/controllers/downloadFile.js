@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = require("path");
+const path = require("swarmutils").path;
 const config = require('../../../config');
 
 function sendResult(resHandler, resultStream) {

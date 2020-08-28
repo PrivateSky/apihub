@@ -1,7 +1,7 @@
 require("../../../../psknode/bundles/pskruntime");
 require('../../flows/CSBmanager');
 const assert = require("double-check").assert;
-const path = require('path');
+const path = require('swarmutils').path;
 const Duplex = require('stream').Duplex;
 const fileStateManager = require('../../../../libraries/utils/FileStateManager').getFileStateManager();
 const os = require('os');
