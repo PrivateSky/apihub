@@ -1,11 +1,11 @@
-const path = require('swarmutils').path;
+const path = require("path");
 const defaultConfig = require('./default');
 
 let serverConfig;
 
 function getConfig(...keys) {
     if (!serverConfig) {
-        const serverJson = typeof serverConf === "undefined" ? require(path.join(process.env.PSK_CONFIG_LOCATION, 'server.json')) : '';
+        const serverJson = typeof serverConfig === "undefined" ? require(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, process.env.PSK_CONFIG_LOCATION, 'server.json')) : '';
 
         serverConfig = new ServerConfig(serverJson);
     }
