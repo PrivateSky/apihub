@@ -123,7 +123,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
 		function addMiddlewares() {
 			const middlewareList = conf.activeEndpoints;
-			const path = require('swarmutils').path;
+			const path = require("path");
 			middlewareList.forEach(middleware => {
 				const middlewareConfigName = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);
 				const middlewareConfig = conf.endpointsConfig[middlewareConfigName];

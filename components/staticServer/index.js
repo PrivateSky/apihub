@@ -1,6 +1,6 @@
 function StaticServer(server) {
     const fs = require("fs");
-    const path =require('swarmutils').path;
+    const path = require('path');
     const utils = require("../../utils");
 
     function sendFiles(req, res, next) {
@@ -140,7 +140,7 @@ function StaticServer(server) {
         }
 
         const rootFolder = server.rootFolder;
-        const path =require('swarmutils').path;
+        const path = require("path");
         let requestedUrl = new URL(req.url, `http://${req.headers.host}`);
 		let requestedUrlPathname = requestedUrl.pathname;
         if (urlPrefix) {

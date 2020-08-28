@@ -1,8 +1,8 @@
 
 function Bricks(server) {
     require('./flows/BricksManager');
-    
-    const path = require('swarmutils').path;
+
+    const path = require("path");
     const bricks_storage_folder = 'brick-storage';
     const { URL_PREFIX } = require('./constants');
     const { headersMiddleware, responseModifierMiddleware } = require('../../utils/middlewares');

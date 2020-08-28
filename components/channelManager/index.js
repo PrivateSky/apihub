@@ -1,4 +1,4 @@
-const path =require('swarmutils').path;
+const path = require("path");
 const fs = require("fs");
 const crypto = require('crypto');
 const integration = require("zmq_adapter");
