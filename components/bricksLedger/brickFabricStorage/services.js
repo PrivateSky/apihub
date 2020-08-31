@@ -71,7 +71,7 @@ function readFromFile() {
 }
 
 async function addBrick(brickData) {
-    const { body: brickHash } = await makeRequest(brickURL, 'POST', encrypted).catch((err) => {
+    const { body: brickHash } = await makeRequest(brickURL, 'POST', brickData).catch((err) => {
         throw err;
     });
     
