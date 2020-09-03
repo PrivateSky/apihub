@@ -23,6 +23,7 @@ function Bricks(server) {
 
     server.put(`${URL_PREFIX}/put-brick`, uploadBrick);
     server.get(`${URL_PREFIX}/get-brick/:hashLink`, downloadBrick);
+    server.get(`${URL_PREFIX}/downloadMultipleBricks`, downloadMultipleBricks);
 }
 
 module.exports = Bricks;

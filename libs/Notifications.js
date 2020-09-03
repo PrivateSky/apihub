@@ -172,7 +172,9 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		let path = swarmUtils.path;
 
 		//if it's the first time we need to ensure that the working folder exists
-		fs.mkdirSync(workingFolderPath, { recursive: true });
+		if (!fs.existsSync(workingFolderPath)) {
+			fs.mkdirSync(workingFolderPath, { recursive: true });
+		}
 
 		loadState((err, state) => {
 			if (typeof storageFolderPath === 'undefined') {
@@ -180,7 +182,9 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 			}
 
 			//if it's the first time we need to ensure that the storage folder exists
-			fs.mkdirSync(storageFolderPath, { recursive: true });
+			if (!fs.existsSync(storageFolderPath)) {
+				fs.mkdirSync(storageFolderPath, { recursive: true });
+			}
 
 			//if is our first boot using a specific folder there is no state to be loaded
 			if (typeof state === 'undefined') {

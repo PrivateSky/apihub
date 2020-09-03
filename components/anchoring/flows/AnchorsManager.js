@@ -11,9 +11,11 @@ $$.flow.describe("AnchorsManager", {
     init: function (rootFolder) {
         rootFolder = path.resolve(rootFolder);
         anchorsFolders = rootFolder;
-        try{
-            fs.mkdirSync(anchorsFolders, {recursive: true});
-        }catch (e) {
+        try {
+            if (!fs.existsSync(anchorsFolders)) {
+                fs.mkdirSync(anchorsFolders, { recursive: true });
+            }
+        } catch (e) {
             throw e;
         }
     },
