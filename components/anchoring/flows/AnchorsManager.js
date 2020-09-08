@@ -34,6 +34,7 @@ $$.flow.describe("AnchorsManager", {
             }
 
             const filePath = path.join(anchorsFolders, alias);
+          
             fs.stat(filePath, (err, stats) => {
                 if (err) {
                     fs.writeFile(filePath, fileHash + endOfLine, callback);
@@ -56,8 +57,10 @@ $$.flow.describe("AnchorsManager", {
                 if (err.code === "ENOENT") {
                     return callback(undefined, []);
                 }
+
                 return callback(err);
             }
+
             callback(undefined, fileHashes.toString().trimEnd().split(endOfLine));
         });
     },

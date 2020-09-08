@@ -21,12 +21,10 @@ function Anchoring(server) {
 
     $$.flow.start('AnchorsManager').init(storageFolder);
 
-
     server.use(`${URL_PREFIX}/*`, responseModifierMiddleware);
 
-    // if the method is POST why add additinal verb do describe action
-    server.post(`${URL_PREFIX}/add/:fileId/:lastHash`, addAnchor);
-    server.post(`${URL_PREFIX}/add/:fileId`, addAnchor);
+    server.put(`${URL_PREFIX}/add/:fileId/:lastHash`, addAnchor);
+    server.put(`${URL_PREFIX}/add/:fileId`, addAnchor);
 
     AnchorVersions(server);
     AnchorSubrscriptions(server);
