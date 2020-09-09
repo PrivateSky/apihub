@@ -8,7 +8,7 @@ function Anchoring(server) {
     const AnchorSubrscriptions = require('./subscriptions');
     const AnchorVersions = require('./versions');
     const { addAnchor } = require('./controllers');
-    const { responseModifierMiddleware } = require('../../utils/middlewares');
+    const { responseModifierMiddleware, requestBodyJSONMiddleware } = require('../../utils/middlewares');
 
     const storageFolder = path.join(server.rootFolder, 'anchors');
     let storageNotAccessible = false;
@@ -23,7 +23,7 @@ function Anchoring(server) {
 
     server.use(`${URL_PREFIX}/*`, responseModifierMiddleware);
 
-    server.put(`${URL_PREFIX}/add/:fileId/:lastHash`, addAnchor);
+    server.put(`${URL_PREFIX}/add/:fileId`, requestBodyJSONMiddleware);
     server.put(`${URL_PREFIX}/add/:fileId`, addAnchor);
 
     AnchorVersions(server);

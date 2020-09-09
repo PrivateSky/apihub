@@ -1,13 +1,13 @@
-const path = require("swarmutils").path;
-const fsModule = "fs";
+const path = require('swarmutils').path;
+const fsModule = 'fs';
 const fs = require(fsModule);
-const osModule = "os";
+const osModule = 'os';
 const endOfLine = require(osModule).EOL;
 let anchorsFolders;
 
 const ALIAS_SYNC_ERR_CODE = 'sync-error';
 
-$$.flow.describe("AnchorsManager", {
+$$.flow.describe('AnchorsManager', {
     init: function (rootFolder) {
         rootFolder = path.resolve(rootFolder);
         anchorsFolders = rootFolder;
@@ -20,41 +20,32 @@ $$.flow.describe("AnchorsManager", {
         }
     },
 
-    addAlias: function (fileHash, lastHash, readStream, callback) {
-        if (!fileHash || typeof fileHash !== "string") {
-            return callback(new Error("No fileId specified."));
+    addAlias: function (fileHash, request, callback) {
+        if (!fileHash || typeof fileHash !== 'string') {
+            return callback(new Error('No fileId specified.'));
         }
+    
+        const filePath = path.join(anchorsFolders, fileHash);
 
-        this.__streamToString(readStream, (err, alias) => {
+        fs.stat(filePath, (err, stats) => {
             if (err) {
-                return callback(err);
-            }
-            if (!alias) {
-                return callback(new Error("No alias was provided"));
+                fs.writeFile(filePath, request.body.hash.new + endOfLine, callback);
+                return;
             }
 
-            const filePath = path.join(anchorsFolders, alias);
-          
-            fs.stat(filePath, (err, stats) => {
-                if (err) {
-                    fs.writeFile(filePath, fileHash + endOfLine, callback);
-                    return;
-                }
-
-                this.__appendHash(filePath, fileHash, {
-                    lastHash,
-                    fileSize: stats.size
-                }, callback);
-            });
-
+            this.__appendHash(filePath, request.body.hash.new, {
+                lastHash: request.body.hash.last,
+                fileSize: stats.size
+            }, callback);
         });
     },
 
     readVersions: function (alias, callback) {
         const filePath = path.join(anchorsFolders, alias);
+
         fs.readFile(filePath, (err, fileHashes) => {
             if (err) {
-                if (err.code === "ENOENT") {
+                if (err.code === 'ENOENT') {
                     return callback(undefined, []);
                 }
 
@@ -77,21 +68,11 @@ $$.flow.describe("AnchorsManager", {
      * @param {callback} callback 
      */
     __appendHash: function (path, hash, options, callback) {
-        if (!options.lastHash) {
-            return fs.appendFile(path, hash + endOfLine, callback);
-        }
-
         fs.open(path, fs.constants.O_RDWR, (err, fd) => {
             if (err) {
                 return callback(err);
             }
-
-            const readOptions = {
-                buffer: Buffer.alloc(options.fileSize),
-                offset: 0,
-                length: options.fileSize,
-                position: null
-            };
+          
             fs.read(fd, Buffer.alloc(options.fileSize), 0, options.fileSize, null, (err, bytesRead, buffer) => {
                 if (err) {
                     return callback(err);
@@ -101,11 +82,11 @@ $$.flow.describe("AnchorsManager", {
                 // if they are not the same, exit with error
                 const hashes = buffer.toString().trimEnd().split(endOfLine);
                 const lastHash = hashes[hashes.length - 1];
-
-                if (lastHash !== options.lastHash) {
+                
+                if (lastHash !== options.lastHash) {              
                     return callback({
                         code: ALIAS_SYNC_ERR_CODE,
-                        message: "Unable to add alias: versions out of sync."
+                        message: 'Unable to add alias: versions out of sync.'
                     });
                 }
 
@@ -118,19 +99,6 @@ $$.flow.describe("AnchorsManager", {
                 });
             });
         });
-    },
-
-    __streamToString: function (readStream, callback) {
-        let str = '';
-        readStream.on("data", (chunk) => {
-            str += chunk;
-        });
-
-        readStream.on("end", () => {
-            callback(undefined, str);
-        });
-
-        readStream.on("error", callback);
     }
 });
 
