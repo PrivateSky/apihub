@@ -12,7 +12,8 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 			timeout = 30 * 1000; //number of seconds * ms
 		}
 
-		if (typeof queues[queueName] !== undefined) {
+		console.log(queues);
+		if (typeof queues[queueName] !== "undefined") {
 			return callback({ message: 'Queue already exists.', statusCode: 409 });
 		}
 
@@ -80,6 +81,9 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		let notificationObject = buildNotification(message);
 		let notificationLifeTimer = queueMessageLifeTimers[queueName];
 
+		if(typeof queues[queueName] === "undefined"){
+			return callback(new Error(`There is no queue called ${queueName}`));
+		}
 		queues[queueName].push();
 
 		if (typeof storageFolderPath) {
@@ -103,7 +107,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 	this.sendMessage = function (queueName, message, callback) {
 		let subs = subscribers[queueName];
-		if (typeof subs === 'undefined' || subs.length > 0) {
+		if (typeof subs !== 'undefined' && subs.length > 0) {
 			return deliverMessage(subs, message, callback);
 		}
 		return addMessageToQueue(queueName, message, callback);
