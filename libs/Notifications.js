@@ -12,7 +12,6 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 			timeout = 30 * 1000; //number of seconds * ms
 		}
 
-		console.log(queues);
 		if (typeof queues[queueName] !== "undefined") {
 			return callback({ message: 'Queue already exists.', statusCode: 409 });
 		}
@@ -118,7 +117,9 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		if (typeof subs !== 'undefined') {
 			subs.push(callback);
 		}
+		
 		let notificationObject = queues[queueName].pop();
+
 		if (typeof notificationObject !== 'undefined' && notificationObject !== null) {
 			deliverMessage(subs, notificationObject.message, (err, counter) => {
 				if (counter > 0) {
