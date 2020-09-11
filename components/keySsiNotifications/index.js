@@ -7,7 +7,7 @@ function KeySSINotifications(server) {
 	const { URL_PREFIX } = require('./constants');
 	const workingDirPath = config.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
 
-	function publish(request, response, next) {
+	function publish(request, response) {
 		let anchorId = request.params.anchorId;
 
 		readBody(request, (err, message) => {
@@ -45,7 +45,7 @@ function KeySSINotifications(server) {
 		});
 	}
 
-	function subscribe(request, response, next) {
+	function subscribe(request, response) {
 		let anchorId = request.params.anchorId;
 
 		notificationManager.createQueue(anchorId, function (err) {
