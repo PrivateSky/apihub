@@ -10,7 +10,7 @@ function KeySSINotifications(server) {
 	function publish(request, response, next) {
 		let anchorId = request.params.anchorId;
 
-		readBody(req, (err, message) => {
+		readBody(request, (err, message) => {
 			if (err) {
 				return response.send(400);
 			}
