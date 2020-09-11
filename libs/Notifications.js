@@ -119,7 +119,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 			subs.push(callback);
 		}
 		let notificationObject = queues[queueName].pop();
-		if (typeof notificationObject !== 'undefined') {
+		if (typeof notificationObject !== 'undefined' && notificationObject !== null) {
 			deliverMessage(subs, notificationObject.message, (err, counter) => {
 				if (counter > 0) {
 					//message delivered... let's check if has a timer waiting to persist it
