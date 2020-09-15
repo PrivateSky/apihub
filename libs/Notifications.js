@@ -77,14 +77,15 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 	}
 
 	function addMessageToQueue(queueName, message, callback) {
-		let notificationObject = buildNotification(message);
-		let notificationLifeTimer = queueMessageLifeTimers[queueName];
+		const notificationObject = buildNotification(message);
+		const notificationLifeTimer = queueMessageLifeTimers[queueName];
 
 		if(typeof queues[queueName] === "undefined"){
 			return callback(new Error(`There is no queue called ${queueName}`));
 		}
-		queues[queueName].push();
 
+		queues[queueName].push(notificationObject);
+		
 		if (typeof storageFolderPath) {
 			notificationObject.timeout = setTimeout(function () {
 				//maybe we don't need to do this ... bur for safety reasons...
@@ -106,19 +107,23 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 	this.sendMessage = function (queueName, message, callback) {
 		let subs = subscribers[queueName];
+		console.log('sub',queueName, subscribers[queueName])
 		if (typeof subs !== 'undefined' && subs.length > 0) {
 			return deliverMessage(subs, message, callback);
 		}
+		
 		return addMessageToQueue(queueName, message, callback);
 	}
 
 	this.readMessage = function (queueName, callback) {
-		let subs = subscribers[queueName];
-		if (typeof subs !== 'undefined') {
-			subs.push(callback);
+		if (typeof subscribers[queueName] === 'undefined') {
+			subscribers[queueName] = [];
 		}
 		
-		let notificationObject = queues[queueName].pop();
+		const subs = subscribers[queueName];		
+		subs.push(callback);
+		
+		const notificationObject = queues[queueName].pop();
 
 		if (typeof notificationObject !== 'undefined' && notificationObject !== null) {
 			deliverMessage(subs, notificationObject.message, (err, counter) => {

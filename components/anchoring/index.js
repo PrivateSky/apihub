@@ -5,7 +5,7 @@ function Anchoring(server) {
     const fs = require('fs');
     const path = require("swarmutils").path;
     const { URL_PREFIX } = require('./constants');
-    const AnchorSubrscriptions = require('./subscriptions');
+    const AnchorSubrscribe = require('./subscribe');
     const AnchorVersions = require('./versions');
     const { addAnchor } = require('./controllers');
     const { responseModifierMiddleware, requestBodyJSONMiddleware } = require('../../utils/middlewares');
@@ -22,12 +22,11 @@ function Anchoring(server) {
     $$.flow.start('AnchorsManager').init(storageFolder);
 
     server.use(`${URL_PREFIX}/*`, responseModifierMiddleware);
-
     server.put(`${URL_PREFIX}/add/:fileId`, requestBodyJSONMiddleware);
     server.put(`${URL_PREFIX}/add/:fileId`, addAnchor);
 
     AnchorVersions(server);
-    AnchorSubrscriptions(server);
+    AnchorSubrscribe(server);
 }
 
 module.exports = Anchoring;
