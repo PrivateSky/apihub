@@ -38,7 +38,21 @@ const defaultConfig = {
             "module": "./components/fileManager"
         },
         "anchoring": {
-            "module": "./components/anchoring"
+            "module": "./components/anchoring",
+            "domainStrategies": {
+                "default": {
+                    "name": "File",
+                    "option": {
+                        "path": "./"
+                    }
+                },
+                "test": {
+                    "name": "File",
+                    "option": {
+                        "path": "./../"
+                    }
+                }
+            }
         },
         "staticServer": {
             "module": "./components/staticServer"

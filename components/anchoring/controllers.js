@@ -1,7 +1,22 @@
-const { ALIAS_SYNC_ERR_CODE } = require('./flows/AnchorsManager');
+const pskCrypto = require('../../../pskcrypto');
+const config = require('../../config');
+
+const { ALIAS_SYNC_ERR_CODE } = require('./strategies/File');
 
 function addAnchor(request, response, next) {
-    $$.flow.start("AnchorsManager").addAlias(request.params.fileId, request, (err, result) => {
+    const keyIdentifier = pskCrypto.pskBase58Decode(request.params.keyssi).toString();
+    // const keySSI = keySSIFactory.create(keyIdentifier.split(':')[1]);
+    // const key = keySSI.autoLoad(pskCrypto.pskBase58Decode(request.params.keyssi).toString())
+    const domain = keyIdentifier.split(':')[2];
+    let stategy = config.getConfig('endpointsConfig', 'anchoring', 'domainStrategies', domain);
+
+    if (!stategy) {
+        stategy = config.getConfig('endpointsConfig', 'anchoring', 'domainStrategies', 'default');
+    }
+
+    $$.flow.start(stategy.name).init(stategy.option.path);
+
+    $$.flow.start(stategy.name).addAlias(request.params.keyssi, request, (err, result) => {
         if (err) {
             if (err.code === 'EACCES') {
                 return response.send(409);

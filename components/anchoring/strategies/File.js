@@ -1,16 +1,15 @@
+const fs = require('fs');
+const endOfLine = require('os').EOL;
 const path = require('swarmutils').path;
-const fsModule = 'fs';
-const fs = require(fsModule);
-const osModule = 'os';
-const endOfLine = require(osModule).EOL;
-let anchorsFolders;
 
 const ALIAS_SYNC_ERR_CODE = 'sync-error';
 
+let anchorsFolders;
+
 $$.flow.describe('AnchorsManager', {
-    init: function (rootFolder) {
-        rootFolder = path.resolve(rootFolder);
-        anchorsFolders = rootFolder;
+    init: function (rootFolder, folderName) {
+        const storageFolder = path.join(rootFolder || server.rootFolder, folderName || 'anchors');
+        anchorsFolders = path.resolve(storageFolder);
         try {
             if (!fs.existsSync(anchorsFolders)) {
                 fs.mkdirSync(anchorsFolders, { recursive: true });
@@ -24,11 +23,11 @@ $$.flow.describe('AnchorsManager', {
         if (!fileHash || typeof fileHash !== 'string') {
             return callback(new Error('No fileId specified.'));
         }
-    
         const filePath = path.join(anchorsFolders, fileHash);
 
         fs.stat(filePath, (err, stats) => {
             if (err) {
+                console.log(err)
                 fs.writeFile(filePath, request.body.hash.new + endOfLine, callback);
                 return;
             }
@@ -48,10 +47,8 @@ $$.flow.describe('AnchorsManager', {
                 if (err.code === 'ENOENT') {
                     return callback(undefined, []);
                 }
-
                 return callback(err);
             }
-
             callback(undefined, fileHashes.toString().trimEnd().split(endOfLine));
         });
     },
@@ -72,18 +69,21 @@ $$.flow.describe('AnchorsManager', {
             if (err) {
                 return callback(err);
             }
-          
+
             fs.read(fd, Buffer.alloc(options.fileSize), 0, options.fileSize, null, (err, bytesRead, buffer) => {
                 if (err) {
+                    console.log(err)
+
                     return callback(err);
                 }
-
                 // compare the last hash in the file with the one received in the request
                 // if they are not the same, exit with error
                 const hashes = buffer.toString().trimEnd().split(endOfLine);
                 const lastHash = hashes[hashes.length - 1];
-                
-                if (lastHash !== options.lastHash) {              
+
+                if (lastHash !== options.lastHash) {
+                    console.log('ops', lastHash, options.lastHash)
+
                     return callback({
                         code: ALIAS_SYNC_ERR_CODE,
                         message: 'Unable to add alias: versions out of sync.'
@@ -92,9 +92,10 @@ $$.flow.describe('AnchorsManager', {
 
                 fs.write(fd, hash + endOfLine, options.fileSize, (err) => {
                     if (err) {
+                        console.log('write', err)
                         return callback(err);
                     }
-
+                    
                     fs.close(fd, callback);
                 });
             });
