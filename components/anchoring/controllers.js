@@ -1,12 +1,10 @@
-const pskCrypto = require('../../../pskcrypto');
 const config = require('../../config');
+const pskCrypto = require('../../../pskcrypto');
 
 const { ALIAS_SYNC_ERR_CODE } = require('./strategies/File');
 
 function addAnchor(request, response, next) {
     const keyIdentifier = pskCrypto.pskBase58Decode(request.params.keyssi).toString();
-    // const keySSI = keySSIFactory.create(keyIdentifier.split(':')[1]);
-    // const key = keySSI.autoLoad(pskCrypto.pskBase58Decode(request.params.keyssi).toString())
     const domain = keyIdentifier.split(':')[2];
     let stategy = config.getConfig('endpointsConfig', 'anchoring', 'domainStrategies', domain);
 
