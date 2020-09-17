@@ -6,7 +6,7 @@ const ALIAS_SYNC_ERR_CODE = 'sync-error';
 
 let anchorsFolders;
 
-$$.flow.describe('AnchorsManager', {
+$$.flow.describe('File', {
     init: function (rootFolder, folderName) {
         const storageFolder = path.join(rootFolder || server.rootFolder, folderName || 'anchors');
         anchorsFolders = path.resolve(storageFolder);
