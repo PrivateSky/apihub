@@ -1,8 +1,8 @@
-const config = require('../../config');
-const pskCrypto = require('../../../pskcrypto');
+const config = require('./../../../config');
+const pskCrypto = require('pskcrypto');
 
 function AnchorVersions(server) {
-    const { URL_PREFIX } = require('./../constants');
+    const { URL_PREFIX } = require('./../constants.js');
 
     server.get(`${URL_PREFIX}/versions/:keyssi`, (request, response, next) => {
         const keyIdentifier = pskCrypto.pskBase58Decode(request.params.keyssi).toString();

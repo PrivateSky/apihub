@@ -2,7 +2,7 @@
 function Anchoring(server) {
     require('./strategies/File');
 
-    const { URL_PREFIX } = require('./constants');
+    const { URL_PREFIX } = require('./constants.js');
     const AnchorSubrscribe = require('./subscribe');
     const AnchorVersions = require('./versions');
     const { addAnchor } = require('./controllers');
