@@ -27,7 +27,9 @@ $$.flow.describe('File', {
 
         fs.stat(filePath, (err, stats) => {
             if (err) {
-                console.log(err)
+                if (err.code !== 'ENOENT') {
+                    console.log(err);
+                }
                 fs.writeFile(filePath, request.body.hash.new + endOfLine, callback);
                 return;
             }
