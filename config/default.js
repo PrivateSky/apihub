@@ -8,7 +8,7 @@ const defaultConfig = {
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bricksLedger", "bricks", "anchoring", "dossier-wizard", "staticServer"],
+    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bricksLedger", "bricks", "anchoring", "dsu-wizard", "staticServer"],
     "endpointsConfig": {
         "messaging": {
             "module": "./components/mqManager",
@@ -28,8 +28,8 @@ const defaultConfig = {
             "signatureHeaderName": "x-signature",
             "enableSignatureCheck": true
         },
-        "dossier-wizard": {
-            "module": "dossier-wizard"
+        "dsu-wizard": {
+            "module": "dsu-wizard"
         },
         "bricks": {
             "module": "./components/bricks"
