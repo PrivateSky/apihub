@@ -1,5 +1,5 @@
 const path = require("swarmutils").path;
-const defaultConfig = require('./default');
+const defaultConf = require('./default');
 
 let serverConfig;
 
@@ -18,7 +18,7 @@ function getConfig(...keys) {
 }
 
 function ServerConfig(conf) {
-    function createConfig(config) {
+    function createConfig(config, defaultConfig) {
         if (typeof config === "undefined") {
             return defaultConfig;
         }
@@ -29,30 +29,25 @@ function ServerConfig(conf) {
                 config[mandatoryKey] = defaultConfig[mandatoryKey];
             }
         }
+        return __createConfigRecursively(conf, defaultConf);
 
-        return __createConfigRecursively(conf);
-
-        function __createConfigRecursively(config) {
+        function __createConfigRecursively(config, defaultConfig) {
             for (let prop in defaultConfig) {
                 if (typeof config[prop] === "object" && !Array.isArray(config[prop])) {
                     __createConfigRecursively(config[prop], defaultConfig[prop]);
                 } else {
                     if (typeof config[prop] === "undefined") {
-                        //only non-object values and arrays in defaultConfig are copied in config
-                        if (typeof defaultConfig[prop] !== "object" || Array.isArray(defaultConfig[prop])) {
-                            config[prop] = defaultConfig[prop];
-                        }
+                        config[prop] = defaultConfig[prop];
+                        __createConfigRecursively(config[prop], defaultConfig[prop]);
                     }
                 }
             }
-
             return config;
         }
     }
 
-    conf = createConfig(conf);
-    conf.defaultEndpoints = defaultConfig.activeEndpoints;
-
+    conf = createConfig(conf, defaultConf);
+    conf.defaultEndpoints = defaultConf.activeEndpoints;
     return conf;
 }
 
