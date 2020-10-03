@@ -20,7 +20,7 @@ process.env.vmq_zeromq_sub_address = `tcp://127.0.0.1:${subP}`;
 process.env.vmq_zeromq_pub_address = `tcp://127.0.0.1:${pubP}`;
 
 function createServer(folder, callback) {
-    const server = VirtualMQ.createPskWebServer(port, folder, undefined, (err, res) => {
+    const server = VirtualMQ.createInstance(port, folder, undefined, (err, res) => {
         if (err) {
             console.log("Failed to create VirtualMQ server on port ", port, "Trying again...");
                 port = getPort();

@@ -110,7 +110,7 @@ const flow = $$.flow.describe('simultaneousReadWrite', {
 
 
 if (process.argv[2] === '--child') {
-	VirtualMQ.createPskWebServer(PORT, tempFolder, () => {});
+	VirtualMQ.createInstance(PORT, tempFolder, () => {});
 } else {
 	fileStateManager.saveState([tempFolder], (err) => {
 		assert.false(err, 'Saving state has failed');
