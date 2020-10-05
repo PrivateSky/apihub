@@ -2,19 +2,21 @@ const httpWrapper = require('./libs/http-wrapper');
 const Server = httpWrapper.Server;
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
-//next require lines are only for browserify build purpose
-// Remove mock
-require('./components/bricks');
-require('./components/anchoring');
-require('./components/channelManager');
-require('./components/fileManager');
-require('./components/bricksLedger');
-require('./components/staticServer');
-require('./components/mqManager');
-require('./components/keySsiNotifications');
-//end
 
 function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
+	require('callflow').initialise();
+	//next require lines are only for browserify build purpose
+	// Remove mock
+	require('./components/bricks');
+	require('./components/anchoring');
+	require('./components/channelManager');
+	require('./components/fileManager');
+	require('./components/bricksLedger');
+	require('./components/staticServer');
+	require('./components/mqManager');
+	require('./components/keySsiNotifications');
+	//end
+
 	const port = listeningPort || 8080;
 	const tokenBucket = new TokenBucket(START_TOKENS, 1, 10);
 
