@@ -29,7 +29,8 @@ const defaultConfig = {
             "enableSignatureCheck": true
         },
         "dsu-wizard": {
-            "module": "dsu-wizard"
+            "module": "dsu-wizard",
+            "function": "initWizard"
         },
         "bricks": {
             "module": "./components/bricks"
