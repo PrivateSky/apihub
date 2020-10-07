@@ -4,7 +4,9 @@ const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
 
 function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
-	require('callflow').initialise();
+	if (typeof $$.flows === "undefined") {
+		require('callflow').initialise();
+	}
 	//next require lines are only for browserify build purpose
 	// Remove mock
 	require('./components/bricks');
