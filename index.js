@@ -49,6 +49,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 		if (typeof sslConfig !== 'undefined') {
 			commType += 's';
 		}
+
+		console.log(`Checking if port ${port} is available. Please wait...`);
+
 		require(commType).request({ port }, (res) => {
 			callback(undefined, true);
 		}).on('error', (err) => {
