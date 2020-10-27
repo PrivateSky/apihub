@@ -34,7 +34,7 @@ $$.flow.describe('BrickStorage', {
 
         if (pendingTransactions.length === 0)
         {
-            console.log('No pending transactions.');
+            //console.log('No pending transactions.');
             return;
         }
 

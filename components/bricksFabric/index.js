@@ -3,15 +3,8 @@ const timeout = require('./utils').getBricksFabricStrategy().option.timeout;
 const strategy = require('./utils').getBricksFabricStrategy().name;
 
 async function AutoSavePendingTransactions () {
-
-    console.log('timeout handler executed !');
-
     await $$.flow.start(strategy).completeBlock();
-
-    console.log('timeout handler execution finished !');
-
     setTimeout ( async () => {
-
         await AutoSavePendingTransactions();
     }, timeout);
 

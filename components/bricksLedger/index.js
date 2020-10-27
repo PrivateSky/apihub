@@ -1,10 +1,6 @@
-
-
 function BricksLedger(server) {
 
-console.log('init BricksLedger');
-
-    console.log('SERVER protocollllll',server.protocol());
+    console.log('init BricksLedger');
 
     const {executeCommand} = require('./controlers');
     const { URL_PREFIX } = require('./constants');
