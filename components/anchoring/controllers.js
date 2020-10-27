@@ -2,9 +2,11 @@ const { ALIAS_SYNC_ERR_CODE } = require('./strategies/File');
 
 function addAnchor(request, response, next) {
     const strategy = require("./utils").getAnchoringStrategy(request.params.keyssi);
-    $$.flow.start(strategy.name).init(strategy.option.path);
+    //todo : refactor - init ar trebui sa primeasca option si sa preia din interior ce doreste
+    // todo : init trebuie sa aiba semnatura generica indiferent de stratergie/domeniu
+    $$.flow.start(strategy.type).init(strategy.option.path);
 
-    $$.flow.start(strategy.name).addAlias(request.params.keyssi, request, (err, result) => {
+    $$.flow.start(strategy.type).addAlias(request.params.keyssi, request, (err, result) => {
         if (err) {
             if (err.code === 'EACCES') {
                 return response.send(409);
@@ -20,6 +22,8 @@ function addAnchor(request, response, next) {
 
         response.send(201);
     });
+
+
 }
 
 module.exports = { addAnchor };

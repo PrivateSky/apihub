@@ -10,7 +10,7 @@ function Anchoring(server) {
 
     server.use(`${URL_PREFIX}/*`, responseModifierMiddleware);
     server.put(`${URL_PREFIX}/add/:keyssi`, requestBodyJSONMiddleware);
-    server.put(`${URL_PREFIX}/add/:keyssi`, addAnchor);
+    server.put(`${URL_PREFIX}/add/:keyssi`, addAnchor); // to do : add call in brickledger to store the trasantion call
 
     AnchorVersions(server);
     AnchorSubrscribe(server);

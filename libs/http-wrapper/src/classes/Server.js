@@ -2,6 +2,7 @@ const MiddlewareRegistry = require('./MiddlewareRegistry');
 const http = require('http');
 const https = require('https');
 
+
 function Server(sslOptions) {
     const middleware = new MiddlewareRegistry();
     const server = _initServer(sslOptions);
@@ -39,7 +40,9 @@ function Server(sslOptions) {
         middleware.use("OPTIONS", reqUrl, reqResolver);
     };
 
-
+    this.protocol = function getProtocol(){
+        return (sslOptions) ? 'https' : 'http';
+    };
     /* INTERNAL METHODS */
 
     function _initServer(sslConfig) {

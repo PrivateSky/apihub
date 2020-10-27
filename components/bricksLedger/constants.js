@@ -1,3 +1,3 @@
-const URL_PREFIX = '/bricks-ledger';
+const URL_PREFIX = '/bricksledger';
 
-module.exports = { URL_PREFIX };
+module.exports = {URL_PREFIX};

@@ -8,7 +8,7 @@ const defaultConfig = {
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bricksLedger", "bricks", "anchoring", "dsu-wizard", "staticServer"],
+    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bricksLedger", "bricks", "anchoring", "bricksFabric", "dsu-wizard", "staticServer"],
     "endpointsConfig": {
         "messaging": {
             "module": "./components/mqManager",
@@ -38,20 +38,40 @@ const defaultConfig = {
         "filesManager": {
             "module": "./components/fileManager"
         },
+        "bricksFabric":{
+          "module" : "./components/bricksFabric",
+            "path": "./",
+          "domainStrategies" : {
+              "default" : {
+                  "name": "BrickStorage",
+                  "option" : {
+                      "timeout" : 15000,
+                     "transactionsPerBlock" : 5
+                  }
+              }
+          },
+            "commands - asta e pe brickledger" : {
+              "doAnchor" :
+                   "cale catre fisierul care contine implementarea metodei doAcnhor. Se apeleaza cu parametrul JSON primit din post . require('').execute(JSOSNPOST, callback)"
+
+            }
+        },
         "anchoring": {
             "module": "./components/anchoring",
             "domainStrategies": {
                 "default": {
-                    "name": "File",
+                    "type": "FS",
                     "option": {
                         "path": "./"
+                    },
+                    "commands" : {
+                        "addAnchor": "doAnchor"
                     }
+
                 },
-                "test": {
-                    "name": "File",
-                    "option": {
-                        "path": "./../"
-                    }
+                "EPI": {
+                    "type" : "etherum",
+                    "EndPoint" : "http://localhost:3000" // endpoitn catre API care proceseaza cererile catre etherum network
                 }
             }
         },
@@ -60,22 +80,7 @@ const defaultConfig = {
         },
         "bricksLedger": {
             "module": "./components/bricksLedger",
-            "brickFabric": {
-                "url": "http://localhost:8080/bricks",
-                "size": 2
-            },
-            "commands": {
-                "addAnchor": {
-                    "url": "http://localhost:8080/test",
-                },
-                // "testurl2": {
-                //     "url": "httpa://localhost:8080/test",
-                // },
-                // "testmethod": {
-                //     "module": "./commands.mock2.js",
-                //     "function": "commandsMock2"
-                // },
-            }
+            "doAnchor" : "anchorCommand.js",
         }
     },
     "tokenBucket": {

@@ -14,6 +14,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	require('./components/channelManager');
 	require('./components/fileManager');
 	require('./components/bricksLedger');
+	require('./components/bricksFabric');
 	require('./components/staticServer');
 	require('./components/mqManager');
 	require('./components/keySsiNotifications');
@@ -137,11 +138,12 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 				let middlewarePath;
 				if (middlewareConfigName) {
 					middlewarePath = middlewareConfig.module;
-					//console.log(middlewareConfig, middlewarePath)
+					//console.log(middlewareConfig, middlewarePath);
+					//console.log(conf.defaultEndpoints);
 					if (middlewarePath.startsWith('.') && conf.defaultEndpoints.indexOf(middleware) === -1) {
 						middlewarePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath);
 					}
-					//console.log(`Preparing to register middleware from path ${middlewarePath}`);
+					console.log(`Preparing to register middleware from path ${middlewarePath}`);
 					let middlewareImplementation = require(middlewarePath);
 					if (typeof middlewareConfig.function !== 'undefined') {
 						middlewareImplementation[middlewareConfig.function](server);
