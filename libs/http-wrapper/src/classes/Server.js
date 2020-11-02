@@ -39,18 +39,73 @@ function Server(sslOptions) {
     this.options = function optionsReq(reqUrl, reqResolver) {
         middleware.use("OPTIONS", reqUrl, reqResolver);
     };
+    this.makeLocalRequest = function (method,path, body,headers, callback)
+    {
+        if (typeof headers === "function")
+        {
+            callback = headers;
+            headers = undefined;
+        }
 
-    this.protocol = function getProtocol(){
-        return (sslOptions) ? 'https' : 'http';
+        if (typeof body === "function")
+        {
+            callback = body;
+            headers = undefined;
+            body = undefined;
+        }
+
+        const protocol =  require(this.protocol);
+        const options = {
+            hostname : 'localhost',
+            port : server.address().port,
+            path,
+            method,
+            headers
+        };
+        const req = protocol.request(options, response => {
+
+            if (response.statusCode < 200 || response.statusCode >= 300) {
+
+                return callback(new Error("Failed to execute command. StatusCode " + response.statusCode));
+            }
+            let data = [];
+            response.on('data', chunk => {
+                data.push(chunk);
+            });
+
+            response.on('end', () => {
+                try {
+                    const bodyContent = Buffer.concat(data).toString();
+                    console.log('resolve will be called. bodyContent received : ', bodyContent);
+                    return callback(undefined,bodyContent);
+                } catch (err) {
+                    return callback(err);
+                }
+            });
+        });
+
+        req.on('error', err => {
+            console.log("reject will be called. err :", err);
+            return callback(err);
+        });
+
+        req.write(body);
+        req.end();
     };
+
     /* INTERNAL METHODS */
 
     function _initServer(sslConfig) {
+        let server;
         if (sslConfig) {
-            return https.createServer(sslConfig, middleware.go);
+             server = https.createServer(sslConfig, middleware.go);
+             server.protocol = "https";
         } else {
-            return http.createServer(middleware.go);
+            server = http.createServer(middleware.go);
+            server.protocol = "http";
         }
+
+        return server;
     }
 
     return new Proxy(this, {

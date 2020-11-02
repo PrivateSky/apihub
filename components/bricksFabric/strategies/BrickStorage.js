@@ -1,40 +1,43 @@
 const fs = require('fs');
 const path = require('swarmutils').path;
 const BRICKSFABRIC_ERROR_CODE = 'bricks fabric error';
-let rootFolder;
-let transactionsPerBlock;
-const pendingTransactions = [];
-let lastBlockHashLink;
-
-
-const hashlinkfile = 'lasthashlink';
 
 
 $$.flow.describe('BrickStorage', {
 
     init : function (brickFabricRootFolder,noOfTransactionsPerBlock) {
-        rootFolder = brickFabricRootFolder;
-        transactionsPerBlock = noOfTransactionsPerBlock;
-
+        this.rootFolder = brickFabricRootFolder;
+        this.transactionsPerBlock = noOfTransactionsPerBlock;
+        this.hashlinkfile = 'lasthashlink';
+        this.lastBlockHashLink = undefined;
+        this.pendingTransactions = [];
+        this.pendingBuffer = [];
+        this.isCommitingBlock = false;
     },
     bootUp : function(){
       //get latest hashlink
-        const hashlinkpath = path.join(rootFolder,hashlinkfile);
+        const hashlinkpath = path.join(this.rootFolder,this.hashlinkfile);
         if (fs.existsSync(hashlinkpath))
         {
-            lastBlockHashLink = fs.readFileSync(hashlinkpath).toString();
+            this.lastBlockHashLink = fs.readFileSync(hashlinkpath).toString();
         }
     },
     __storeLastHashLink : function () {
-        const hashlinkpath = path.join(rootFolder,hashlinkfile);
-        fs.writeFileSync(hashlinkpath,lastBlockHashLink);
+        const hashlinkpath = path.join(this.rootFolder,this.hashlinkfile);
+        fs.writeFileSync(hashlinkpath,this.lastBlockHashLink);
     },
-    completeBlock : async function () {
+    completeBlock : function (server, callback) {
 
-
-        if (pendingTransactions.length === 0)
+        if (callback === undefined)
         {
-            //console.log('No pending transactions.');
+            callback = (err, result) => {
+                // Autosave callback.
+            };
+        }
+
+        if (this.pendingTransactions.length === 0)
+        {
+            //No pending transactions
             return;
         }
 
@@ -42,36 +45,82 @@ $$.flow.describe('BrickStorage', {
         const blockId = $$.uidGenerator.safe_uuid();
         const block = {
             'blockId' : blockId,
-            'previousBlockHashLink' : lastBlockHashLink,
+            'previousBlockHashLink' : this.lastBlockHashLink,
             'transactions' : []
 
         };
 
-        for (let i = 0; i < pendingTransactions.length; i++) {
-            block.transactions.push(pendingTransactions[i])
+        for (let i = 0; i < this.pendingTransactions.length; i++) {
+            block.transactions.push(this.pendingTransactions[i])
         }
 
-        lastBlockHashLink = await this.__SaveBlockToBrickStorage(JSON.stringify(block));
-        this.__storeLastHashLink();
-
-        pendingTransactions.splice(0, pendingTransactions.length);
-        console.log(block);
-        console.log('block finished');
+        this.__SaveBlockToBrickStorage(JSON.stringify(block), server, callback);
     },
-    __SaveBlockToBrickStorage : async function (data){
+    __SaveBlockToBrickStorage : function (data, server, callback){
 
-        const putBrickAsync = require('../utils').putBrickAsync;
-        const result = await putBrickAsync(data);
-        const resultJson =  JSON.parse(result);
-        console.log('hashlink : ',resultJson.message);
-        console.log(resultJson);
-        return resultJson.message;
-    },
-    storeData : async function (anchorData) {
-        pendingTransactions.push(anchorData);
-        if (pendingTransactions.length === transactionsPerBlock)
+        const blockHeaders = {
+            'Content-Type': 'application/json',
+            'Content-Length': data.length
+        };
+        const blockPath = require("../../bricks/constants").URL_PREFIX + "/put-brick";
+        const blockMethod = "PUT";
+        this.isCommitingBlock = true;
+
+        try {
+            server.makeLocalRequest(blockMethod, blockPath, data, blockHeaders, (err, result) => {
+                if (err) {
+                    console.log(err);
+                    this.__pushBuffer();
+                    this.isCommitingBlock = false;
+                    callback(err, undefined);
+                }
+
+                if (result) {
+                    this.lastBlockHashLink = JSON.parse(result);
+                    this.__storeLastHashLink();
+                    this.pendingTransactions.splice(0, this.pendingTransactions.length);
+                    this.__pushBuffer();
+                    this.isCommitingBlock = false;
+                    //console.log(result);
+                    console.log('block finished');
+
+                    callback(undefined, result);
+                }
+
+
+            });
+        } catch (err)
         {
-           await this.completeBlock();
+            console.log("bricks fabric", err);
+        }
+    },
+    __pushBuffer : function (){
+        if (this.pendingBuffer.length > 0)
+        {
+            console.log("push buffer to pending block", this.pendingBuffer);
+            for (let i = 0; i < this.pendingBuffer.length; i++) {
+                this.pendingTransactions.push(this.pendingBuffer[i]);
+            }
+            this.pendingBuffer.splice(0, this.pendingBuffer.length);
+        }
+    },
+    storeData : function (anchorData, server, callback) {
+        if (this.isCommitingBlock === true)
+        {
+            console.log("transaction cached");
+            this.pendingBuffer.push(anchorData);
+            callback(undefined,"Transaction was added to the block.");
+            return;
+        }
+        console.log("transaction pushed to pending block");
+        this.pendingTransactions.push(anchorData);
+        if (this.pendingTransactions.length >= this.transactionsPerBlock)
+        {
+           // console.log("commit block callback");
+           this.completeBlock(server, callback);
+        }else {
+            //console.log("pending callback");
+            callback(undefined,"Transaction was added to the block.");
         }
     }
 

@@ -1,29 +1,37 @@
-const { ALIAS_SYNC_ERR_CODE } = require('./strategies/File');
+const { ALIAS_SYNC_ERR_CODE } = require('./strategies/FS');
 
-function addAnchor(request, response, next) {
-    const strategy = require("./utils").getAnchoringStrategy(request.params.keyssi);
-    //todo : refactor - init ar trebui sa primeasca option si sa preia din interior ce doreste
-    // todo : init trebuie sa aiba semnatura generica indiferent de stratergie/domeniu
-    $$.flow.start(strategy.type).init(strategy.option.path);
+function createHandler(server){
 
-    $$.flow.start(strategy.type).addAlias(request.params.keyssi, request, (err, result) => {
-        if (err) {
-            if (err.code === 'EACCES') {
-                return response.send(409);
+    return function  addAnchor(request, response, next) {
+
+
+        // get the strategy based on the domain extracted from keyssi. if no domain found fallback on default
+        const strategy = require("./utils").getAnchoringStrategy(request.params.keyssi);
+        //init will receive all the available context information : the whole strategy, body, keyssi from the query and the protocol
+        let flow = $$.flow.start(strategy.type);
+        flow.init(strategy, request.params.keyssi, request.body, server.rootFolder);
+
+        // all the available information was passed on init.
+        flow.addAlias(server, (err, result) => {
+            if (err) {
+                if (err.code === 'EACCES') {
+                    return response.send(409);
+                }
+                if (err.code === ALIAS_SYNC_ERR_CODE) {
+                    // see: https://tools.ietf.org/html/rfc6585#section-3
+                    return response.send(428);
+                }
+                return response.send(500);
             }
 
-            if (err.code === ALIAS_SYNC_ERR_CODE) {
-                // see: https://tools.ietf.org/html/rfc6585#section-3
-                return response.send(428);
-            }
-
-            return response.send(500);
-        }
-
-        response.send(201);
-    });
+            response.send(201);
+        });
 
 
+    }
 }
 
-module.exports = { addAnchor };
+
+
+
+module.exports = createHandler;

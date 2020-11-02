@@ -1,8 +1,6 @@
 function BricksLedger(server) {
 
-    console.log('init BricksLedger');
-
-    const {executeCommand} = require('./controlers');
+    const executeCommand= require('./controlers')(server);
     const { URL_PREFIX } = require('./constants');
     const { responseModifierMiddleware, requestBodyJSONMiddleware } = require('../../utils/middlewares');
 

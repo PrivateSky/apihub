@@ -49,12 +49,7 @@ const defaultConfig = {
                      "transactionsPerBlock" : 5
                   }
               }
-          },
-            "commands - asta e pe brickledger" : {
-              "doAnchor" :
-                   "cale catre fisierul care contine implementarea metodei doAcnhor. Se apeleaza cu parametrul JSON primit din post . require('').execute(JSOSNPOST, callback)"
-
-            }
+          }
         },
         "anchoring": {
             "module": "./components/anchoring",
@@ -62,16 +57,23 @@ const defaultConfig = {
                 "default": {
                     "type": "FS",
                     "option": {
-                        "path": "./"
+                        "path": "/anchors"
                     },
                     "commands" : {
-                        "addAnchor": "doAnchor"
+                        "addAnchor": "anchor"
+                        // anchor se trimite in body ca si commandType, apoi este tradus in doAnchor si acesta e cautat in settings pentru a vedea ce executa
+                        // domainStrategies : sunt legate intre ele ? adica anchoring va trimite strategia sa catre bricksLedger si acesta o va trimite catree bricksFabric ?
+                        // momentan strategia pare sa poata fii determinata doar de anchoring care primeste un keySSI in params. Restul componentelor nu au metode prin care sa poata determina o strategie
                     }
 
                 },
                 "EPI": {
                     "type" : "etherum",
-                    "EndPoint" : "http://localhost:3000" // endpoitn catre API care proceseaza cererile catre etherum network
+                    "option" : {
+                        "EndPoint" : "http://localhost:3000" // endpoitn catre API care proceseaza cererile catre etherum network
+                    } // operation will be done dirrectlly into the Ethereum API -> jsonrpc-> network
+
+
                 }
             }
         },
@@ -81,6 +83,7 @@ const defaultConfig = {
         "bricksLedger": {
             "module": "./components/bricksLedger",
             "doAnchor" : "anchorCommand.js",
+            "doEPIAnchor" : "EPIAnchorCommand.js"
         }
     },
     "tokenBucket": {

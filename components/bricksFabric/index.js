@@ -1,25 +1,15 @@
 
-const timeout = require('./utils').getBricksFabricStrategy().option.timeout;
-const strategy = require('./utils').getBricksFabricStrategy().name;
 
-async function AutoSavePendingTransactions () {
-    await $$.flow.start(strategy).completeBlock();
-    setTimeout ( async () => {
-        await AutoSavePendingTransactions();
+function AutoSavePendingTransactions (flow, timeout, server) {
+    flow.completeBlock(server);
+    setTimeout (  () => {
+         AutoSavePendingTransactions(flow, timeout, server);
     }, timeout);
 
 }
 
 
-setTimeout ( async () => {
-    //start forever loop starting in timeout
-    await AutoSavePendingTransactions();
-}, timeout)
-
-
 function BricksFabric(server) {
-
-    console.log('init bricksFabric');
 
     require('./strategies/BrickStorage.js');
 
@@ -30,24 +20,27 @@ function BricksFabric(server) {
     const strategyType = bricksFabricStrategy.name;
 
     //init strategy
-    $$.flow.start(strategyType).init(rootFolder,noOfTran);
+    let flow = $$.flow.start(strategyType);
+    flow.init(rootFolder,noOfTran);
 
     //resume if necessary
-    $$.flow.start(strategyType).bootUp();
+    flow.bootUp();
+
+    const timeout = bricksFabricStrategy.option.timeout;
+    setTimeout (  () => {
+        //start forever loop starting in timeout
+        AutoSavePendingTransactions(flow, timeout, server);
+    }, timeout);
 
     const { URL_PREFIX } = require('./constants.js');
     const { responseModifierMiddleware, requestBodyJSONMiddleware } = require('../../utils/middlewares');
-    const { storeAnchor } = require('./controllers');
+    const  storeTransaction  = require('./controllers')(flow, server);
 
     server.use(`${URL_PREFIX}/*`, responseModifierMiddleware);
-    // request.body is populated
-    // we will have anchor json in there
-    server.put(`${URL_PREFIX}/add/:anchorId`, requestBodyJSONMiddleware);
+    // request.body is populated with what data needs to be stored
+    server.put(`${URL_PREFIX}/add`, requestBodyJSONMiddleware);
 
-    server.put(`${URL_PREFIX}/add/:anchorId`, async (request, response, next) => await storeAnchor(request, response, next));
-
-    console.log('middleware bricksFabric initialized');
-    console.log(`listening to ${URL_PREFIX}/add/:anchorId`);
+    server.put(`${URL_PREFIX}/add`, storeTransaction);
 };
 
 

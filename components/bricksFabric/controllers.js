@@ -1,37 +1,19 @@
 
-async function storeAnchor (request, response, callback) {
+function createHandler(flow, server) {
 
-    console.log('store anchored called');
+    return function storeTransaction (request, response, next) {
 
-    //get request info
-    const anchorId = request.params.anchorId;
+        console.log('store anchored called');
+        //strategy is already booted up
+        flow.storeData(request.body, server, (err, result) => {
+            if (err) {
+                return response.send(500,"Failed to store transaction."+ err.toString());
+            }
+            response.send(201, result);
+        });
 
-    const hashnew = request.body.hash.new;
-    const hashlast = request.body.hash.last;
-
-    const anchorData = {
-        anchorId : anchorId,
-        hash : {
-            last: hashlast,
-            new : hashnew
-        }
-    };
-
-    console.log(anchorData);
-
-    const bricksFabricStrategy = require('./utils').getBricksFabricStrategy();
-    const strategyType = bricksFabricStrategy.name;
-
-    //strategy is already booted up
-    await $$.flow.start(strategyType).storeData(anchorData, callback);
-
-
-
-    response.send(201);
-
+    }
 }
 
 
-
-
-module.exports = {storeAnchor};
+module.exports = createHandler;
