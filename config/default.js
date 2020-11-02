@@ -69,11 +69,10 @@ const defaultConfig = {
                 },
                 "EPI": {
                     "type" : "etherum",
+                    "endpoint" : "http://localhost:3000", // endpoitn catre API care proceseaza cererile catre etherum network
                     "option" : {
-                        "EndPoint" : "http://localhost:3000" // endpoitn catre API care proceseaza cererile catre etherum network
+                       //maybe other options will be required
                     } // operation will be done dirrectlly into the Ethereum API -> jsonrpc-> network
-
-
                 }
             }
         },
