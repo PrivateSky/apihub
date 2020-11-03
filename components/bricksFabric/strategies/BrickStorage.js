@@ -76,7 +76,7 @@ $$.flow.describe('BrickStorage', {
                 }
 
                 if (result) {
-                    this.lastBlockHashLink = JSON.parse(result);
+                    this.lastBlockHashLink = JSON.parse(result).message;
                     this.__storeLastHashLink();
                     this.pendingTransactions.splice(0, this.pendingTransactions.length);
                     this.__pushBuffer();
