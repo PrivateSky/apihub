@@ -9,6 +9,7 @@ function createHandler(server){
         const strategy = require("./utils").getAnchoringStrategy(request.params.keyssi);
         //init will receive all the available context information : the whole strategy, body, keyssi from the query and the protocol
         let flow = $$.flow.start(strategy.type);
+        //let flow = $$.flow.start('ETH');
         flow.init(strategy, request.params.keyssi, request.body, server.rootFolder);
 
         // all the available information was passed on init.

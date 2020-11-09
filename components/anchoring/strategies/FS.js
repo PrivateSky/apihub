@@ -97,7 +97,7 @@ $$.flow.describe('FS', {
         };
     },
 
-    readVersions: function (alias, callback) {
+    readVersions: function (alias,server, callback) {
         const filePath = path.join(this.anchorsFolders, alias);
         fs.readFile(filePath, (err, fileHashes) => {
             if (err) {
