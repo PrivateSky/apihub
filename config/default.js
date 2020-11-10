@@ -33,7 +33,19 @@ const defaultConfig = {
             "function": "initWizard"
         },
         "bricks": {
-            "module": "./components/bricks"
+            "module": "./components/bricks",
+            "domains" : {
+                "default" : {
+                    "path" :"/internal-volume/domains/default/brick-storage" },
+                "predefined" : {
+                    "path" :"/internal-volume/domains/predefined/brick-storage" },
+                "vault" : {
+                    "path" :"/internal-volume/domains/vault/brick-storage"
+                },
+                "EPI" : {
+                    "path" :"/external-volume/domains/epi/brick-storage"
+                }
+            }
         },
         "filesManager": {
             "module": "./components/fileManager"
@@ -57,15 +69,25 @@ const defaultConfig = {
                 "default": {
                     "type": "FS",
                     "option": {
-                        "path": "/anchors"
+                        "path": "/internal-volume/domains/default/anchors",
+                        "enableBricksLedger" : false
                     },
                     "commands" : {
                         "addAnchor": "anchor"
-                        // anchor se trimite in body ca si commandType, apoi este tradus in doAnchor si acesta e cautat in settings pentru a vedea ce executa
-                        // domainStrategies : sunt legate intre ele ? adica anchoring va trimite strategia sa catre bricksLedger si acesta o va trimite catree bricksFabric ?
-                        // momentan strategia pare sa poata fii determinata doar de anchoring care primeste un keySSI in params. Restul componentelor nu au metode prin care sa poata determina o strategie
-                    }
+                       }
 
+                },
+                "predefined": {
+                    "type": "FS",
+                    "option": {
+                        "path": "/internal-volume/domains/predefined/anchors"
+                    }
+                },
+                "vault":{
+                    "type": "FS",
+                    "option": {
+                        "path": "/internal-volume/domains/vault/anchors"
+                    }
                 },
                 "EPI": {
                     "type" : "etherum",

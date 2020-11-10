@@ -1,13 +1,13 @@
-const getAnchoringStrategy = (ssiString) => {
+const getAnchoringDomainConfig = (ssiString) => {
     const config = require("../../../config");
     const domain = getDomainFromKeySSI(ssiString);
-    let strategy = config.getConfig('endpointsConfig', 'anchoring', 'domainStrategies', domain);
+    let domainConfig = config.getConfig('endpointsConfig', 'anchoring', 'domainStrategies', domain);
 
-    if (!strategy) {
-        strategy = config.getConfig('endpointsConfig', 'anchoring', 'domainStrategies', 'default');
+    if (!domainConfig) {
+        domainConfig = config.getConfig('endpointsConfig', 'anchoring', 'domainStrategies', 'default');
     }
 
-    return strategy;
+    return domainConfig;
 };
 
 const getDomainFromKeySSI = function (ssiString) {
@@ -20,4 +20,4 @@ const getDomainFromKeySSI = function (ssiString) {
     return domain;
 }
 
-module.exports = {getAnchoringStrategy, getDomainFromKeySSI}
+module.exports = {getAnchoringDomainConfig, getDomainFromKeySSI}

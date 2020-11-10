@@ -4,50 +4,36 @@ const path = require('swarmutils').path;
 
 const ALIAS_SYNC_ERR_CODE = 'sync-error';
 
-let folderStrategy = [];
+//dictionary. key - domain, value path
+let folderStrategy = {};
 
 $$.flow.describe('FS', {
-    init: function (strategy, anchorId, jsonData, rootFolder) {
+    init: function (domainConfig, anchorId, jsonData, rootFolder) {
+            const domainName = this.__getDomainName(anchorId);
             this.commandData = {};
-            this.commandData.option = strategy.option;
-            this.commandData.strategyType = strategy.type;
+            this.commandData.option = domainConfig.option;
+            this.commandData.domain = domainName;
             this.commandData.anchorId = anchorId;
             this.commandData.jsonData = jsonData;
-            this.domain = require('../utils/index').getDomainFromKeySSI(anchorId);
-
-            let folderPrepared = this.__getFolderStrategy(strategy, this.domain);
-
-            //because we work instance based, ensure that folder structure is done only once per strategy type
-            if (folderPrepared && folderPrepared.IsDone === true)
+            //config "enableBricksLedger" . default false, even if it is not configured
+            this.commandData.EnableBricksLedger = typeof domainConfig.option.enableBricksLedger === 'undefined' ? false : domainConfig.option.enableBricksLedger;
+            //because we work instance based, ensure that folder structure is done only once per domain
+            //skip, folder structure is already done for this domain type
+            if (!folderStrategy[domainName])
             {
-                //skip, folder structure is already done for this strategy type
-            } else {
-                let folderPrepared = {
-                    "IsDone" : false,
-                    "type" : strategy.type,
-                    "domain" : this.domain,
-                    "anchorsFolders" : ""
-                };
-                folderStrategy.push(folderPrepared);
-                let anchorFolder = strategy.option.path;
-                if (typeof process.env.ANCHOR_STORAGE_FOLDER !== 'undefined') {
-                    anchorFolder = process.env.ANCHOR_STORAGE_FOLDER;
-                }
-                let storageFolder = path.join(rootFolder,'external-volume/domains',this.domain, anchorFolder);
-
-                this.__prepareFolderStructure(storageFolder, folderPrepared);
-            };
-
-
+                const storageFolder = path.join(rootFolder,domainConfig.option.path);
+                folderStrategy[domainName] = storageFolder;
+                this.__prepareFolderStructure(storageFolder, domainName);
+            }
     },
-    __getFolderStrategy(){
-        return folderStrategy.find(elem => elem.type === this.commandData.strategyType && elem.domain === this.domain);
+    __getDomainName : function (keySSI){
+        return require('../utils/index').getDomainFromKeySSI(keySSI);
     },
-    __prepareFolderStructure: function (storageFolder, folderPrepared) {
-        folderPrepared.anchorsFolders = path.resolve(storageFolder);
+    __prepareFolderStructure: function (storageFolder, domainName) {
+        folderStrategy[domainName] = path.resolve(storageFolder);
         try {
-            if (!fs.existsSync(folderPrepared.anchorsFolders)) {
-                fs.mkdirSync(folderPrepared.anchorsFolders, { recursive: true });
+            if (!fs.existsSync(folderStrategy[domainName])) {
+                fs.mkdirSync(folderStrategy[domainName], { recursive: true });
             }
         } catch (e) {
             console.log('error creating anchoring folder', e);
@@ -56,7 +42,7 @@ $$.flow.describe('FS', {
     },
     addAlias : function (server, callback) {
         const fileHash = this.commandData.anchorId;
-        const anchorsFolders = this.__getFolderStrategy().anchorsFolders;
+        const anchorsFolders = folderStrategy[this.commandData.domain];
         if (!fileHash || typeof fileHash !== 'string') {
             return callback(new Error('No fileId specified.'));
         }
@@ -76,8 +62,12 @@ $$.flow.describe('FS', {
             }, callback);
         });
 
-        //send log info
-        this.__logWriteRequest(server);
+
+        if (this.commandData.EnableBricksLedger)
+        {
+            //send log info
+            this.__logWriteRequest(server);
+        }
     },
 
     __logWriteRequest : function(server){
@@ -109,7 +99,7 @@ $$.flow.describe('FS', {
     },
 
     readVersions: function (alias,server, callback) {
-        const anchorsFolders = this.__getFolderStrategy().anchorsFolders;
+        const anchorsFolders = folderStrategy[this.commandData.domain];
         const filePath = path.join(anchorsFolders, alias);
         fs.readFile(filePath, (err, fileHashes) => {
             if (err) {

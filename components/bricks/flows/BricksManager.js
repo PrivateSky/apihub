@@ -2,15 +2,20 @@ const fs = require('fs');
 const path = require('swarmutils').path;
 const crypto = require('pskcrypto');
 
-let brickStorageFolder;
 const HASH_ALGORITHM = 'sha256';
 const folderNameSize = process.env.FOLDER_NAME_SIZE || 5;
 
+//key - domain
+//value - folder
+let bricksFolders = {};
+
 $$.flow.describe('BricksManager', {
-    init: function (rootFolder) {
-        rootFolder = path.resolve(rootFolder);
-        brickStorageFolder = rootFolder;
-        this.__ensureFolderStructure(rootFolder);
+    init: function (domainConfig, domain, serverRootFolder) {
+        this.domain = domain;
+        if (typeof bricksFolders[domain] === 'undefined') {
+            bricksFolders[domain] = path.join(serverRootFolder, domainConfig.path);
+            this.__ensureFolderStructure(bricksFolders[domain]);
+        }
     },
     write: function (readFileStream, callback) {
         this.__convertStreamToBuffer(readFileStream, (err, brickData) => {
@@ -22,8 +27,7 @@ $$.flow.describe('BricksManager', {
                 return;
             }
 
-
-            const folderName = path.join(brickStorageFolder, fileName.substr(0, folderNameSize));
+            const folderName = path.join(bricksFolders[this.domain], fileName.substr(0, folderNameSize));
 
             this.__ensureFolderStructure(folderName, (err) => {
                 if (err) {
@@ -39,7 +43,7 @@ $$.flow.describe('BricksManager', {
             return;
         }
 
-        const folderPath = path.join(brickStorageFolder, fileName.substr(0, folderNameSize));
+        const folderPath = path.join(bricksFolders[this.domain], fileName.substr(0, folderNameSize));
         const filePath = path.join(folderPath, fileName);
 
         this.__verifyFileExistence(filePath, (err, result) => {
@@ -84,7 +88,7 @@ $$.flow.describe('BricksManager', {
         });
     },
     __readBrick: function (brickHash, callback) {
-        const folderPath = path.join(brickStorageFolder, brickHash.substr(0, folderNameSize));
+        const folderPath = path.join(bricksFolders[this.domain], brickHash.substr(0, folderNameSize));
         const filePath = path.join(folderPath, brickHash);
         this.__verifyFileExistence(filePath, (err) => {
             if (err) {
@@ -142,7 +146,7 @@ $$.flow.describe('BricksManager', {
     __verifyFileExistence: function (filePath, callback) {
         fs.access(filePath, callback);
     },
-    __convertStreamToBuffer: function (readStream, callback){
+    __convertStreamToBuffer: function (readStream, callback) {
         let brickData = Buffer.alloc(0);
         readStream.on('data', (chunk) => {
             brickData = Buffer.concat([brickData, chunk]);
