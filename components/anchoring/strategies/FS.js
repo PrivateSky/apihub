@@ -10,34 +10,44 @@ $$.flow.describe('FS', {
     init: function (strategy, anchorId, jsonData, rootFolder) {
             this.commandData = {};
             this.commandData.option = strategy.option;
+            this.commandData.strategyType = strategy.type;
             this.commandData.anchorId = anchorId;
             this.commandData.jsonData = jsonData;
-            const folderPrepared = folderStrategy.find(elem => elem.type === strategy.type);
+            this.domain = require('../utils/index').getDomainFromKeySSI(anchorId);
+
+            let folderPrepared = this.__getFolderStrategy(strategy, this.domain);
 
             //because we work instance based, ensure that folder structure is done only once per strategy type
             if (folderPrepared && folderPrepared.IsDone === true)
             {
                 //skip, folder structure is already done for this strategy type
             } else {
-                folderStrategy.push({
+                let folderPrepared = {
                     "IsDone" : false,
-                    "type" : strategy.type
-                });
-                let storageFolder = path.join(rootFolder, strategy.option.path);
+                    "type" : strategy.type,
+                    "domain" : this.domain,
+                    "anchorsFolders" : ""
+                };
+                folderStrategy.push(folderPrepared);
+                let anchorFolder = strategy.option.path;
                 if (typeof process.env.ANCHOR_STORAGE_FOLDER !== 'undefined') {
-                    storageFolder = process.env.ANCHOR_STORAGE_FOLDER;
+                    anchorFolder = process.env.ANCHOR_STORAGE_FOLDER;
                 }
-                this.__prepareFolderStructure(storageFolder);
+                let storageFolder = path.join(rootFolder,'external-volume/domains',this.domain, anchorFolder);
+
+                this.__prepareFolderStructure(storageFolder, folderPrepared);
             };
 
 
     },
-
-    __prepareFolderStructure: function (storageFolder) {
-        this.anchorsFolders = path.resolve(storageFolder);
+    __getFolderStrategy(){
+        return folderStrategy.find(elem => elem.type === this.commandData.strategyType && elem.domain === this.domain);
+    },
+    __prepareFolderStructure: function (storageFolder, folderPrepared) {
+        folderPrepared.anchorsFolders = path.resolve(storageFolder);
         try {
-            if (!fs.existsSync(this.anchorsFolders)) {
-                fs.mkdirSync(this.anchorsFolders, { recursive: true });
+            if (!fs.existsSync(folderPrepared.anchorsFolders)) {
+                fs.mkdirSync(folderPrepared.anchorsFolders, { recursive: true });
             }
         } catch (e) {
             console.log('error creating anchoring folder', e);
@@ -46,10 +56,11 @@ $$.flow.describe('FS', {
     },
     addAlias : function (server, callback) {
         const fileHash = this.commandData.anchorId;
+        const anchorsFolders = this.__getFolderStrategy().anchorsFolders;
         if (!fileHash || typeof fileHash !== 'string') {
             return callback(new Error('No fileId specified.'));
         }
-        const filePath = path.join(this.anchorsFolders, fileHash);
+        const filePath = path.join(anchorsFolders, fileHash);
         fs.stat(filePath, (err, stats) => {
             if (err) {
                 if (err.code !== 'ENOENT') {
@@ -98,7 +109,8 @@ $$.flow.describe('FS', {
     },
 
     readVersions: function (alias,server, callback) {
-        const filePath = path.join(this.anchorsFolders, alias);
+        const anchorsFolders = this.__getFolderStrategy().anchorsFolders;
+        const filePath = path.join(anchorsFolders, alias);
         fs.readFile(filePath, (err, fileHashes) => {
             if (err) {
                 if (err.code === 'ENOENT') {
