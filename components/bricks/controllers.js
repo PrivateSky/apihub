@@ -34,6 +34,7 @@ function createHandlerDownloadBrick(server)
 
         flow.read(request.params.hashLink, response, (err, result) => {
             if (err) {
+                console.log("Brick not found ", request.params.hashLink);
                 return response.send(404, 'Brick not found');
             }
 

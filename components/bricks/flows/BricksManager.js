@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('swarmutils').path;
-const crypto = require('pskcrypto');
+const openDSU = require("opendsu");
+const crypto = openDSU.loadApi("crypto");
 
-const HASH_ALGORITHM = 'sha256';
 const folderNameSize = process.env.FOLDER_NAME_SIZE || 5;
 
 //key - domain
@@ -22,7 +22,7 @@ $$.flow.describe('BricksManager', {
             if (err) {
                 return callback(err);
             }
-            const fileName = crypto.hash(HASH_ALGORITHM, brickData, 'hex');
+            const fileName = crypto.sha256(brickData);
             if (!this.__verifyFileName(fileName, callback)) {
                 return;
             }
