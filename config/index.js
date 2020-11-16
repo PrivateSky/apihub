@@ -5,7 +5,14 @@ let serverConfig;
 
 function getConfig(...keys) {
     if (!serverConfig) {
-        const serverJson = typeof serverConfig === "undefined" ? require(path.join(path.resolve(process.env.PSK_CONFIG_LOCATION), 'server.json')) : '';
+        let serverJson;
+            if(typeof process.env.PSK_CONFIG_LOCATION === "undefined"){
+                console.log("PSK_CONFIG_LOCATION env variable not set. Not able to load any external config. Using default configuration.")
+                serverJson = {};
+            }else{
+                console.log("Trying to read the server.json file from the location pointed by PSK_CONFIG_LOCATION env variable.");
+                serverJson = typeof serverConfig === "undefined" ? require(path.join(path.resolve(process.env.PSK_CONFIG_LOCATION), 'server.json')) : '';
+            }
 
         serverConfig = new ServerConfig(serverJson);
     }
