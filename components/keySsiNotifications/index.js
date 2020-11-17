@@ -5,7 +5,9 @@ function KeySSINotifications(server) {
 	const config = require('../../config');
 	const { responseModifierMiddleware } = require('./../../utils/middlewares');
 	const { URL_PREFIX } = require('./constants');
-	const workingDirPath = config.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
+	const path = require("path");
+	const storage = config.getConfig("storage");
+	const workingDirPath = path.join(storage, config.getConfig('endpointsConfig', 'messaging', 'workingDirPath'));
 
 	function publish(request, response) {
 		let anchorId = request.params.anchorId;

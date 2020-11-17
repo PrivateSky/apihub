@@ -4,9 +4,10 @@ function mqManager(server) {
 	const { URL_PREFIX } = require('./constants');
 	const readBody = utils.streams.readStringFromStream;
 	const config = require('../../config');
-	const workingDirPath = config.getConfig('endpointsConfig', 'messaging', 'workingDirPath');
-	const storageDirPath = config.getConfig('endpointsConfig', 'messaging', 'storageDirPath');
-
+	const path = require("path");
+	const storage = config.getConfig("storage");
+	const workingDirPath = path.join(storage, config.getConfig('endpointsConfig', 'messaging', 'workingDirPath'));
+	const storageDirPath = path.join(storage, config.getConfig('endpointsConfig', 'messaging', 'storageDirPath'));
 
 	function sendStatus(res, reasonCode) {
 		res.statusCode = reasonCode;
