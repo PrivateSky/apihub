@@ -3,6 +3,9 @@ const Server = httpWrapper.Server;
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
 
+const LoggerMiddleware = require('./middlewares/logger');
+const AuthorisationMiddleware = require('./middlewares/authorisation');
+
 function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	if (typeof $$.flows === "undefined") {
 		require('callflow').initialise();
@@ -17,7 +20,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	require('./components/bricksFabric');
 	require('./components/staticServer');
 	require('./components/mqManager');
-	require('./components/keySsiNotifications');
+  require('./components/keySsiNotifications');
 	//end
 
 	const port = listeningPort || 8080;
@@ -127,7 +130,16 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 			headers['Access-Control-Allow-Headers'] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${conf.endpointsConfig.virtualMQ.signatureHeaderName}}`;
 			res.writeHead(200, headers);
 			res.end();
-		});
+    });
+    
+    function addRootMiddlewares() {
+      if(conf.enableRequestLogger) {
+        new LoggerMiddleware(server);
+      }
+      if(conf.enableAuthorisation) {
+        new AuthorisationMiddleware(server);
+      }
+    }
 
 		function addMiddlewares() {
 			const middlewareList = conf.activeEndpoints;
@@ -155,6 +167,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
 		}
 
+    addRootMiddlewares();
 		addMiddlewares();
 		setTimeout(function () {
 			//allow other endpoints registration before registering fallback handler

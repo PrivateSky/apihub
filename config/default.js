@@ -120,7 +120,23 @@ const defaultConfig = {
         "startTokens": 6000,
         "tokenValuePerTime": 10,
         "unitOfTime": 100
-    }
+    },
+    "enableRequestLogger": false,
+    "enableAuthorisation": true,
+    "skipAuthorisation": [
+      "/leaflet-wallet",
+      "/anchor",
+      "/bricks",
+      "/bricksFabric",
+      "/bricksledger",  
+      "/create-channel",
+      "/forward-zeromq",
+      "/send-message",
+      "/receive-message",
+      "/files",
+      "/notifications",
+      "/mq",
+    ],
 };
 
 module.exports = Object.freeze(defaultConfig);
