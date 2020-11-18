@@ -122,7 +122,7 @@ const defaultConfig = {
         "unitOfTime": 100
     },
     "enableRequestLogger": false,
-    "enableAuthorisation": true,
+    "enableAuthorisation": false,
     "skipAuthorisation": [
       "/leaflet-wallet",
       "/anchor",

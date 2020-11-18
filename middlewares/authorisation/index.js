@@ -1,7 +1,8 @@
 const openDSU = require("opendsu");
 const crypto = openDSU.loadApi("crypto");
 
-function sendUnauthorizedResponse(res) {
+function sendUnauthorizedResponse(req, res, reason, error) {
+  console.error(`[Auth] [${req.method}] ${req.url} blocked: ${reason}`, error);
   res.statusCode = 403;
   res.end();
 }
@@ -11,7 +12,6 @@ function Authorisation(server) {
 
   const config = require("../../config");
   const skipAuthorisation = config.getConfig("skipAuthorisation");
-  console.log({ skipAuthorisation });
 
   const urlsToSkip = skipAuthorisation && Array.isArray(skipAuthorisation) ? skipAuthorisation : [];
 
@@ -25,22 +25,18 @@ function Authorisation(server) {
       return;
     }
 
-    console.log({url})
-
     if (!jwt) {
-      console.error("Missing required Authorization header");
-      return sendUnauthorizedResponse(res);
+      return sendUnauthorizedResponse(req, res, "Missing required Authorization header");
     }
 
     config.getTokenIssuers((err, tokenIssuers) => {
       if (err) {
-        return sendUnauthorizedResponse(res);
+        return sendUnauthorizedResponse(req, res, "error while getting token issuers", err);
       }
 
       crypto.verifyAuthToken(jwt, tokenIssuers, (error, isValid) => {
         if (error || !isValid) {
-          console.error(`[${req.method}] ${req.url} BLOCKED`, error);
-          return sendUnauthorizedResponse(res);
+          return sendUnauthorizedResponse(req, res, "JWT could not be verified", error);
         }
 
         next();
