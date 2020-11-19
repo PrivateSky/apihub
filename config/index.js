@@ -2,10 +2,18 @@ const path = require("swarmutils").path;
 const defaultConf = require('./default');
 
 let serverConfig;
+let tokenIssuers;
 
 function getConfig(...keys) {
     if (!serverConfig) {
-        const serverJson = typeof serverConfig === "undefined" ? require(path.join(path.resolve(process.env.PSK_CONFIG_LOCATION), 'server.json')) : '';
+        let serverJson;
+            if(typeof process.env.PSK_CONFIG_LOCATION === "undefined"){
+                console.log("PSK_CONFIG_LOCATION env variable not set. Not able to load any external config. Using default configuration.")
+                serverJson = {};
+            }else{
+                console.log("Trying to read the server.json file from the location pointed by PSK_CONFIG_LOCATION env variable.");
+                serverJson = typeof serverConfig === "undefined" ? require(path.join(path.resolve(process.env.PSK_CONFIG_LOCATION), 'server.json')) : '';
+            }
 
         serverConfig = new ServerConfig(serverJson);
     }
@@ -59,4 +67,39 @@ function getSource(arrayKeys, source) {
     return getSource(arrayKeys, source[arrayKeys.shift()]);
 }
 
-module.exports = { getConfig }
+function getTokenIssuers(callback) {
+  const fs = require("fs");
+
+  if (tokenIssuers) {
+    return callback(null, tokenIssuers);
+  }
+
+  if (typeof process.env.PSK_CONFIG_LOCATION === "undefined") {
+    tokenIssuers = [];
+    return callback(null, tokenIssuers);
+  }
+
+  const filePath = path.join(path.resolve(process.env.PSK_CONFIG_LOCATION), "token-issuers.txt");
+  console.log(
+    `Trying to read the token-issuers.txt file from the location pointed by PSK_CONFIG_LOCATION env variable: ${filePath}`
+  );
+
+  fs.access(filePath, fs.F_OK, (err) => {
+    if (err) {
+      console.log(`${filePath} doesn't exist so skipping it`);
+      tokenIssuers = [];
+      callback(null, tokenIssuers);
+    }
+
+    fs.readFile(filePath, "utf8", function (err, data) {
+      if (err) {
+        console.error(`Cannot load ${filePath}`, err);
+        return;
+      }
+      tokenIssuers = data.split(/\s+/g).filter((issuer) => issuer);
+      callback(null, tokenIssuers);
+    });
+  });
+}
+
+module.exports = { getConfig, getTokenIssuers }
