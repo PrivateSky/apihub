@@ -69,13 +69,18 @@ function makeRequest(protocol, hostname, port, method, path, body, headers, call
 
 
 $$.flow.describe('ETH',{
-    init : function (strategy, anchorId, jsonData, rootFolder) {
+    init : function (domainConfig, anchorId, jsonData, rootFolder) {
         this.commandData = {};
         this.commandData.anchorId = anchorId;
         this.commandData.jsonData = jsonData;
+        this.commandData.option = domainConfig.option;
+        const endpointURL =  new URL(domainConfig.option.endpoint);
+        this.commandData.apiEndpoint = endpointURL.hostname;
+        this.commandData.apiPort = endpointURL.port;
+        this.commandData.protocol = endpointURL.protocol.replace(':',"");
+
     },
     addAlias : function (server, callback) {
-        console.log("add anchor",this.commandData.anchorId);
         this.__SendToBlockChain(callback);
     },
     __SendToBlockChain : function(callback){
@@ -95,9 +100,9 @@ $$.flow.describe('ETH',{
             'Content-Type': 'application/json',
             'Content-Length': bodyData.length
         };
-        const apiEndpoint = 'a14306cc05c5746bd8c4a24afca52a12-837176892.eu-west-2.elb.amazonaws.com';
-        const apiPort = 3000;
-        const protocol = "http";
+        const apiEndpoint = this.commandData.apiEndpoint;
+        const apiPort = this.commandData.apiPort;
+        const protocol = this.commandData.protocol;
         try {
             makeRequest(protocol, apiEndpoint, apiPort, apiMethod, apiPath, bodyData, apiHeaders, (err, result) => {
 
@@ -113,16 +118,14 @@ $$.flow.describe('ETH',{
                     return;
 
                 }
-                console.log(result);
                 callback (null, result);
             })
         }catch (err) {
-            console.log("anchoring smart contract ",err);
+            console.log("anchoring smart contract Error: ",err);
             callback(err, null);
         }
     },
     readVersions: function (anchorID,server, callback) {
-        console.log("get version anchor",this.commandData.anchorId);
         this.__ReadFromBlockChain(anchorID, callback);
     },
     __ReadFromBlockChain : function(anchorID, callback){
@@ -137,9 +140,9 @@ $$.flow.describe('ETH',{
             'Content-Type': 'application/json',
             'Content-Length': bodyData.length
         };
-        const apiEndpoint = 'a14306cc05c5746bd8c4a24afca52a12-837176892.eu-west-2.elb.amazonaws.com';
-        const apiPort = 3000;
-        const protocol = 'http';
+        const apiEndpoint = this.commandData.apiEndpoint;
+        const apiPort = this.commandData.apiPort;
+        const protocol = this.commandData.protocol;
         try {
             makeRequest(protocol, apiEndpoint, apiPort, apiMethod, apiPath, bodyData, apiHeaders, (err, result) => {
 
@@ -149,11 +152,10 @@ $$.flow.describe('ETH',{
                     return;
                 }
 
-                console.log(result);
                 callback(null, JSON.parse(result));
             })
         }catch (err) {
-            console.log("anchoring smart contract ",err);
+            console.log("anchoring smart contract Error: ",err);
             callback(err, null);
         }
     }

@@ -89,12 +89,11 @@ const defaultConfig = {
                         "path": "/internal-volume/domains/vault/anchors"
                     }
                 },
-                "EPI": {
-                    "type" : "etherum",
-                    "endpoint" : "http://localhost:3000", // endpoitn catre API care proceseaza cererile catre etherum network
+                "ETH": {
+                    "type" : "ETH",
                     "option" : {
-                       //maybe other options will be required
-                    } // operation will be done dirrectlly into the Ethereum API -> jsonrpc-> network
+                        "endpoint" : "http://localhost:3000", // endpoint to the APIAdapter which will make the requests to the blockchain network
+                    } // operation will be done directly into the Ethereum API -> jsonrpc-> network
                 }
             }
         },
