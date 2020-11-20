@@ -147,9 +147,9 @@ $$.flow.describe('BricksManager', {
         fs.access(filePath, callback);
     },
     __convertStreamToBuffer: function (readStream, callback) {
-        let brickData = Buffer.alloc(0);
+        const buffs = [];
         readStream.on('data', (chunk) => {
-            brickData = Buffer.concat([brickData, chunk]);
+            buffs.push(chunk);
         });
 
         readStream.on('error', (err) => {
@@ -157,6 +157,7 @@ $$.flow.describe('BricksManager', {
         });
 
         readStream.on('end', () => {
+            const brickData = Buffer.concat(buffs);
             return callback(undefined, brickData);
         });
     }
