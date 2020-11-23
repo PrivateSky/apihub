@@ -35,6 +35,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 			throw Error(`Port ${port} is used by another server.`);
 		}
 
+        server.setTimeout(10 * 60 * 1000);
 		server.listen(port, conf.host, (err) => {
 			if (err) {
 				console.log(err);
