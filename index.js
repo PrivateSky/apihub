@@ -15,12 +15,13 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	require('./components/bricks');
 	require('./components/anchoring');
 	require('./components/channelManager');
+	require('./components/bdns');
 	require('./components/fileManager');
 	require('./components/bricksLedger');
 	require('./components/bricksFabric');
 	require('./components/staticServer');
 	require('./components/mqManager');
-  require('./components/keySsiNotifications');
+	require('./components/keySsiNotifications');
 	//end
 
 	const port = listeningPort || 8080;
@@ -154,10 +155,15 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 					//console.log(middlewareConfig, middlewarePath);
 					//console.log(conf.defaultEndpoints);
 					if (middlewarePath.startsWith('.') && conf.defaultEndpoints.indexOf(middleware) === -1) {
-						middlewarePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath);
+						middlewarePath = path.resolve(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath));
 					}
 					console.log(`Preparing to register middleware from path ${middlewarePath}`);
-					let middlewareImplementation = require(middlewarePath);
+					let middlewareImplementation;
+					try{
+						middlewareImplementation = require(middlewarePath);
+					}catch(e){
+						throw e;
+					}
 					if (typeof middlewareConfig.function !== 'undefined') {
 						middlewareImplementation[middlewareConfig.function](server);
 					} else {

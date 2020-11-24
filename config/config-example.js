@@ -8,7 +8,7 @@ const defaultConfig = {
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricksLedger", "bricks", "anchoring", "bricksFabric", "dsu-wizard", "staticServer"],
+    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bricksLedger", "bricks", "anchoring", "bricksFabric", "dsu-wizard", "staticServer"],
     "endpointsConfig": {
         "messaging": {
             "module": "./components/mqManager",
@@ -32,38 +32,36 @@ const defaultConfig = {
             "module": "dsu-wizard",
             "function": "initWizard"
         },
-        "bdns": {
-            "module": "./components/bdns",
-        },
         "bricks": {
             "module": "./components/bricks",
-            "domains": {
-                "default": {
-                    "path": "/internal-volume/domains/default/brick-storage"
+            "domains" : {
+                "default" : {
+                    "path" :"/internal-volume/domains/default/brick-storage" },
+                "predefined" : {
+                    "path" :"/internal-volume/domains/predefined/brick-storage" },
+                "vault" : {
+                    "path" :"/internal-volume/domains/vault/brick-storage"
                 },
-                "predefined": {
-                    "path": "/internal-volume/domains/predefined/brick-storage"
-                },
-                "vault": {
-                    "path": "/internal-volume/domains/vault/brick-storage"
+                "EPI" : {
+                    "path" :"/external-volume/domains/epi/brick-storage"
                 }
             }
         },
         "filesManager": {
             "module": "./components/fileManager"
         },
-        "bricksFabric": {
-            "module": "./components/bricksFabric",
+        "bricksFabric":{
+          "module" : "./components/bricksFabric",
             "path": "./",
-            "domainStrategies": {
-                "default": {
-                    "name": "BrickStorage",
-                    "option": {
-                        "timeout": 15000,
-                        "transactionsPerBlock": 5
-                    }
-                }
-            }
+          "domainStrategies" : {
+              "default" : {
+                  "name": "BrickStorage",
+                  "option" : {
+                      "timeout" : 15000,
+                     "transactionsPerBlock" : 5
+                  }
+              }
+          }
         },
         "anchoring": {
             "module": "./components/anchoring",
@@ -72,11 +70,11 @@ const defaultConfig = {
                     "type": "FS",
                     "option": {
                         "path": "/internal-volume/domains/default/anchors",
-                        "enableBricksLedger": false
+                        "enableBricksLedger" : false
                     },
-                    "commands": {
+                    "commands" : {
                         "addAnchor": "anchor"
-                    }
+                       }
 
                 },
                 "predefined": {
@@ -85,11 +83,17 @@ const defaultConfig = {
                         "path": "/internal-volume/domains/predefined/anchors"
                     }
                 },
-                "vault": {
+                "vault":{
                     "type": "FS",
                     "option": {
                         "path": "/internal-volume/domains/vault/anchors"
                     }
+                },
+                "ETH": {
+                    "type" : "ETH",
+                    "option" : {
+                        "endpoint" : "http://localhost:3000", // endpoint to the APIAdapter which will make the requests to the blockchain network
+                    } // operation will be done directly into the Ethereum API -> jsonrpc-> network
                 }
             }
         },
@@ -98,8 +102,8 @@ const defaultConfig = {
         },
         "bricksLedger": {
             "module": "./components/bricksLedger",
-            "doAnchor": "anchorCommand.js",
-            "doEPIAnchor": "EPIAnchorCommand.js"
+            "doAnchor" : "anchorCommand.js",
+            "doEPIAnchor" : "EPIAnchorCommand.js"
         }
     },
     "tokenBucket": {
@@ -119,18 +123,18 @@ const defaultConfig = {
     "enableRequestLogger": false,
     "enableAuthorisation": false,
     "skipAuthorisation": [
-        "/leaflet-wallet",
-        "/anchor",
-        "/bricks",
-        "/bricksFabric",
-        "/bricksledger",
-        "/create-channel",
-        "/forward-zeromq",
-        "/send-message",
-        "/receive-message",
-        "/files",
-        "/notifications",
-        "/mq",
+      "/leaflet-wallet",
+      "/anchor",
+      "/bricks",
+      "/bricksFabric",
+      "/bricksledger",  
+      "/create-channel",
+      "/forward-zeromq",
+      "/send-message",
+      "/receive-message",
+      "/files",
+      "/notifications",
+      "/mq",
     ],
 };
 
