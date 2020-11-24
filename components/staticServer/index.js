@@ -115,6 +115,9 @@ function StaticServer(server) {
             res.setHeader('Content-Type', "application/octet-stream");
         }
 
+        // instruct to not store response into cache
+        res.setHeader('Cache-Control', 'no-store');
+
         res.statusCode = 200;
         stream.pipe(res);
         stream.on('finish', () => {
