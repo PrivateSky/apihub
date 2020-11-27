@@ -118,6 +118,7 @@ const defaultConfig = {
     },
     "enableRequestLogger": false,
     "enableAuthorisation": false,
+    "enableLocalhostAuthorization": false,
     "skipAuthorisation": [
         "/leaflet-wallet",
         "/anchor",
@@ -130,7 +131,7 @@ const defaultConfig = {
         "/receive-message",
         "/files",
         "/notifications",
-        "/mq",
+        "/mq"
     ],
 };
 

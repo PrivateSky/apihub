@@ -16,11 +16,16 @@ function Authorisation(server) {
   const urlsToSkip = skipAuthorisation && Array.isArray(skipAuthorisation) ? skipAuthorisation : [];
 
   server.use(function (req, res, next) {
-    const { url } = req;
+    let { url } = req;
     const jwt = req.headers.Authorization;
 
     const canSkipAuthorisation = urlsToSkip.some((urlToSkip) => url.indexOf(urlToSkip) === 0);
     if (canSkipAuthorisation) {
+      next();
+      return;
+    }
+
+    if(!config.getConfig("enableLocalhostAuthorization") && req.headers.host.indexOf("localhost") === 0){
       next();
       return;
     }
