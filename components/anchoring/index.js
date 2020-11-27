@@ -6,19 +6,17 @@ function Anchoring(server) {
     require('./strategies/FS');
     require('./strategies/ETH');
 
-
-    const { URL_PREFIX } = require('./constants.js');
-    const AnchorSubrscribe = require('./subscribe');
+    const AnchorSubscribe = require('./subscribe');
     const AnchorVersions = require('./versions');
     const  addAnchor = require('./controllers')(server);
     const { responseModifierMiddleware, requestBodyJSONMiddleware } = require('../../utils/middlewares');
 
-    server.use(`${URL_PREFIX}/*`, responseModifierMiddleware);
-    server.put(`${URL_PREFIX}/add/:keyssi`, requestBodyJSONMiddleware);
-    server.put(`${URL_PREFIX}/add/:keyssi`, addAnchor); // to do : add call in brickledger to store the trasantion call
+    server.use(`/anchor/:domain/*`, responseModifierMiddleware);
+    server.put(`/anchor/:domain/add/:keyssi`, requestBodyJSONMiddleware);
+    server.put(`/anchor/:domain/add/:keyssi`, addAnchor); // to do : add call in brickledger to store the trasantion call
 
     AnchorVersions(server);
-    AnchorSubrscribe(server);
+    AnchorSubscribe(server);
 
     //todo : check for body & param
     // de verificat daca ce primim in body si parameters este corect si nu e malformat - Pentru entry points apelate din extern
