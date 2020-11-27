@@ -88,6 +88,10 @@ $$.flow.describe('ETH',{
             "hash": {
                 "newHashLinkSSI" : this.commandData.jsonData.hash.new,
                 "lastHashLinkSSI" : this.commandData.jsonData.hash.last
+            },
+            "digitalProof" : {
+                "signature" : this.commandData.jsonData.digitalProof.signature,
+                "publicKey" : this.commandData.jsonData.digitalProof.publicKey
             }
         };
         const bodyData = JSON.stringify(body);
