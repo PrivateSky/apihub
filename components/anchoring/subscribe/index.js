@@ -1,13 +1,12 @@
-function AnchorSubrscribe(server) {
-    const { URL_PREFIX } = require('../constants');
+function AnchorSubscribe(server) {
     const { publishHandler } = require('./controllers');
 
-    server.get(`${URL_PREFIX}/subscribe/:keyssi`, publishHandler);
+    server.get(`/anchor/:domain/subscribe/:keyssi`, publishHandler);
 
-    server.delete(`${URL_PREFIX}/subscribe/:keyssi`, (request, response, next) => {
+    server.delete(`/anchor/:domain/subscribe/:keyssi`, (request, response, next) => {
         // delete ANCHOR ?subscribeId=
     });
     
 }
 
-module.exports = AnchorSubrscribe;
+module.exports = AnchorSubscribe;

@@ -1,7 +1,6 @@
 function AnchorVersions(server) {
-    const { URL_PREFIX } = require('./../constants.js');
 
-    server.get(`${URL_PREFIX}/versions/:keyssi`, (request, response, next) => {
+    server.get(`/anchor/:domain/versions/:keyssi`, (request, response, next) => {
         const domainConfig = require("../utils").getAnchoringDomainConfig(request.params.keyssi);
         const flow = $$.flow.start(domainConfig.type);
         //const flow = $$.flow.start('ETH');
