@@ -12,7 +12,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	}
 	//next require lines are only for browserify build purpose
 	// Remove mock
-	require('./components/bricks');
+	require('./components/bricking');
 	require('./components/anchoring');
 	require('./components/channelManager');
 	require('./components/bdns');

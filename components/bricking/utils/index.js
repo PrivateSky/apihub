@@ -10,9 +10,9 @@ const getBricksDomainConfigByDomain = (domain) => {
 
 function __getDomainConfig(domain) {
     const config = require("../../../config");
-    let domainConfig = config.getConfig('endpointsConfig', 'bricks', 'domains', domain);
+    let domainConfig = config.getConfig('endpointsConfig', 'bricking', 'domains', domain);
     if (!domainConfig) {
-        domainConfig = config.getConfig('endpointsConfig', 'bricks', 'domains', 'default');
+        domainConfig = config.getConfig('endpointsConfig', 'bricking', 'domains', 'default');
     }
     return domainConfig;
 }
