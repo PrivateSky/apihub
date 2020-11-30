@@ -17,7 +17,7 @@ function Authorisation(server) {
 
   server.use(function (req, res, next) {
     let { url } = req;
-    const jwt = req.headers.Authorization;
+    let jwt = req.headers['authorization'];
 
     const canSkipAuthorisation = urlsToSkip.some((urlToSkip) => url.indexOf(urlToSkip) === 0);
     if (canSkipAuthorisation) {
@@ -39,6 +39,7 @@ function Authorisation(server) {
         return sendUnauthorizedResponse(req, res, "error while getting token issuers", err);
       }
 
+      jwt = jwt.replace("Bearer ", "");
       crypto.verifyAuthToken(jwt, tokenIssuers, (error, isValid) => {
         if (error || !isValid) {
           return sendUnauthorizedResponse(req, res, "JWT could not be verified", error);

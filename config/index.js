@@ -79,7 +79,7 @@ function getTokenIssuers(callback) {
     return callback(null, tokenIssuers);
   }
 
-  const filePath = path.join(path.resolve(process.env.PSK_CONFIG_LOCATION), "token-issuers.txt");
+  const filePath = path.join(path.resolve(process.env.PSK_CONFIG_LOCATION), "issuers-public-identities");
   console.log(
     `Trying to read the token-issuers.txt file from the location pointed by PSK_CONFIG_LOCATION env variable: ${filePath}`
   );
