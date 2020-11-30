@@ -62,7 +62,7 @@ $$.flow.describe('BrickStorage', {
             'Content-Type': 'application/json',
             'Content-Length': data.length
         };
-        const blockPath = "/bricks/default/put-brick";
+        const blockPath = "/bricking/default/put-brick";
         const blockMethod = "PUT";
         this.isCommitingBlock = true;
 
