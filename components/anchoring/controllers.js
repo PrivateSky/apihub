@@ -5,12 +5,12 @@ function createHandler(server){
     return function  addAnchor(request, response, next) {
 
 
-        // get the domain configuration based on the domain extracted from keyssi. if no domain found fallback on default
-        const domainConfig = require("./utils").getAnchoringDomainConfig(request.params.keyssi);
-        //init will receive all the available context information : the whole strategy, body, keyssi from the query and the protocol
+        // get the domain configuration based on the domain extracted from anchorId. if no domain found fallback on default
+        const domainConfig = require("./utils").getAnchoringDomainConfig(request.params.anchorId);
+        //init will receive all the available context information : the whole strategy, body, anchorId from the query and the protocol
         let flow = $$.flow.start(domainConfig.type);
         //let flow = $$.flow.start('ETH');
-        flow.init(domainConfig, request.params.keyssi, request.body, server.rootFolder);
+        flow.init(domainConfig, request.params.anchorId, request.body, server.rootFolder);
 
         // all the available information was passed on init.
         flow.addAlias(server, (err, result) => {
