@@ -92,7 +92,8 @@ $$.flow.describe('ETH',{
             "digitalProof" : {
                 "signature" : this.commandData.jsonData.digitalProof.signature,
                 "publicKey" : this.commandData.jsonData.digitalProof.publicKey
-            }
+            },
+            "zkp" : this.commandData.jsonData.zkp
         };
         const bodyData = JSON.stringify(body);
         //build path
