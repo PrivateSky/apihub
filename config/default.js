@@ -133,6 +133,7 @@ const defaultConfig = {
         "/notifications",
         "/mq"
     ],
+    "iframeHandlerDsuBootPath": "./psknode/bundles/nodeBoot.js"
 };
 
 module.exports = Object.freeze(defaultConfig);

@@ -5,6 +5,7 @@ const START_TOKENS = 6000000;
 
 const LoggerMiddleware = require('./middlewares/logger');
 const AuthorisationMiddleware = require('./middlewares/authorisation');
+const IframeHandlerMiddleware = require('./middlewares/iframeHandler');
 
 function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	if (typeof $$.flows === "undefined") {
@@ -140,6 +141,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
       }
       if(conf.enableAuthorisation) {
         new AuthorisationMiddleware(server);
+      }
+      if(conf.iframeHandlerDsuBootPath) {
+        new IframeHandlerMiddleware(server);
       }
     }
 
