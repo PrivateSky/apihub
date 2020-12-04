@@ -16,7 +16,6 @@ const getDomainFromKeySSI = function (ssiString) {
 
     const keySSI = keySSISpace.parse(ssiString);
     const domain = keySSI.getDLDomain();
-
     return domain;
 }
 
