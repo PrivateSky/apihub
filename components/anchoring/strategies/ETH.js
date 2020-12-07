@@ -41,7 +41,7 @@ function makeRequest(protocol, hostname, port, method, path, body, headers, call
 
         response.on('end', () => {
             try {
-                const bodyContent = Buffer.concat(data).toString();
+                const bodyContent = $$.Buffer.concat(data).toString();
                 return callback(undefined, bodyContent);
             } catch (error) {
                 return callback({

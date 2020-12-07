@@ -75,7 +75,7 @@ const flow = $$.flow.describe('CSBmanagerFlowTest', {
 
 	__getDemoFileStream: function () {
 		//console.log("Entered in getDemoFileStream func scope!!!");
-		demoFileStream = bufferToStream(Buffer.alloc(25, 'abc'));
+		demoFileStream = bufferToStream($$.Buffer.alloc(25, 'abc'));
 	},
 	__writeFile: function () {
 		//console.log("Entered in writeFile func scope!!!");

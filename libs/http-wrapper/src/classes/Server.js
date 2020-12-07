@@ -75,7 +75,7 @@ function Server(sslOptions) {
 
             response.on('end', () => {
                 try {
-                    const bodyContent = Buffer.concat(data).toString();
+                    const bodyContent = $$.Buffer.concat(data).toString();
                     console.log('resolve will be called. bodyContent received : ', bodyContent);
                     return callback(undefined,bodyContent);
                 } catch (err) {

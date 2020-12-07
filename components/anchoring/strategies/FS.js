@@ -130,7 +130,7 @@ $$.flow.describe('FS', {
                 return callback(err);
             }
 
-            fs.read(fd, Buffer.alloc(options.fileSize), 0, options.fileSize, null, (err, bytesRead, buffer) => {
+            fs.read(fd, $$.Buffer.alloc(options.fileSize), 0, options.fileSize, null, (err, bytesRead, buffer) => {
                 if (err) {
                     console.log("__appendHash-read-error : ",err);
 

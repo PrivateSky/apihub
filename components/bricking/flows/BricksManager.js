@@ -61,7 +61,7 @@ $$.flow.describe('BricksManager', {
         this.__writeMultipleBricksToStream(brickHashes, 0, writeStream, callback);
     },
     __writeBrickDataToStream: function (brickData, writeStream, callback) {
-        const brickSize = Buffer.alloc(4);
+        const brickSize = $$.Buffer.alloc(4);
         brickSize.writeUInt32BE(brickData.length);
         writeStream.write(brickSize, (err) => {
             if (err) {
@@ -157,7 +157,7 @@ $$.flow.describe('BricksManager', {
         });
 
         readStream.on('end', () => {
-            const brickData = Buffer.concat(buffs);
+            const brickData = $$.Buffer.concat(buffs);
             return callback(undefined, brickData);
         });
     }

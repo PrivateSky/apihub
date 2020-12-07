@@ -34,7 +34,7 @@ function readMessageBufferFromHTTPStream(reqORres, callback) {
     }
 
     function streamToBuffer(stream, bufferSize, callback) {
-        const buffer = Buffer.alloc(bufferSize);
+        const buffer = $$.Buffer.alloc(bufferSize);
         let currentOffset = 0;
 
         stream.on('data', function (chunk) {

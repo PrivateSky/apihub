@@ -53,7 +53,7 @@ function requestFactory(virtualMQAddress, zeroMQAddress) {
 
         req.setHeader("content-length", pack.byteLength);
         req.setHeader("content-type", 'application/octet-stream');
-        req.write(Buffer.from(pack));
+        req.write($$.Buffer.from(pack));
         req.end();
     }
 
@@ -67,7 +67,7 @@ function requestFactory(virtualMQAddress, zeroMQAddress) {
             const utils = require("../../utils").streams;
             utils.readMessageBufferFromStream(res, function (err, message) {
 
-                callback(err, res, (message && Buffer.isBuffer(message)) ? SwarmPacker.unpack(message.buffer) : message);
+                callback(err, res, (message && $$.Buffer.isBuffer(message)) ? SwarmPacker.unpack(message.buffer) : message);
             });
         });
 

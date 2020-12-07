@@ -237,7 +237,7 @@ function ChannelsManager(server) {
         }
 
         function streamToBuffer(stream, bufferSize, callback) {
-            const buffer = Buffer.alloc(bufferSize);
+            const buffer = $$.Buffer.alloc(bufferSize);
             let currentOffset = 0;
 
             stream.on('data', function (chunk) {
@@ -336,7 +336,7 @@ function ChannelsManager(server) {
     }
 
     function deliverMessage(res, message) {
-        if (Buffer.isBuffer(message)) {
+        if ($$.Buffer.isBuffer(message)) {
             res.setHeader('content-type', 'application/octet-stream');
         }
 

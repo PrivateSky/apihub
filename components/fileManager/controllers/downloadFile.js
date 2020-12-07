@@ -29,7 +29,7 @@ function download(req, res, callback) {
         return;
     }
 
-    const folder = Buffer.from(req.params.filepath, 'base64').toString().replace('\n', '');
+    const folder = $$.Buffer.from(req.params.filepath, 'base64').toString().replace('\n', '');
     const completeFolderPath = path.join(config.getConfig('storage'), folder);
 
     if (folder.includes('..')) {

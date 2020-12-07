@@ -31,7 +31,7 @@ function upload(req, callback) {
         return callback(new Error("Something wrong happened"));
     }
 
-    const folder = Buffer.from(req.params.folder, 'base64').toString().replace('\n', '');
+    const folder = $$.Buffer.from(req.params.folder, 'base64').toString().replace('\n', '');
 
     if (folder.includes('..')) {
         return callback('err');

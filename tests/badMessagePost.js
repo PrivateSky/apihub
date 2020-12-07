@@ -92,7 +92,7 @@ function createTestSuite(api, finish){
         const offset = pack.length-2;
         dv.setUint32(offset, dv.getUint32(offset)+100);
 
-        req.write(Buffer.from(pack));
+        req.write($$.Buffer.from(pack));
         req.end();
     }
 

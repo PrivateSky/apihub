@@ -28,7 +28,7 @@ $$.flow.describe('CSBVersioningTest', {
         this.CSBManager.init(tempFolder, callback);
     },
     __getDemoFileStream: function () {
-        this.demoFileStream = bufferToStream(Buffer.alloc(10, 'a'));
+        this.demoFileStream = bufferToStream($$.Buffer.alloc(10, 'a'));
     },
     __writeFile: function (callback) {
         this.CSBManager.write(fileName, this.demoFileStream, (err) => {

@@ -122,7 +122,7 @@ function IframeHandler(server) {
 
                 response.on("end", () => {
                     try {
-                        const bodyContent = Buffer.concat(data);
+                        const bodyContent = $$.Buffer.concat(data);
                         res.end(bodyContent);
                     } catch (err) {
                         console.log("worker response error", err);

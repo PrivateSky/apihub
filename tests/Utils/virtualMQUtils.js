@@ -4,7 +4,7 @@ require("../../../psknode/bundles/psknode");
 const http = require("http");
 
 const VirtualMQ = require('virtualmq');
-const CHANNEL_NAME = Buffer.from('mychannel').toString('base64');
+const CHANNEL_NAME = $$.Buffer.from('mychannel').toString('base64');
 const path = require("swarmutils").path;
 const fs = require('fs');
 let port = 8089;
@@ -62,7 +62,7 @@ module.exports.getRequestOptions = function (requestType, urlParams) {
     let path = urlParams ? '/' + CHANNEL_NAME + urlParams : '/' + CHANNEL_NAME;
     let headers = {'Content-Type': 'application/json;charset=UTF-8'};
     if (requestType && requestType == 'DELETE') {
-        headers ['Content-Length'] = Buffer.byteLength(urlParams.slice(1));
+        headers ['Content-Length'] = $$.Buffer.byteLength(urlParams.slice(1));
     }
     return {
         host: '127.0.0.1',
