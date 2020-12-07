@@ -8,7 +8,7 @@ function createHandler(server) {
         const commandType = request.body.commandType;
         const getCmdConfig = require('./utils').getCmdConfig(commandType);
         //we need to provide full path to the file, relative path will generate not found module error
-        const modulePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER,'modules/psk-apihub/components/bricksLedger/commands', getCmdConfig);
+        const modulePath = path.join(process.env.PSK_ROOT_INSTALATION_FOLDER,'modules/apihub/components/bricksLedger/commands', getCmdConfig);
         try {
             require(`${modulePath}`)(request.body , server, (err, result) => {
                 if (err) {
