@@ -1,11 +1,10 @@
-const http = require("http");
-const crypto = require("crypto");
-const worker_threads = "worker_threads";
-const { Worker } = require(worker_threads);
-const config = require("../../config").getConfig();
-const path = require("swarmutils").path;
-
 function IframeHandler(server) {
+    const http = require("http");
+    const crypto = require("crypto");
+    const worker_threads = "worker_threads";
+    const { Worker } = require(worker_threads);
+    const config = require("../../config").getConfig();
+    const path = require("swarmutils").path;
     console.log(`Registering IframeHandler middleware`);
 
     let { iframeHandlerDsuBootPath } = config;

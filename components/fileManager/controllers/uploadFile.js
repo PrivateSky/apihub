@@ -1,8 +1,3 @@
-
-const fs = require('fs');
-const path = require("swarmutils").path;
-const config = require('../../../config');
-
 function guid() {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000)
@@ -26,6 +21,10 @@ function uploadFile(req, res) {
 };
 
 function upload(req, callback) {
+    const fs = require('fs');
+    const path = require("swarmutils").path;
+    const config = require('../../../config');
+
     const readFileStream = req;
     if (!readFileStream || !readFileStream.pipe || typeof readFileStream.pipe !== "function") {
         return callback(new Error("Something wrong happened"));

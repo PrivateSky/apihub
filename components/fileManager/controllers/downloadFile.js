@@ -1,7 +1,3 @@
-const fs = require('fs');
-const path = require("swarmutils").path;
-const config = require('../../../config');
-
 function sendResult(resHandler, resultStream) {
     resHandler.statusCode = 200;
     resultStream.pipe(resHandler);
@@ -23,6 +19,10 @@ function downloadFile(req, res) {
 }
 
 function download(req, res, callback) {
+    const fs = require('fs');
+    const path = require("swarmutils").path;
+    const config = require('../../../config');
+
     const readFileStream = req;
     if (!readFileStream || !readFileStream.pipe || typeof readFileStream.pipe !== "function") {
         callback(new Error("Something wrong happened"));
