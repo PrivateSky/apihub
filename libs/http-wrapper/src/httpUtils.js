@@ -1,6 +1,3 @@
-const fs = require('fs');
-const path = require("swarmutils").path;
-
 function setDataHandler(request, callback) {
     let bodyContent = '';
 
@@ -51,6 +48,9 @@ function bodyParser(req, res, next) {
 
 function serveStaticFile(baseFolder, ignorePath) {
     return function (req, res) {
+        const fs = require('fs');
+        const path = require("swarmutils").path;
+
         const url = req.url.substring(ignorePath.length);
         const filePath = path.join(baseFolder, url);
         fs.stat(filePath, (err) => {

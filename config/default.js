@@ -1,8 +1,7 @@
-const path = require("swarmutils").path;
 
 const defaultConfig = {
-    "storage": path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "tmp"),
-    "sslFolder": path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "conf", "ssl"),
+    "storage":  require("swarmutils").path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "tmp"),
+    "sslFolder":  require("swarmutils").path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "conf", "ssl"),
     "port": 8080,
     "host": "0.0.0.0",
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",

@@ -1,12 +1,12 @@
-const path = require("swarmutils").path;
-const fs = require("fs");
-const crypto = require('crypto');
-const integration = require("zmq_adapter");
-
-const Queue = require("swarmutils").Queue;
-const SwarmPacker = require("swarmutils").SwarmPacker;
-
 function ChannelsManager(server) {
+    const path = require("swarmutils").path;
+    const fs = require("fs");
+    const crypto = require('crypto');
+    const integration = require("zmq_adapter");
+
+    const Queue = require("swarmutils").Queue;
+    const SwarmPacker = require("swarmutils").SwarmPacker;
+
     const utils = require("../../utils");
     const readBody = utils.streams.readStringFromStream;
     const config = require("../../config").getConfig();

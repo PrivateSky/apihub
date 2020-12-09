@@ -3,19 +3,27 @@ function BDNS(server) {
     const {headersMiddleware} = require('../../utils/middlewares');
 
     let bdnsCache;
-    try{
-        const fs = require("fs");
-        const path = require("path");
-        //TODO: we should use the process.env.PSK_CONFIG_LOCATION variable instead of the hard coding...
-        const bdnsHostsPath = path.join(server.rootFolder, "external-volume", "config", "bdns.hosts")
 
-        bdnsCache = fs.readFileSync(bdnsHostsPath).toString();
-    }catch(e){
-        throw e;
+    let init_process_runned = false;
+    function initialize(){
+        if(init_process_runned){
+           return true;
+        }
+        init_process_runned = true;
+        try{
+            const fs = require("fs");
+            const path = require("path");
+            //TODO: we should use the process.env.PSK_CONFIG_LOCATION variable instead of the hard coding...
+            const bdnsHostsPath = path.join(server.rootFolder, "external-volume", "config", "bdns.hosts")
+
+            bdnsCache = fs.readFileSync(bdnsHostsPath).toString();
+        }catch(e){
+            throw e;
+        }
     }
 
     function bdnsHandler(request, response, next) {
-
+        initialize();
         if (typeof bdnsCache !== "undefined") {
             response.setHeader('content-type', 'application/json');
             response.statusCode = 200;
