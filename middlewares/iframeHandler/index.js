@@ -152,8 +152,8 @@ function IframeHandler(server) {
             const req = http.request(options, (response) => {
                 const { statusCode, headers } = response;
                 res.statusCode = statusCode;
-                const contentType = headers ? headers["content-type"] : "text/html";
-                res.setHeader("Content-Type", contentType);
+                const contentType = headers ? headers["content-type"] : null;
+                res.setHeader("Content-Type", contentType || "text/html");
 
                 if (statusCode < 200 || statusCode >= 300) {
                     logRequestInfo(statusCode);
