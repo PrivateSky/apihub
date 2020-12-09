@@ -5,6 +5,28 @@ const { Worker } = require(worker_threads);
 const config = require("../../config").getConfig();
 const path = require("swarmutils").path;
 
+const getElapsedTime = (timer) => {
+    const elapsed = process.hrtime(timer)[1] / 1000000;
+    return `${elapsed.toFixed(3)} ms`;
+};
+
+const INVALID_DSU_HTML_RESPONSE = `
+    <html>
+    <body>
+        <p>
+            The application has encountered an unexpected error. <br/>
+            If you have network issues please use the following to refresh the application.
+        </p>
+        <button id="refresh">Refresh</button>
+        <script>
+            document.getElementById("refresh").addEventListener("click", function() {
+                window.location.reload();
+            });
+        </script>
+    </body>
+    </html>
+`;
+
 function IframeHandler(server) {
     console.log(`Registering IframeHandler middleware`);
 
@@ -21,6 +43,7 @@ function IframeHandler(server) {
     const dsuWorkers = {};
 
     const addDsuWorker = (seed) => {
+        const workerStartTime = process.hrtime();
         const dsuWorker = {
             port: null,
             authorizationKey: null,
@@ -34,6 +57,7 @@ function IframeHandler(server) {
                     const authorizationKey = randomBuffer.toString("hex");
                     dsuWorker.authorizationKey = authorizationKey;
 
+                    console.log(`Starting worker for handling seed ${seed}`);
                     const worker = new Worker(iframeHandlerDsuBootPath, {
                         workerData: {
                             seed,
@@ -42,8 +66,16 @@ function IframeHandler(server) {
                     });
 
                     worker.on("message", (message) => {
+                        if (message.error) {
+                            dsuWorkers[seed] = null;
+                            return reject(message.error);
+                        }
                         if (message.port) {
-                            console.log(`Running worker on PORT ${message.port} for seed ${seed}`);
+                            console.log(
+                                `Running worker on PORT ${message.port} for seed ${seed}. Startup took ${getElapsedTime(
+                                    workerStartTime
+                                )}`
+                            );
                             dsuWorker.port = message.port;
                             resolve(worker);
                         }
@@ -92,7 +124,9 @@ function IframeHandler(server) {
             dsuWorker = addDsuWorker(keySSI);
         }
 
-        dsuWorker.resolver.then(() => {
+        const requestStartTime = process.hrtime();
+
+        const forwarRequestToWorker = () => {
             const options = {
                 hostname: "localhost",
                 port: dsuWorker.port,
@@ -103,15 +137,20 @@ function IframeHandler(server) {
                 },
             };
 
+            const logRequestInfo = (statusCode) => {
+                const duration = getElapsedTime(requestStartTime);
+                const message = `[STATUS ${statusCode}][${duration}][${method}] /${requestedPath}`;
+                console.log(message);
+            };
+
             const req = http.request(options, (response) => {
                 const { statusCode, headers } = response;
                 res.statusCode = statusCode;
-                if (headers) {
-                    res.setHeader("Content-Type", response.headers["content-type"] || "text/html");
-                }
+                const contentType = headers ? headers["content-type"] : "text/html";
+                res.setHeader("Content-Type", contentType);
 
                 if (statusCode < 200 || statusCode >= 300) {
-                    console.log(`Worker failed to execute path ${requestedPath} with status code ${statusCode}`);
+                    logRequestInfo(statusCode);
                     return res.end();
                 }
 
@@ -123,8 +162,11 @@ function IframeHandler(server) {
                 response.on("end", () => {
                     try {
                         const bodyContent = $$.Buffer.concat(data);
+                        logRequestInfo(200);
+                        res.statusCode = 200;
                         res.end(bodyContent);
                     } catch (err) {
+                        logRequestInfo(500);
                         console.log("worker response error", err);
                         res.statusCode = 500;
                         res.end();
@@ -132,6 +174,7 @@ function IframeHandler(server) {
                 });
             });
             req.on("error", (err) => {
+                logRequestInfo(500);
                 console.log("worker request error", err);
                 res.statusCode = 500;
                 res.end();
@@ -139,6 +182,12 @@ function IframeHandler(server) {
 
             // req.write(body);
             req.end();
+        };
+
+        dsuWorker.resolver.then(forwarRequestToWorker).catch((error) => {
+            res.setHeader("Content-Type", "text/html");
+            res.statusCode = 400;
+            res.end(INVALID_DSU_HTML_RESPONSE);
         });
     });
 }
