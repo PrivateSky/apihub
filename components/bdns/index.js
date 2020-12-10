@@ -13,8 +13,8 @@ function BDNS(server) {
         try{
             const fs = require("fs");
             const path = require("path");
-            //TODO: we should use the process.env.PSK_CONFIG_LOCATION variable instead of the hard coding...
-            const bdnsHostsPath = path.join(server.rootFolder, "external-volume", "config", "bdns.hosts")
+
+            const bdnsHostsPath = path.join(process.env.PSK_CONFIG_LOCATION, "bdns.hosts");
 
             bdnsCache = fs.readFileSync(bdnsHostsPath).toString();
         }catch(e){
