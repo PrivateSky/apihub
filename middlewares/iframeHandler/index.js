@@ -20,7 +20,7 @@ const INVALID_DSU_HTML_RESPONSE = `
         <button id="refresh">Refresh</button>
         <script>
             document.getElementById("refresh").addEventListener("click", function() {
-                window.location.reload();
+                window.top.location.reload();
             });
         </script>
     </body>
