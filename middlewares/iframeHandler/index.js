@@ -28,12 +28,6 @@ const INVALID_DSU_HTML_RESPONSE = `
 `;
 
 function IframeHandler(server) {
-    const http = require("http");
-    const crypto = require("crypto");
-    const worker_threads = "worker_threads";
-    const { Worker } = require(worker_threads);
-    const config = require("../../config").getConfig();
-    const path = require("swarmutils").path;
     console.log(`Registering IframeHandler middleware`);
 
     let { iframeHandlerDsuBootPath } = config;
@@ -121,8 +115,10 @@ function IframeHandler(server) {
 
         const urlPathInfoMatch = keySSI.match(/^([^\/\?]*)[\/\?](.*)$/);
         if (urlPathInfoMatch) {
-            keySSI = urlPathInfoMatch[1];
-            requestedPath = urlPathInfoMatch[2];
+            const keySSIPart = urlPathInfoMatch[1];
+            const separator = keySSI[keySSIPart.length];
+            keySSI = keySSIPart;
+            requestedPath = `${separator !== "/" ? "/" : ""}${separator}${urlPathInfoMatch[2]}`;
         }
 
         let dsuWorker = dsuWorkers[keySSI];
@@ -136,20 +132,24 @@ function IframeHandler(server) {
             const options = {
                 hostname: "localhost",
                 port: dsuWorker.port,
-                path: `/${requestedPath}`,
+                path: requestedPath,
                 method,
                 headers: {
                     authorization: dsuWorker.authorizationKey,
                 },
             };
 
+            if (req.headers["content-type"]) {
+                options.headers["content-type"] = req.headers["content-type"];
+            }
+
             const logRequestInfo = (statusCode) => {
                 const duration = getElapsedTime(requestStartTime);
-                const message = `[STATUS ${statusCode}][${duration}][${method}] /${requestedPath}`;
+                const message = `[STATUS ${statusCode}][${duration}][${method}] ${requestedPath}`;
                 console.log(message);
             };
 
-            const req = http.request(options, (response) => {
+            const workerRequest = http.request(options, (response) => {
                 const { statusCode, headers } = response;
                 res.statusCode = statusCode;
                 const contentType = headers ? headers["content-type"] : null;
@@ -168,8 +168,8 @@ function IframeHandler(server) {
                 response.on("end", () => {
                     try {
                         const bodyContent = $$.Buffer.concat(data);
-                        logRequestInfo(200);
-                        res.statusCode = 200;
+                        logRequestInfo(statusCode);
+                        res.statusCode = statusCode;
                         res.end(bodyContent);
                     } catch (err) {
                         logRequestInfo(500);
@@ -179,18 +179,39 @@ function IframeHandler(server) {
                     }
                 });
             });
-            req.on("error", (err) => {
+            workerRequest.on("error", (err) => {
                 logRequestInfo(500);
                 console.log("worker request error", err);
                 res.statusCode = 500;
                 res.end();
             });
 
-            // req.write(body);
-            req.end();
+            if (method === "POST" || method === "PUT") {
+                let data = [];
+                req.on("data", (chunk) => {
+                    console.log("data.push(chunk);", chunk);
+                    data.push(chunk);
+                });
+
+                req.on("end", () => {
+                    try {
+                        const bodyContent = $$.Buffer.concat(data);
+                        workerRequest.write(bodyContent);
+                        workerRequest.end();
+                    } catch (err) {
+                        logRequestInfo(500);
+                        console.log("worker response error", err);
+                        res.statusCode = 500;
+                        res.end();
+                    }
+                });
+                return;
+            }
+            workerRequest.end();
         };
 
         dsuWorker.resolver.then(forwarRequestToWorker).catch((error) => {
+            console.log("worker resolver error", error);
             res.setHeader("Content-Type", "text/html");
             res.statusCode = 400;
             res.end(INVALID_DSU_HTML_RESPONSE);
