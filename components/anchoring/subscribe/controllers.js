@@ -53,8 +53,8 @@ function publishToChannel(name, message, callback) {
             //if everything went ok then try to resolve pending requests for that channel
             tryToResolvePendingRequests(name, message);
         }
-        
-        return callback(err);
+
+        return callback(createOpenDSUErrorWrapper(`Failed append in file <${path.join(storageFolder, name)}>`, err));
     });
 }
 

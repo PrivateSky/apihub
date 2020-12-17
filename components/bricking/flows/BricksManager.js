@@ -20,7 +20,7 @@ $$.flow.describe('BricksManager', {
     write: function (readFileStream, callback) {
         this.__convertStreamToBuffer(readFileStream, (err, brickData) => {
             if (err) {
-                return callback(err);
+                return callback(createOpenDSUErrorWrapper(`Failed to convert stream to buffer`, err));
             }
             const fileName = crypto.sha256(brickData);
             if (!this.__verifyFileName(fileName, callback)) {
@@ -31,7 +31,7 @@ $$.flow.describe('BricksManager', {
 
             this.__ensureFolderStructure(folderName, (err) => {
                 if (err) {
-                    return callback(err);
+                    return callback(createOpenDSUErrorWrapper(`Failed to create folder structure <${folderName}>`, err));
                 }
 
                 this.__writeFile(brickData, folderName, fileName, callback);
@@ -74,9 +74,12 @@ $$.flow.describe('BricksManager', {
     __writeMultipleBricksToStream: function (brickHashes, brickIndex, writeStream, callback) {
         const brickHash = brickHashes[brickIndex];
         this.__readBrick(brickHash, (err, brickData) => {
+            if (err) {
+                return callback(createOpenDSUErrorWrapper(`Failed to read brick <${brickHash}>`, err));
+            }
             this.__writeBrickDataToStream(brickData, writeStream, (err) => {
                 if (err) {
-                    return callback(err);
+                    return callback(createOpenDSUErrorWrapper(`Failed to write brick data to stream `, err));
                 }
                 brickIndex++;
                 if (brickIndex === brickHashes.length) {
@@ -92,7 +95,7 @@ $$.flow.describe('BricksManager', {
         const filePath = path.join(folderPath, brickHash);
         this.__verifyFileExistence(filePath, (err) => {
             if (err) {
-                return callback(err);
+                return callback(createOpenDSUErrorWrapper(`File <${filePath}> does not exist.`, err));
             }
 
             fs.readFile(filePath, callback);

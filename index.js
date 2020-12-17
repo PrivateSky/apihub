@@ -42,7 +42,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 			if (err) {
 				console.log(err);
 				if (callback) {
-					callback(err);
+					return callback(createOpenDSUErrorWrapper(`Failed to listen on port <${port}>`, err));
 				}
 			}
 		});
@@ -80,7 +80,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 		if (err) {
 			console.log(err);
 			if (callback) {
-				callback(err);
+				return callback(createOpenDSUErrorWrapper(`Failed to bind on port <${port}>`, err));
 			}
 			return;
 		}

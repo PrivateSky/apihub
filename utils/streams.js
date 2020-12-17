@@ -25,7 +25,7 @@ function readMessageBufferFromHTTPStream(reqORres, callback) {
 
         streamToBuffer(reqORres, contentLength, (err, bodyAsBuffer) => {
             if (err) {
-                return callback(err);
+                return callback(createOpenDSUErrorWrapper(`Failed to convert stream to buffer`, err));
             }
             callback(undefined, bodyAsBuffer);
         });

@@ -106,7 +106,7 @@ $$.flow.describe('FS', {
                 if (err.code === 'ENOENT') {
                     return callback(undefined, []);
                 }
-                return callback(err);
+                return callback(createOpenDSUErrorWrapper(`Failed to read file <${filePath}>`, err));
             }
             callback(undefined, fileHashes.toString().trimEnd().split(endOfLine));
         });
@@ -126,15 +126,12 @@ $$.flow.describe('FS', {
     __appendHash: function (path, hash, options, callback) {
         fs.open(path, fs.constants.O_RDWR, (err, fd) => {
             if (err) {
-                console.log("__appendHash-open-error : ",err);
-                return callback(err);
+                return callback(createOpenDSUErrorWrapper(`Failed to append hash <${hash}> in file at path <${path}>`, err));
             }
 
             fs.read(fd, $$.Buffer.alloc(options.fileSize), 0, options.fileSize, null, (err, bytesRead, buffer) => {
                 if (err) {
-                    console.log("__appendHash-read-error : ",err);
-
-                    return callback(err);
+                    return callback(createOpenDSUErrorWrapper(`Failed read file <${path}>`, err));
                 }
                 // compare the last hash in the file with the one received in the request
                 // if they are not the same, exit with error
@@ -154,7 +151,7 @@ $$.flow.describe('FS', {
                 fs.write(fd, hash + endOfLine, options.fileSize, (err) => {
                     if (err) {
                         console.log("__appendHash-write : ",err);
-                        return callback(err);
+                        return callback(createOpenDSUErrorWrapper(`Failed write in file <${path}>`, err));
                     }
                     
                     fs.close(fd, callback);
