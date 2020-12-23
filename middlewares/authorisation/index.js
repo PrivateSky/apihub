@@ -20,12 +20,12 @@ function Authorisation(server) {
     let jwt = req.headers['authorization'];
 
     const canSkipAuthorisation = urlsToSkip.some((urlToSkip) => url.indexOf(urlToSkip) === 0);
-    if (canSkipAuthorisation) {
+    if (url === "/" || canSkipAuthorisation) {
       next();
       return;
     }
 
-    if(!config.getConfig("enableLocalhostAuthorization") && req.headers.host.indexOf("localhost") === 0){
+    if (!config.getConfig("enableLocalhostAuthorization") && req.headers.host.indexOf("localhost") === 0) {
       next();
       return;
     }

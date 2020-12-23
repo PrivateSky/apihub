@@ -98,7 +98,12 @@ function getTokenIssuers(callback) {
                 console.error(`Cannot load ${filePath}`, err);
                 return;
             }
-            tokenIssuers = data.split(/\s+/g).filter((issuer) => issuer);
+
+            const openDSU = require("opendsu");
+            const crypto = openDSU.loadApi("crypto");
+
+            tokenIssuers = data.split(/\s+/g).filter((issuer) => issuer).map(issuer => crypto.getReadableSSI(issuer));
+
             callback(null, tokenIssuers);
         });
     });
