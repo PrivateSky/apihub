@@ -29,7 +29,8 @@ const defaultConfig = {
         },
         "dsu-wizard": {
             "module": "dsu-wizard",
-            "function": "initWizard"
+            "function": "initWizard",
+            "storage": "./external-volume/dsu-wizard/transactions"
         },
         "bdns": {
             "module": "./components/bdns",
