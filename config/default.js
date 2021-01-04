@@ -30,7 +30,9 @@ const defaultConfig = {
         "dsu-wizard": {
             "module": "dsu-wizard",
             "function": "initWizard",
-            "storage": "./external-volume/dsu-wizard/transactions"
+            "storage": "./external-volume/dsu-wizard/transactions",
+            "workers": 5,
+            "bundle": "./../privatesky/psknode/bundles/openDSU.js"
         },
         "bdns": {
             "module": "./components/bdns",
