@@ -54,7 +54,7 @@ function publishToChannel(name, message, callback) {
             tryToResolvePendingRequests(name, message);
         }
 
-        return callback(createOpenDSUErrorWrapper(`Failed append in file <${path.join(storageFolder, name)}>`, err));
+        return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed append in file <${path.join(storageFolder, name)}>`, err));
     });
 }
 
