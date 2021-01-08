@@ -145,6 +145,10 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
       if(conf.iframeHandlerDsuBootPath) {
         new IframeHandlerMiddleware(server);
       }
+      if(conf.enableInstallationDetails) {
+      	const enableInstallationDetails = require("./components/installation-details");
+      	enableInstallationDetails(server);
+	  }
     }
 
 		function addMiddlewares() {

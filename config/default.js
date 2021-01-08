@@ -118,6 +118,7 @@ const defaultConfig = {
         "tokenValuePerTime": 10,
         "unitOfTime": 100
     },
+    "enableInstallationDetails": true,
     "enableRequestLogger": true,
     "enableAuthorisation": false,
     "enableLocalhostAuthorization": false,
