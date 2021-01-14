@@ -3,6 +3,8 @@ const Server = httpWrapper.Server;
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
 
+const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
+
 const LoggerMiddleware = require('./middlewares/logger');
 const AuthorisationMiddleware = require('./middlewares/authorisation');
 const IframeHandlerMiddleware = require('./middlewares/iframeHandler');
@@ -48,6 +50,24 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 		});
 	});
 
+	setInterval(function(){
+		let restartServerFile = server.rootFolder + '/needServerRestart';
+		const fsname = "fs";
+		const fs = require(fsname);
+		fs.readFile(restartServerFile, function(error, content) {
+			if (!error && content.toString() !== "") {
+				console.log(`### Preparing to restart because of the request done by file: <${restartServerFile}> File content: ${content}`);
+				server.close();
+				server.listen(port, conf.host, () => {
+					fs.writeFile(restartServerFile, "", function(){
+						//we don't care about this file.. we just clear it's content the prevent recursive restarts
+						console.log("### Restart operation finished.");
+					});
+				});
+			}
+		});
+	}, CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL);
+
 	server.on('listening', bindFinished);
 	server.on('error', bindErrorHandler);
 
@@ -88,7 +108,14 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 		registerEndpoints(callback);
 	}
 
+	let endpointsAlreadyRegistered = false;
 	function registerEndpoints(callback) {
+		//The purpose of this flag is to prevent endpoints registering again
+		//in case of a restart requested by file needServerRestart present in rootFolder
+		if(endpointsAlreadyRegistered){
+			return ;
+		}
+		endpointsAlreadyRegistered = true;
 		server.use(function (req, res, next) {
 			res.setHeader('Access-Control-Allow-Origin', req.headers.origin || req.headers.host);
 			res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
