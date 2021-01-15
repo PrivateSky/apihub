@@ -87,9 +87,13 @@ function IframeHandler(server) {
                         if (code !== 0) {
                             console.log(`Worker stopped with exit code ${code}`);
                             // remove the worker from list in order to be recreated when needed
-                            dsuWorkers[seed] = null;
+                            delete dsuWorkers[seed];
                         }
                     });
+
+                    dsuWorker.terminate = function(){
+                        worker.terminate();
+                    }
                 });
             }),
         };
@@ -105,9 +109,8 @@ function IframeHandler(server) {
             console.log(`Stopping a number of ${Object.keys(dsuWorkers).length} thread workers`);
             for(let seed in dsuWorkers){
                 let worker = dsuWorkers[seed];
-                if(typeof worker !== "undefined"){
+                if(worker && worker.terminate){
                     worker.terminate();
-                    delete dsuWorkers[seed];
                 }
             }
         }
