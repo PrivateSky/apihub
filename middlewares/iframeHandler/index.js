@@ -97,6 +97,22 @@ function IframeHandler(server) {
         return dsuWorker;
     };
 
+    //if a listening event is fired from this point on...
+    //it means that a restart was triggered
+    server.on("listening", ()=>{
+        if(typeof dsuWorkers !== "undefined"){
+            console.log(`Restarting process in progress...`);
+            console.log(`Stopping a number of ${Object.keys(dsuWorkers).length} thread workers`);
+            for(let seed in dsuWorkers){
+                let worker = dsuWorkers[seed];
+                if(typeof worker !== "undefined"){
+                    worker.terminate();
+                    delete dsuWorkers[seed];
+                }
+            }
+        }
+    });
+
     server.use(function (req, res, next) {
         const { method, url } = req;
 
