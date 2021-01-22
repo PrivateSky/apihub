@@ -5,11 +5,16 @@ function createHandler(server){
     return function  addAnchor(request, response, next) {
 
 
-        // get the domain configuration based on the domain extracted from anchorId. if no domain found fallback on default
-        const domainConfig = require("./utils").getAnchoringDomainConfig(request.params.anchorId);
+        // get the domain configuration based on the domain extracted from anchorId.
+        const receivedDomain = require('./utils').getDomainFromKeySSI(request.params.anchorId);
+        const domainConfig = require("./utils").getAnchoringDomainConfig(receivedDomain);
+        if (!domainConfig)
+        {
+            console.log('Anchoring Domain not found : ', receivedDomain);
+            return response.send(500);
+        }
         //init will receive all the available context information : the whole strategy, body, anchorId from the query and the protocol
         let flow = $$.flow.start(domainConfig.type);
-        //let flow = $$.flow.start('ETH');
         flow.init(domainConfig, request.params.anchorId, request.body, server.rootFolder);
 
         // all the available information was passed on init.
