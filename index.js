@@ -5,7 +5,7 @@ const START_TOKENS = 6000000;
 
 const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
 
-const LoggerMiddleware = require('./middlewares/logger');
+const LoggerMiddleware = require('./middlewares/stop-watch-logger');
 const AuthorisationMiddleware = require('./middlewares/authorisation');
 const IframeHandlerMiddleware = require('./middlewares/iframeHandler');
 
