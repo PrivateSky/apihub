@@ -7,7 +7,7 @@ const defaultConfig = {
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricksLedger", "bricking", "anchoring", "bricksFabric", "dsu-wizard", "staticServer"],
+    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricksLedger", "bricking", "anchoring", "bricksFabric", "dsu-wizard", 'debugLogger', "staticServer"],
     "endpointsConfig": {
         "messaging": {
             "module": "./components/mqManager",
@@ -95,6 +95,11 @@ const defaultConfig = {
                 }
             }
         },
+        "debugLogger": {
+            "module": './components/debugLogger',
+            "workingDirPath": './external-volume/debug-logger',
+            "storageDirPath": './external-volume/debug-logger/storage',
+        },
         "staticServer": {
             "module": "./components/staticServer"
         },
@@ -134,7 +139,8 @@ const defaultConfig = {
         "/receive-message",
         "/files",
         "/notifications",
-        "/mq"
+        "/mq",
+        "/logs"
     ],
     "iframeHandlerDsuBootPath": "./psknode/bundles/nodeBoot.js"
 };
