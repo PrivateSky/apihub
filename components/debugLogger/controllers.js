@@ -13,13 +13,6 @@ const levels = {
   debug: 'debug',
 };
 
-const levelsNumbers = {
-  [levels.error]: 0,
-  [levels.warning]: 1,
-  [levels.info]: 2,
-  [levels.debug]: 3,
-};
-
 function createHandlerAppendToLog(server) {
   return function appendToLog(request, response) {
     if (!request.body || !request.body.message) {
@@ -28,7 +21,7 @@ function createHandlerAppendToLog(server) {
     }
     const message = request.body && request.body.message;
     const anchorID = request.params.anchorID;
-    const logLevel = levelsNumbers[request.params.logLevel] || levelsNumbers[levels.info];
+    const logLevel = levels[request.params.logLevel] || levels['info'];
 
     let data;
 
@@ -80,10 +73,11 @@ function createHandlerAppendToLog(server) {
 
 function createHandlerReadFromLog(server) {
   return function readFromLog(request, response) {
+    console.log('running');
     const today = new Date().toISOString().split('T')[0];
     const anchorID = request.params.anchorID;
     const queryObject = url.parse(request.url, true).query;
-    const logLevel = levelsNumbers[queryObject.logLevel || levels.info];
+    const logLevel = levels[queryObject.logLevel] || levels['info'];
 
     let fromDate = queryObject.from ? Date.parse(queryObject.from) : Date.parse(today);
     const toDate = queryObject.to ? Date.parse(queryObject.to) : Date.parse(today);
@@ -109,11 +103,16 @@ function createHandlerReadFromLog(server) {
             data = JSON.parse(data);
             data = data.filter((log) => log.anchorID === anchorID);
             data = data.filter((log) =>
-              logLevel === levelsNumbers[levels.debug]
-                ? log.level === levelsNumbers[levels.info] ||
-                  log.level === levelsNumbers[levels.error] ||
-                  log.level === levelsNumbers[levels.warning]
-                : log.level === logLevel
+              logLevel === levels['debug']
+                ? log.level === levels['info'] ||
+                  log.level === levels['error'] ||
+                  log.level === levels['warning'] ||
+                  log.level === levels['debug']
+                : logLevel === levels['error']
+                ? log.level === levels['info'] || log.level === levels['error'] || log.level === levels['warning']
+                : logLevel === levels['warning']
+                ? log.level === levels['info'] || log.level === levels['warning']
+                : log.level === levels['info']
             );
 
             resolve(data);

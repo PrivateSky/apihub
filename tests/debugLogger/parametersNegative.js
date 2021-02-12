@@ -48,7 +48,7 @@ assert.callback(
             res.on('end', async () => {
               data = await JSON.parse(data);
               assert.true(data.anchorID === anchorID, 'Response error, anchorId');
-              assert.true(data.level === 2, 'Response error, level');
+              assert.true(data.level === 'info', 'Response error, level');
               assert.true(data.message === postData.message, 'Response error, message');
 
               // GET REQUEST
