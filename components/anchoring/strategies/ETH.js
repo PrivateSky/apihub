@@ -86,8 +86,8 @@ $$.flow.describe('ETH',{
     __SendToBlockChain : function(callback){
         const body = {
             "hash": {
-                "newHashLinkSSI" : this.commandData.jsonData.hash.new,
-                "lastHashLinkSSI" : this.commandData.jsonData.hash.last
+                "newHashLinkSSI" : this.commandData.jsonData.hashLinkIds.new,
+                "lastHashLinkSSI" : this.commandData.jsonData.hashLinkIds.last
             },
             "digitalProof" : {
                 "signature" : this.commandData.jsonData.digitalProof.signature,

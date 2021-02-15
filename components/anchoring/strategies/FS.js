@@ -9,22 +9,22 @@ let folderStrategy = {};
 
 $$.flow.describe('FS', {
     init: function (domainConfig, anchorId, jsonData, rootFolder) {
-            const domainName = this.__getDomainName(anchorId);
-            this.commandData = {};
-            this.commandData.option = domainConfig.option;
-            this.commandData.domain = domainName;
-            this.commandData.anchorId = anchorId;
-            this.commandData.jsonData = jsonData;
-            //config "enableBricksLedger" . default false, even if it is not configured
-            this.commandData.EnableBricksLedger = typeof domainConfig.option.enableBricksLedger === 'undefined' ? false : domainConfig.option.enableBricksLedger;
-            //because we work instance based, ensure that folder structure is done only once per domain
-            //skip, folder structure is already done for this domain type
-            if (!folderStrategy[domainName])
-            {
-                const storageFolder = path.join(rootFolder,domainConfig.option.path);
-                folderStrategy[domainName] = storageFolder;
-                this.__prepareFolderStructure(storageFolder, domainName);
-            }
+        const domainName = this.__getDomainName(anchorId);
+        this.commandData = {};
+        this.commandData.option = domainConfig.option;
+        this.commandData.domain = domainName;
+        this.commandData.anchorId = anchorId;
+        this.commandData.jsonData = jsonData;
+        //config "enableBricksLedger" . default false, even if it is not configured
+        this.commandData.EnableBricksLedger = typeof domainConfig.option.enableBricksLedger === 'undefined' ? false : domainConfig.option.enableBricksLedger;
+        //because we work instance based, ensure that folder structure is done only once per domain
+        //skip, folder structure is already done for this domain type
+        if (!folderStrategy[domainName])
+        {
+            const storageFolder = path.join(rootFolder,domainConfig.option.path);
+            folderStrategy[domainName] = storageFolder;
+            this.__prepareFolderStructure(storageFolder, domainName);
+        }
     },
     __getDomainName : function (keySSI){
         return require('../utils/index').getDomainFromKeySSI(keySSI);
@@ -41,23 +41,24 @@ $$.flow.describe('FS', {
         }
     },
     addAlias : function (server, callback) {
-        const fileHash = this.commandData.anchorId;
+
+        const anchorId = this.commandData.anchorId;
         const anchorsFolders = folderStrategy[this.commandData.domain];
-        if (!fileHash || typeof fileHash !== 'string') {
+        if (!anchorId || typeof anchorId !== 'string') {
             return callback(new Error('No fileId specified.'));
         }
-        const filePath = path.join(anchorsFolders, fileHash);
+        const filePath = path.join(anchorsFolders, anchorId);
         fs.stat(filePath, (err, stats) => {
             if (err) {
                 if (err.code !== 'ENOENT') {
                     console.log(err);
                 }
-                fs.writeFile(filePath, this.commandData.jsonData.hash.new + endOfLine, callback);
+                fs.writeFile(filePath, this.commandData.jsonData.hashLinkIds.new + endOfLine, callback);
                 return;
             }
 
-            this.__appendHash(filePath, this.commandData.jsonData.hash.new, {
-                lastHash: this.commandData.jsonData.hash.last,
+            this.__appendHashLink(filePath, this.commandData.jsonData.hashLinkIds.new, {
+                lastHashLink: this.commandData.jsonData.hashLinkIds.last,
                 fileSize: stats.size
             }, callback);
         });
@@ -114,16 +115,16 @@ $$.flow.describe('FS', {
 
     /**
      * Append `hash` to file only
-     * if the `lastHash` is the last hash in the file
+     * if the `lastHashLink` is the last hash in the file
      * 
      * @param {string} path 
      * @param {string} hash 
      * @param {object} options
-     * @param {string|undefined} options.lastHash 
+     * @param {string|undefined} options.lastHashLink
      * @param {number} options.fileSize 
      * @param {callback} callback 
      */
-    __appendHash: function (path, hash, options, callback) {
+    __appendHashLink: function (path, hash, options, callback) {
         fs.open(path, fs.constants.O_RDWR, (err, fd) => {
             if (err) {
                 return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to append hash <${hash}> in file at path <${path}>`, err));
@@ -136,10 +137,10 @@ $$.flow.describe('FS', {
                 // compare the last hash in the file with the one received in the request
                 // if they are not the same, exit with error
                 const hashes = buffer.toString().trimEnd().split(endOfLine);
-                const lastHash = hashes[hashes.length - 1];
+                const lastHashLink = hashes[hashes.length - 1];
 
-                if (lastHash !== options.lastHash) {
-                    console.log('__appendHash error.Unable to add alias: versions out of sync.', lastHash, options.lastHash)
+                if (lastHashLink !== options.lastHashLink) {
+                    console.log('__appendHashLink error.Unable to add alias: versions out of sync.', lastHashLink, options.lastHashLink)
                     console.log("existing hashes :", hashes);
                     console.log("received hashes :", options);
                     return callback({
@@ -150,7 +151,7 @@ $$.flow.describe('FS', {
 
                 fs.write(fd, hash + endOfLine, options.fileSize, (err) => {
                     if (err) {
-                        console.log("__appendHash-write : ",err);
+                        console.log("__appendHashLink-write : ",err);
                         return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed write in file <${path}>`, err));
                     }
                     
