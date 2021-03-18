@@ -12,13 +12,13 @@ function Logger(server) {
       url,
       connection: { remoteAddress },
     } = req;
-    const { statusCode } = res;
 
     const start = process.hrtime();
     const datetime = new Date().toISOString();
     let durationInMilliseconds;
 
     res.on('finish', () => {
+      const { statusCode } = res;
       durationInMilliseconds = getRequestDuration(start);
       let log = `${remoteAddress} - [${datetime}] ${method}:${url} ${statusCode} ${durationInMilliseconds.toLocaleString()}ms`;
       console.log(log);
