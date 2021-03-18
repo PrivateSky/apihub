@@ -23,10 +23,14 @@ function createHandler(server){
                 if (err.code === 'EACCES') {
                     return response.send(409);
                 }
-                if (err.code === ALIAS_SYNC_ERR_CODE) {
+                else if (err.code === ALIAS_SYNC_ERR_CODE) {
                     // see: https://tools.ietf.org/html/rfc6585#section-3
                     return response.send(428);
                 }
+                else if (err.code === 403) {
+                    return response.send(403)
+                }
+
                 return response.send(500);
             }
 
