@@ -2,6 +2,8 @@ const fs = require('fs');
 const endOfLine = require('os').EOL;
 const path = require('swarmutils').path;
 const crypto = require("pskcrypto");
+const openDSU = require("opendsu");
+const cryptoDSU = openDSU.loadApi("crypto");
 
 const ALIAS_SYNC_ERR_CODE = 'sync-error';
 
@@ -53,12 +55,12 @@ $$.flow.describe('FS', {
                 return callback({ error: new Error('403'), code: 403})
             }
 
-            let dataToSign = anchorId + hashLinkIds.new + zkp;
+            let signedData = anchorId + hashLinkIds.new + zkp;
             if (hashLinkIds.last) {
-                dataToSign += hashLinkIds.last;
+                signedData += hashLinkIds.last;
             }
 
-            crypto.verifyDefault(dataToSign, signature, publicKey, (err, res) => {
+            crypto.verifyDefault(signedData, cryptoDSU.decodeBase58(signature), cryptoDSU.decodeBase58(publicKey), (err, res) => {
                 if (err) {
                     return callback({ error: err, code: 403});
                 }
