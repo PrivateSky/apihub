@@ -4,6 +4,7 @@ const path = require('swarmutils').path;
 const crypto = require("pskcrypto");
 const openDSU = require("opendsu");
 const cryptoDSU = openDSU.loadApi("crypto");
+const {getKeySSITypeDigitalProofConfig} = openDSU.loadApi("anchoring");
 
 const ALIAS_SYNC_ERR_CODE = 'sync-error';
 
@@ -46,54 +47,68 @@ $$.flow.describe('FS', {
     addAlias : function (server, callback) {
         const self = this;
         const anchorId = this.commandData.anchorId;
-        const {digitalProof, hashLinkIds, zkp} = this.commandData.jsonData;
-        if (!digitalProof) {
-            return callback({ error: new Error('403'), code: 403})
-            const {signature, publicKey} = digitalProof;
 
-            if (!signature || !publicKey) {
-                return callback({ error: new Error('403'), code: 403})
+        const {digitalProof, hashLinkIds, zkp, keySSIType} = this.commandData.jsonData;
+
+        const _addAlias = () => {
+            const anchorsFolders = folderStrategy[self.commandData.domain];
+            if (!anchorId || typeof anchorId !== 'string') {
+                return callback(new Error('No fileId specified.'));
             }
-
-            let signedData = anchorId + hashLinkIds.new + zkp;
-            if (hashLinkIds.last) {
-                signedData += hashLinkIds.last;
-            }
-
-            crypto.verifyDefault(signedData, cryptoDSU.decodeBase58(signature), cryptoDSU.decodeBase58(publicKey), (err, res) => {
+            const filePath = path.join(anchorsFolders, anchorId);
+            fs.stat(filePath, (err, stats) => {
                 if (err) {
-                    return callback({ error: err, code: 403});
-                }
-                const anchorsFolders = folderStrategy[self.commandData.domain];
-                if (!anchorId || typeof anchorId !== 'string') {
-                    return callback(new Error('No fileId specified.'));
-                }
-                const filePath = path.join(anchorsFolders, anchorId);
-                fs.stat(filePath, (err, stats) => {
-                    if (err) {
-                        if (err.code !== 'ENOENT') {
-                            console.log(err);
-                        }
-                        fs.writeFile(filePath, hashLinkIds.new + endOfLine, callback);
-                        return;
+                    if (err.code !== 'ENOENT') {
+                        console.log(err);
                     }
-
-                    self.__appendHashLink(filePath, hashLinkIds.new, {
-                        lastHashLink: hashLinkIds.last,
-                        fileSize: stats.size
-                    }, callback);
-                });
-
-
-                if (self.commandData.EnableBricksLedger)
-                {
-                    //send log info
-                    self.__logWriteRequest(server);
+                    fs.writeFile(filePath, hashLinkIds.new + endOfLine, callback);
+                    return;
                 }
-            })
+
+                self.__appendHashLink(filePath, hashLinkIds.new, {
+                    lastHashLink: hashLinkIds.last,
+                    fileSize: stats.size
+                }, callback);
+            });
 
 
+            if (self.commandData.EnableBricksLedger)
+            {
+                //send log info
+                self.__logWriteRequest(server);
+            }
         }
+
+        getKeySSITypeDigitalProofConfig(keySSIType, (err, res) => {
+            if (err) {
+                return callback(err)
+            }
+            if (!res.dsa) {
+                _addAlias()
+            }
+            else {
+                if (!digitalProof) {
+                    return callback({error: new Error('403'), code: 403})
+                }
+                const {signature, publicKey} = digitalProof;
+
+                if (!signature || !publicKey) {
+                    return callback({ error: new Error('403'), code: 403})
+                }
+
+                let signedData = anchorId + hashLinkIds.new + zkp;
+                if (hashLinkIds.last) {
+                    signedData += hashLinkIds.last;
+                }
+
+                crypto.verifyDefault(signedData, cryptoDSU.decodeBase58(signature), cryptoDSU.decodeBase58(publicKey), (err, res) => {
+                    if (err) {
+                        return callback({ error: err, code: 403});
+                    }
+                    _addAlias()
+                })
+            }
+        });
     },
 
     __logWriteRequest : function(server){
