@@ -17,7 +17,7 @@ function mqManager(server) {
 	function createChannel(req, res) {
 		let anchorId = req.params.anchorId;
 		let SSI = req.headers['ssi'];
-		if (typeof SSI === 'undefined' || typeof anchorId === 'undefined') {
+		if (/*typeof SSI === 'undefined' ||*/ typeof anchorId === 'undefined') {
 			return sendStatus(res, 400);
 		}
 
