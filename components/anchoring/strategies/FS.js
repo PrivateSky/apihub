@@ -102,8 +102,9 @@ $$.flow.describe('FS', {
                 }
 
                 crypto.verifyDefault(signedData, cryptoDSU.decodeBase58(signature), cryptoDSU.decodeBase58(publicKey), (err, res) => {
-                    if (err) {
-                        return callback({ error: err, code: 403});
+                     if (err) {
+                        console.trace("Failed to verify signature during anchoring", err);
+                        //return callback({ error: err, code: 403});
                     }
                     _addAlias()
                 })
