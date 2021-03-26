@@ -1,6 +1,10 @@
 const fs = require('fs');
 const endOfLine = require('os').EOL;
 const path = require('swarmutils').path;
+const crypto = require("pskcrypto");
+const openDSU = require("opendsu");
+const cryptoDSU = openDSU.loadApi("crypto");
+const {getKeySSITypeDigitalProofConfig} = openDSU.loadApi("anchoring");
 
 const ALIAS_SYNC_ERR_CODE = 'sync-error';
 
@@ -41,34 +45,70 @@ $$.flow.describe('FS', {
         }
     },
     addAlias : function (server, callback) {
-
+        const self = this;
         const anchorId = this.commandData.anchorId;
-        const anchorsFolders = folderStrategy[this.commandData.domain];
-        if (!anchorId || typeof anchorId !== 'string') {
-            return callback(new Error('No fileId specified.'));
-        }
-        const filePath = path.join(anchorsFolders, anchorId);
-        fs.stat(filePath, (err, stats) => {
-            if (err) {
-                if (err.code !== 'ENOENT') {
-                    console.log(err);
-                }
-                fs.writeFile(filePath, this.commandData.jsonData.hashLinkIds.new + endOfLine, callback);
-                return;
+
+        const {digitalProof, hashLinkIds, zkp, keySSIType} = this.commandData.jsonData;
+
+        const _addAlias = () => {
+            const anchorsFolders = folderStrategy[self.commandData.domain];
+            if (!anchorId || typeof anchorId !== 'string') {
+                return callback(new Error('No fileId specified.'));
             }
+            const filePath = path.join(anchorsFolders, anchorId);
+            fs.stat(filePath, (err, stats) => {
+                if (err) {
+                    if (err.code !== 'ENOENT') {
+                        console.log(err);
+                    }
+                    fs.writeFile(filePath, hashLinkIds.new + endOfLine, callback);
+                    return;
+                }
 
-            this.__appendHashLink(filePath, this.commandData.jsonData.hashLinkIds.new, {
-                lastHashLink: this.commandData.jsonData.hashLinkIds.last,
-                fileSize: stats.size
-            }, callback);
-        });
+                self.__appendHashLink(filePath, hashLinkIds.new, {
+                    lastHashLink: hashLinkIds.last,
+                    fileSize: stats.size
+                }, callback);
+            });
 
 
-        if (this.commandData.EnableBricksLedger)
-        {
-            //send log info
-            this.__logWriteRequest(server);
+            if (self.commandData.EnableBricksLedger)
+            {
+                //send log info
+                self.__logWriteRequest(server);
+            }
         }
+
+        getKeySSITypeDigitalProofConfig(keySSIType, (err, res) => {
+            if (err) {
+                return callback(err)
+            }
+            if (!res.dsa) {
+                _addAlias()
+            }
+            else {
+                if (!digitalProof) {
+                    return callback({error: new Error('403'), code: 403})
+                }
+                const {signature, publicKey} = digitalProof;
+
+                if (!signature || !publicKey) {
+                    return callback({ error: new Error('403'), code: 403})
+                }
+
+                let signedData = anchorId + hashLinkIds.new + zkp;
+                if (hashLinkIds.last) {
+                    signedData += hashLinkIds.last;
+                }
+
+                crypto.verifyDefault(signedData, cryptoDSU.decodeBase58(signature), cryptoDSU.decodeBase58(publicKey), (err, res) => {
+                    if (err) {
+                        return callback({ error: err, code: 403});
+                    }
+                    _addAlias()
+                })
+            }
+        });
     },
 
     __logWriteRequest : function(server){
@@ -116,13 +156,13 @@ $$.flow.describe('FS', {
     /**
      * Append `hash` to file only
      * if the `lastHashLink` is the last hash in the file
-     * 
-     * @param {string} path 
-     * @param {string} hash 
+     *
+     * @param {string} path
+     * @param {string} hash
      * @param {object} options
      * @param {string|undefined} options.lastHashLink
-     * @param {number} options.fileSize 
-     * @param {callback} callback 
+     * @param {number} options.fileSize
+     * @param {callback} callback
      */
     __appendHashLink: function (path, hash, options, callback) {
         fs.open(path, fs.constants.O_RDWR, (err, fd) => {
@@ -140,6 +180,8 @@ $$.flow.describe('FS', {
                 const lastHashLink = hashes[hashes.length - 1];
 
                 if (lastHashLink !== options.lastHashLink) {
+                    // TODO
+                    // options.lastHashLink === null
                     console.log('__appendHashLink error.Unable to add alias: versions out of sync.', lastHashLink, options.lastHashLink)
                     console.log("existing hashes :", hashes);
                     console.log("received hashes :", options);
@@ -154,7 +196,7 @@ $$.flow.describe('FS', {
                         console.log("__appendHashLink-write : ",err);
                         return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed write in file <${path}>`, err));
                     }
-                    
+
                     fs.close(fd, callback);
                 });
             });
