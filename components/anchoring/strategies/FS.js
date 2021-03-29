@@ -4,7 +4,8 @@ const path = require('swarmutils').path;
 const crypto = require("pskcrypto");
 const openDSU = require("opendsu");
 const cryptoDSU = openDSU.loadApi("crypto");
-//const {getKeySSITypeDigitalProofConfig} = openDSU.loadApi("anchoring");
+const {getKeySSITypeDigitalProofConfig} = openDSU.loadApi("anchoring");
+const {parse, keySSIFactory} = openDSU.loadApi("keyssi");
 
 const ALIAS_SYNC_ERR_CODE = 'sync-error';
 
@@ -47,8 +48,10 @@ $$.flow.describe('FS', {
     addAlias : function (server, callback) {
         const self = this;
         const anchorId = this.commandData.anchorId;
+        const anchorKeySSI = parse(anchorId)
+        const rootKeySSIType = keySSIFactory.getCommonRootKeySSIType(anchorKeySSI)
 
-        const {digitalProof, hashLinkIds, zkp, keySSIType} = this.commandData.jsonData;
+        const {digitalProof, hashLinkIds, zkp} = this.commandData.jsonData;
 
         const _addAlias = () => {
             const anchorsFolders = folderStrategy[self.commandData.domain];
@@ -72,12 +75,55 @@ $$.flow.describe('FS', {
             });
 
 
-            if (self.commandData.EnableBricksLedger) {
+            if (self.commandData.EnableBricksLedger)
+            {
                 //send log info
                 self.__logWriteRequest(server);
             }
         }
-        _addAlias();
+        
+        getKeySSITypeDigitalProofConfig(rootKeySSIType, (err, {dsa, encoding}) => {
+            if (err) {
+                return callback(err)
+            }
+            if (!dsa) {
+                _addAlias()
+            }
+            else {
+                if (!digitalProof) {
+                    return callback({error: new Error('403'), code: 403})
+                }
+                const {signature, publicKey} = digitalProof;
+                //
+                if (!signature || !publicKey) {
+                    return callback({ error: new Error('403'), code: 403})
+                }
+
+                let data = anchorId + hashLinkIds.new + zkp;
+                if (hashLinkIds.last) {
+                    data += hashLinkIds.last;
+                }
+                console.log('||||||||||||||||||||||||||')
+                console.log('DATA:', data)
+                console.log('SIG:', signature)
+                console.log('SIG:', crypto.pskBase58Decode(signature))
+                console.log('PUB:', publicKey)
+                console.log('PUB:', crypto.pskBase58Decode(publicKey))
+                console.log('PUB local:', crypto.pskBase58Decode(publicKey).toString())
+
+                const rawSignature = encoding ? crypto.pskBase58Decode(signature) : signature;
+                const rawPubKey = encoding ? crypto.pskBase58Decode(publicKey) : publicKey;
+                cryptoDSU.verifySignature(rootKeySSIType, data, rawSignature, rawPubKey, (err, res) => {
+                     if (err) {
+                        console.trace("Failed to verify signature during anchoring", err);
+                        return callback({ error: err, code: 403});
+                    }
+
+                    return _addAlias()
+
+                })
+            }
+        });
     },
 
     __logWriteRequest : function(server){
