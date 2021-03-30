@@ -81,7 +81,7 @@ $$.flow.describe('FS', {
                 self.__logWriteRequest(server);
             }
         }
-        
+
         getKeySSITypeDigitalProofConfig(rootKeySSIType, (err, {dsa, encoding}) => {
             if (err) {
                 return callback(err)
@@ -91,11 +91,13 @@ $$.flow.describe('FS', {
             }
             else {
                 if (!digitalProof) {
+                    console.trace('Missing "digitalProof payload"')
                     return callback({error: new Error('403'), code: 403})
                 }
+
                 const {signature, publicKey} = digitalProof;
-                //
                 if (!signature || !publicKey) {
+                    console.trace('Missing "signature" or "publicKey" in the payload')
                     return callback({ error: new Error('403'), code: 403})
                 }
 
@@ -103,13 +105,6 @@ $$.flow.describe('FS', {
                 if (hashLinkIds.last) {
                     data += hashLinkIds.last;
                 }
-                console.log('||||||||||||||||||||||||||')
-                console.log('DATA:', data)
-                console.log('SIG:', signature)
-                console.log('SIG:', crypto.pskBase58Decode(signature))
-                console.log('PUB:', publicKey)
-                console.log('PUB:', crypto.pskBase58Decode(publicKey))
-                console.log('PUB local:', crypto.pskBase58Decode(publicKey).toString())
 
                 const rawSignature = encoding ? crypto.pskBase58Decode(signature) : signature;
                 const rawPubKey = encoding ? crypto.pskBase58Decode(publicKey) : publicKey;
