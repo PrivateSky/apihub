@@ -43,6 +43,11 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 	function getQueueStoragePath(queueName) {
 		let path = swarmUtils.path;
+		const opendsu = require("opendsu");
+		const crypto = opendsu.loadAPI('crypto');
+		if (queueName.indexOf(':') !== -1) {
+			queueName = crypto.encodeBase58(queueName);
+		}
 		return path.join(storageFolderPath, queueName);
 	}
 
