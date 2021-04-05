@@ -55,6 +55,13 @@ $$.flow.describe('FS', {
             if (!anchorId || typeof anchorId !== 'string') {
                 return callback(new Error('No fileId specified.'));
             }
+
+            let forbiddenCharacters = new RegExp(/[~`!#$%\^&*+=\-\[\]\\';,/{}|\\":<>\?]/g);
+            if(forbiddenCharacters.test(anchorId)){
+                console.log(`Found forbidden characters in anchorId ${anchorId}`);
+                return callback(new Error("anchorId contains forbidden characters"));
+            }
+
             const filePath = path.join(anchorsFolders, anchorId);
             fs.stat(filePath, (err, stats) => {
                 if (err) {
