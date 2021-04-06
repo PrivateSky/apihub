@@ -4,7 +4,6 @@ const path = require('swarmutils').path;
 const crypto = require("pskcrypto");
 const openDSU = require("opendsu");
 const cryptoDSU = openDSU.loadApi("crypto");
-const {getKeySSITypeDigitalProofConfig} = openDSU.loadApi("anchoring");
 const {parse, keySSIFactory} = openDSU.loadApi("keyssi");
 
 const ALIAS_SYNC_ERR_CODE = 'sync-error';
@@ -50,6 +49,7 @@ $$.flow.describe('FS', {
         const anchorId = this.commandData.anchorId;
         const anchorKeySSI = parse(anchorId)
         const rootKeySSIType = keySSIFactory.getCommonRootKeySSIType(anchorKeySSI)
+        const rootKeySSI = keySSIFactory.createByType(rootKeySSIType, "");
 
         const {digitalProof, hashLinkIds, zkp} = this.commandData.jsonData;
 
@@ -82,43 +82,38 @@ $$.flow.describe('FS', {
             }
         }
 
-        getKeySSITypeDigitalProofConfig(rootKeySSIType, (err, {dsa, encoding}) => {
-            if (err) {
-                return callback(err)
+        if (!rootKeySSI.canSign()) {
+            return _addAlias()
+        }
+        else {
+            if (!digitalProof) {
+                console.trace('Missing "digitalProof payload"')
+                return callback({error: new Error('403'), code: 403})
             }
-            if (!dsa) {
-                _addAlias()
+
+            const {signature, publicKey} = digitalProof;
+            if (!signature || !publicKey) {
+                console.trace('Missing "signature" or "publicKey" in the payload')
+                return callback({ error: new Error('403'), code: 403})
             }
-            else {
-                if (!digitalProof) {
-                    console.trace('Missing "digitalProof payload"')
-                    return callback({error: new Error('403'), code: 403})
+
+            let data = anchorId + hashLinkIds.new + zkp;
+            if (hashLinkIds.last) {
+                data += hashLinkIds.last;
+            }
+
+            const rawSignature = crypto.pskBase58Decode(signature);
+            const rawPubKey = crypto.pskBase58Decode(publicKey);
+            cryptoDSU.verifySignature(rootKeySSIType, data, rawSignature, rawPubKey, (err, res) => {
+                if (err) {
+                    console.trace("Failed to verify signature during anchoring", err);
+                    return callback({ error: err, code: 403});
                 }
 
-                const {signature, publicKey} = digitalProof;
-                if (!signature || !publicKey) {
-                    console.trace('Missing "signature" or "publicKey" in the payload')
-                    return callback({ error: new Error('403'), code: 403})
-                }
+                return _addAlias()
 
-                let data = anchorId + hashLinkIds.new + zkp;
-                if (hashLinkIds.last) {
-                    data += hashLinkIds.last;
-                }
-
-                const rawSignature = encoding ? crypto.pskBase58Decode(signature) : signature;
-                const rawPubKey = encoding ? crypto.pskBase58Decode(publicKey) : publicKey;
-                cryptoDSU.verifySignature(rootKeySSIType, data, rawSignature, rawPubKey, (err, res) => {
-                     if (err) {
-                        console.trace("Failed to verify signature during anchoring", err);
-                        return callback({ error: err, code: 403});
-                    }
-
-                    return _addAlias()
-
-                })
-            }
-        });
+            })
+        }
     },
 
     __logWriteRequest : function(server){
