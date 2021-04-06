@@ -49,7 +49,7 @@ $$.flow.describe('FS', {
         const anchorId = this.commandData.anchorId;
         const anchorKeySSI = parse(anchorId)
         const rootKeySSIType = keySSIFactory.getCommonRootKeySSIType(anchorKeySSI)
-        const rootKeySSI = keySSIFactory.createByType(rootKeySSIType, "");
+        const rootKeySSI = keySSIFactory.createByType(rootKeySSIType, `ssi:${rootKeySSIType}`);
 
         const {digitalProof, hashLinkIds, zkp} = this.commandData.jsonData;
 
