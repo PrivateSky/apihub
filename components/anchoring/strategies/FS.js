@@ -1,10 +1,8 @@
 const fs = require('fs');
 const endOfLine = require('os').EOL;
 const path = require('swarmutils').path;
-const crypto = require("pskcrypto");
 const openDSU = require("opendsu");
-const cryptoDSU = openDSU.loadApi("crypto");
-const {parse, keySSIFactory} = openDSU.loadApi("keyssi");
+const {parse, createTemplateKeySSI} = openDSU.loadApi("keyssi");
 
 const ALIAS_SYNC_ERR_CODE = 'sync-error';
 
@@ -23,33 +21,32 @@ $$.flow.describe('FS', {
         this.commandData.EnableBricksLedger = typeof domainConfig.option.enableBricksLedger === 'undefined' ? false : domainConfig.option.enableBricksLedger;
         //because we work instance based, ensure that folder structure is done only once per domain
         //skip, folder structure is already done for this domain type
-        if (!folderStrategy[domainName])
-        {
-            const storageFolder = path.join(rootFolder,domainConfig.option.path);
+        if (!folderStrategy[domainName]) {
+            const storageFolder = path.join(rootFolder, domainConfig.option.path);
             folderStrategy[domainName] = storageFolder;
             this.__prepareFolderStructure(storageFolder, domainName);
         }
     },
-    __getDomainName : function (keySSI){
+    __getDomainName: function (keySSI) {
         return require('../utils/index').getDomainFromKeySSI(keySSI);
     },
     __prepareFolderStructure: function (storageFolder, domainName) {
         folderStrategy[domainName] = path.resolve(storageFolder);
         try {
             if (!fs.existsSync(folderStrategy[domainName])) {
-                fs.mkdirSync(folderStrategy[domainName], { recursive: true });
+                fs.mkdirSync(folderStrategy[domainName], {recursive: true});
             }
         } catch (e) {
             console.log('error creating anchoring folder', e);
             throw e;
         }
     },
-    addAlias : function (server, callback) {
+    addAlias: function (server, callback) {
         const self = this;
         const anchorId = this.commandData.anchorId;
         const anchorKeySSI = parse(anchorId)
-        const rootKeySSIType = keySSIFactory.getCommonRootKeySSIType(anchorKeySSI)
-        const rootKeySSI = keySSIFactory.createByType(rootKeySSIType, `ssi:${rootKeySSIType}`);
+        const rootKeySSITypeName = anchorKeySSI.getRootKeySSITypeName();
+        const rootKeySSI = createTemplateKeySSI(rootKeySSITypeName, anchorKeySSI.getDLDomain());
 
         const {digitalProof, hashLinkIds, zkp} = this.commandData.jsonData;
 
@@ -60,7 +57,7 @@ $$.flow.describe('FS', {
             }
 
             let forbiddenCharacters = new RegExp(/[~`!#$%\^&*+=\-\[\]\\';,/{}|\\":<>\?]/g);
-            if(forbiddenCharacters.test(anchorId)){
+            if (forbiddenCharacters.test(anchorId)) {
                 console.log(`Found forbidden characters in anchorId ${anchorId}`);
                 return callback(new Error("anchorId contains forbidden characters"));
             }
@@ -82,8 +79,7 @@ $$.flow.describe('FS', {
             });
 
 
-            if (self.commandData.EnableBricksLedger)
-            {
+            if (self.commandData.EnableBricksLedger) {
                 //send log info
                 self.__logWriteRequest(server);
             }
@@ -92,41 +88,68 @@ $$.flow.describe('FS', {
         if (!rootKeySSI.canSign()) {
             return _addAlias()
         }
-        else {
-            if (!digitalProof) {
-                console.trace('Missing "digitalProof payload"')
-                return callback({error: new Error('403'), code: 403})
-            }
 
-            const {signature, publicKey} = digitalProof;
-            if (!signature || !publicKey) {
-                console.trace('Missing "signature" or "publicKey" in the payload')
-                return callback({ error: new Error('403'), code: 403})
-            }
-
-            let data = anchorId + hashLinkIds.new + zkp;
-            if (hashLinkIds.last) {
-                data += hashLinkIds.last;
-            }
-
-            const rawSignature = crypto.pskBase58Decode(signature);
-            const rawPubKey = crypto.pskBase58Decode(publicKey);
-            cryptoDSU.verifySignature(rootKeySSIType, data, rawSignature, rawPubKey, (err, res) => {
-                if (err) {
-                    console.trace("Failed to verify signature during anchoring", err);
-                    return callback({ error: err, code: 403});
-                }
-
-                return _addAlias()
-
-            })
+        if (!digitalProof) {
+            console.trace('Missing "digitalProof payload"')
+            return callback({error: new Error('403'), code: 403})
         }
+
+        const {signature, publicKey} = digitalProof;
+        if (!signature || !publicKey) {
+            console.trace('Missing "signature" or "publicKey" in the payload')
+            return callback({error: new Error('403'), code: 403})
+        }
+
+        let data = anchorId + hashLinkIds.new + zkp;
+        if (hashLinkIds.last) {
+            data += hashLinkIds.last;
+        }
+
+        if (!anchorKeySSI.verify(data, digitalProof)) {
+            return callback({error: Error("Failed to verify signature"), code: 403});
+        }
+        let validAnchor;
+        if (anchorKeySSI.getTypeName() === openDSU.constants.ZERO_ACCESS_TOKEN_SSI) {
+            try {
+                validAnchor = this.__verifyZatSSIAnchor(anchorKeySSI, hashLinkIds.new, hashLinkIds.last);
+            }catch (e) {
+                return callback({error: err, code: 403});
+            }
+        }
+        if (!validAnchor) {
+            return callback({error: Error("Failed to verify signature"), code: 403});
+        }
+
+        _addAlias();
     },
 
-    __logWriteRequest : function(server){
+    __verifyZatSSIAnchor(anchorKeySSI, newSSIIdentifier, lastSSIIdentifier){
+        const newSSI = openDSU.loadAPI("keyssi").parse(newSSIIdentifier);
+        const timestamp = newSSI.getTimestamp();
+        const signature = newSSI.getSignature();
+        let dataToVerify = timestamp;
+        if (typeof lastSSIIdentifier !== "undefined") {
+            dataToVerify = lastSSIIdentifier + dataToVerify;
+        }
+
+        if (newSSI.getTypeName() === openDSU.constants.KEY_SSIS.SIGNED_HASH_LINK_SSI) {
+            dataToVerify += newSSI.getHash();
+            return anchorKeySSI.verify(dataToVerify, signature)
+        }
+        if(newSSI.getTypeName() === openDSU.constants.KEY_SSIS.TRANSFER_SSI){
+            dataToVerify += newSSI.getPublicKeyHash();
+            return anchorKeySSI.verify(dataToVerify, signature);
+        }
+
+        throw Error(`Invalid newSSI type provided`);
+        //sign(lastEntryInAnchor, timestamp, hash New Public Key)
+        //sign(lastEntryInAnchor, timestamp, hashLink)
+    },
+
+    __logWriteRequest: function (server) {
         const runCommandBody = {
-            "commandType" : "anchor",
-            "data" : this.commandData
+            "commandType": "anchor",
+            "data": this.commandData
         };
         const bodyData = JSON.stringify(runCommandBody);
         //build path
@@ -146,12 +169,12 @@ $$.flow.describe('FS', {
                 }
                 //console.log(result);
             })
-        }catch (err) {
-            console.log("anchoring ",err);
-        };
+        } catch (err) {
+            console.log("anchoring ", err);
+        }
     },
 
-    readVersions: function (alias,server, callback) {
+    readVersions: function (alias, server, callback) {
         const anchorsFolders = folderStrategy[this.commandData.domain];
         const filePath = path.join(anchorsFolders, alias);
         fs.readFile(filePath, (err, fileHashes) => {
@@ -205,7 +228,7 @@ $$.flow.describe('FS', {
 
                 fs.write(fd, hash + endOfLine, options.fileSize, (err) => {
                     if (err) {
-                        console.log("__appendHashLink-write : ",err);
+                        console.log("__appendHashLink-write : ", err);
                         return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed write in file <${path}>`, err));
                     }
 
