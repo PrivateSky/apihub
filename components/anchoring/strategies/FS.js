@@ -89,63 +89,81 @@ $$.flow.describe('FS', {
             return _addAlias()
         }
 
-        if (!digitalProof) {
-            console.trace('Missing "digitalProof payload"')
-            return callback({error: new Error('403'), code: 403})
-        }
-
-        const {signature, publicKey} = digitalProof;
-        if (!signature || !publicKey) {
-            console.trace('Missing "signature" or "publicKey" in the payload')
-            return callback({error: new Error('403'), code: 403})
-        }
-
         let data = anchorId + hashLinkIds.new + zkp;
         if (hashLinkIds.last) {
             data += hashLinkIds.last;
         }
 
-        if (!anchorKeySSI.verify(data, digitalProof)) {
-            return callback({error: Error("Failed to verify signature"), code: 403});
-        }
         let validAnchor;
-        if (anchorKeySSI.getTypeName() === openDSU.constants.ZERO_ACCESS_TOKEN_SSI) {
-            try {
-                validAnchor = this.__verifyZatSSIAnchor(anchorKeySSI, hashLinkIds.new, hashLinkIds.last);
-            }catch (e) {
-                return callback({error: err, code: 403});
-            }
+        try {
+            validAnchor = this.__verifySignature(anchorKeySSI, hashLinkIds.new, hashLinkIds.last);
+        } catch (e) {
+            return callback({error: e, code: 403});
         }
         if (!validAnchor) {
             return callback({error: Error("Failed to verify signature"), code: 403});
         }
 
+        if (anchorKeySSI.getTypeName() === openDSU.constants.KEY_SSIS.ZERO_ACCESS_TOKEN_SSI) {
+            return this.__validateZatSSI(anchorKeySSI, hashLinkIds.new, server, (err, isValid) => {
+                if (err) {
+                    return callback({error: err, code: 403});
+                }
+
+                _addAlias();
+            });
+        }
         _addAlias();
     },
 
-    __verifyZatSSIAnchor(anchorKeySSI, newSSIIdentifier, lastSSIIdentifier){
+    __verifySignature(anchorKeySSI, newSSIIdentifier, lastSSIIdentifier) {
         const newSSI = openDSU.loadAPI("keyssi").parse(newSSIIdentifier);
         const timestamp = newSSI.getTimestamp();
         const signature = newSSI.getSignature();
         let dataToVerify = timestamp;
-        if (typeof lastSSIIdentifier !== "undefined") {
+        if (lastSSIIdentifier) {
             dataToVerify = lastSSIIdentifier + dataToVerify;
         }
 
         if (newSSI.getTypeName() === openDSU.constants.KEY_SSIS.SIGNED_HASH_LINK_SSI) {
-            dataToVerify += newSSI.getHash();
+            dataToVerify += anchorKeySSI.getIdentifier();
             return anchorKeySSI.verify(dataToVerify, signature)
         }
-        if(newSSI.getTypeName() === openDSU.constants.KEY_SSIS.TRANSFER_SSI){
-            dataToVerify += newSSI.getPublicKeyHash();
+        if (newSSI.getTypeName() === openDSU.constants.KEY_SSIS.TRANSFER_SSI) {
+            dataToVerify += newSSI.getSpecificString();
             return anchorKeySSI.verify(dataToVerify, signature);
         }
 
         throw Error(`Invalid newSSI type provided`);
-        //sign(lastEntryInAnchor, timestamp, hash New Public Key)
-        //sign(lastEntryInAnchor, timestamp, hashLink)
     },
 
+    __validateZatSSI(zatSSI, newSSIIdentifier, server, callback){
+        const newSSI = openDSU.loadAPI("keyssi").parse(newSSIIdentifier);
+        this.readVersions(zatSSI.getIdentifier(), server, (err, SSIs) => {
+            if (err) {
+                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to get versions for <${zatSSI.getIdentifier()}>`, err));
+            }
+
+            if (SSIs.length === 0) {
+                return callback(undefined, true);
+            }
+
+            let lastTransferSSI;
+            for (let i = SSIs.length - 1; i >= 0; i--) {
+                const ssi = openDSU.loadAPI("keyssi").parse(SSIs[i]);
+                if (ssi.getTypeName() === openDSU.constants.KEY_SSIS.TRANSFER_SSI) {
+                    lastTransferSSI = ssi;
+                    break;
+                }
+            }
+
+            if (lastTransferSSI.getPublicKeyHash() !== newSSI.getPublicKeyHash()) {
+                return callback(Error("Failed to validate ZATSSI"), false);
+            }
+
+            callback(undefined, true);
+        });
+    },
     __logWriteRequest: function (server) {
         const runCommandBody = {
             "commandType": "anchor",
@@ -217,7 +235,15 @@ $$.flow.describe('FS', {
                 if (lastHashLink !== options.lastHashLink) {
                     // TODO
                     // options.lastHashLink === null
-                    console.log('__appendHashLink error.Unable to add alias: versions out of sync.', lastHashLink, options.lastHashLink)
+                    const opendsu = require("opendsu");
+                    const keySSISpace = opendsu.loadAPI("keyssi");
+                    if (lastHashLink) {
+                        const lastSSI = keySSISpace.parse(lastHashLink);
+                        if (lastSSI.getTypeName() === opendsu.constants.KEY_SSIS.TRANSFER_SSI) {
+                            return __writeNewSSI();
+                        }
+                    }
+                    console.log('__appendHashLink error.Unable to add alias: versions out of sync.', lastHashLink, options.lastHashLink);
                     console.log("existing hashes :", hashes);
                     console.log("received hashes :", options);
                     return callback({
@@ -226,14 +252,19 @@ $$.flow.describe('FS', {
                     });
                 }
 
-                fs.write(fd, hash + endOfLine, options.fileSize, (err) => {
-                    if (err) {
-                        console.log("__appendHashLink-write : ", err);
-                        return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed write in file <${path}>`, err));
-                    }
+                function __writeNewSSI() {
+                    fs.write(fd, hash + endOfLine, options.fileSize, (err) => {
+                        if (err) {
+                            console.log("__appendHashLink-write : ", err);
+                            return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed write in file <${path}>`, err));
+                        }
 
-                    fs.close(fd, callback);
-                });
+                        fs.close(fd, callback);
+                    });
+
+                }
+
+                __writeNewSSI();
             });
         });
     }
