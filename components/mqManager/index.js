@@ -69,21 +69,25 @@ function mqManager(server) {
 
 		//check tokens before delivering a message
 
+		let connectionActive = true;
+		req.connection.on('close', function(err) {
+			//console.log("Connection closed (timeout or client closed conection)");
+			connectionActive = false;
+		});
+
 		notificationManager.readMessage(anchorId, function (err, message) {
-			try {
-				if (err) {
-					if (err.statusCode) {
-						return sendStatus(res, err.statusCode);
-					} else {
-						return sendStatus(res, 500);
-					}
+			if (err) {
+				if (err.statusCode) {
+					return sendStatus(res, err.statusCode);
+				} else {
+					return sendStatus(res, 500);
 				}
-				res.write(message);
-				sendStatus(res, 200);
-			} catch (err) {
-				//here we expect to get errors when a connection has reached timeout
-				console.log(err);
 			}
+			if(!connectionActive){
+				throw "Connection not active with this subscriber.";
+			}
+			res.write(message);
+			sendStatus(res, 200);
 		});
 	}
 

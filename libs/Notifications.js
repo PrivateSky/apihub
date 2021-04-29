@@ -59,8 +59,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 				sub(undefined, message);
 				counter++;
 			} catch (err) {
-				//we should not get any errors here but lets log it
-				console.log('We weren\'t expecting for this', err);
+				//if something happens durring message delivery we will catch the error here
 			}
 		}
 		callback(undefined, counter);
@@ -112,9 +111,14 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 	this.sendMessage = function (queueName, message, callback) {
 		let subs = subscribers[queueName];
-		console.log('sub',queueName, subscribers[queueName])
+		//console.log('sub',queueName, subscribers[queueName])
 		if (typeof subs !== 'undefined' && subs.length > 0) {
-			return deliverMessage(subs, message, callback);
+			return deliverMessage(subs, message, (err, counter)=>{
+				if(err || counter === 0){
+					return addMessageToQueue(queueName, message, callback);
+				}
+				return callback(err, counter);
+			});
 		}
 		
 		return addMessageToQueue(queueName, message, callback);
