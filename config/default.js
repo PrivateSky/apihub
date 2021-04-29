@@ -7,7 +7,7 @@ const defaultConfig = {
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricksLedger", "bricking", "anchoring", "bricksFabric", "dsu-wizard", 'debugLogger', "staticServer"],
+    "activeEndpoints": ["virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricksLedger", "bricking", "anchoring", "bricksFabric", "contracts", "dsu-wizard", 'debugLogger', "staticServer"],
     "endpointsConfig": {
         "messaging": {
             "module": "./components/mqManager",
@@ -107,6 +107,14 @@ const defaultConfig = {
             "module": "./components/bricksLedger",
             "doAnchor": "anchorCommand.js",
             "doEPIAnchor": "EPIAnchorCommand.js"
+        },
+        "contracts": {
+            "module": "./components/contracts",
+            "domains": {   
+                "default": {
+                    "constitution": ""
+                }
+            }
         }
     },
     "tokenBucket": {

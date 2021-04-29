@@ -15,6 +15,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	}
 	//next require lines are only for browserify build purpose
 	// Remove mock
+    require('./components/contracts');
 	require('./components/bricking');
 	require('./components/anchoring');
 	require('./components/channelManager');
@@ -250,3 +251,7 @@ module.exports.getServerConfig = function () {
 
 	return config.getConfig();
 };
+
+module.exports.bootContracts = function (domain, domainConfig) {
+    return require("./components/contracts/boot")(domain, domainConfig);
+}
