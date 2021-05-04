@@ -110,11 +110,7 @@ const defaultConfig = {
         },
         "contracts": {
             "module": "./components/contracts",
-            "domains": {   
-                "default": {
-                    "constitution": ""
-                }
-            }
+            "domainsPath": "/external-volume/domains"
         }
     },
     "tokenBucket": {

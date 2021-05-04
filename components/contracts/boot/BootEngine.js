@@ -4,14 +4,13 @@ function BootEngine(domain, domainConfig) {
     const resolver = openDSU.loadApi("resolver");
 
     console.log(
-        `[worker] booting contracts for domain ${domain} and domainConfig ${JSON.stringify(domainConfig)} booting...`,
+        `[contract-worker] booting contracts for domain ${domain} and domainConfig ${JSON.stringify(domainConfig)} booting...`,
         domainConfig
     );
 
     const getContractConfigs = async () => {
-        const listFiles = promisify(this.rawDossier.listFiles);
+        const listFiles = $$.promisify(this.rawDossier.listFiles);
         const codeFolderFiles = await listFiles(constants.CODE_FOLDER);
-        console.log("codeFolderFiles", codeFolderFiles);
 
         const contractConfigs = codeFolderFiles
             .filter((file) => file)
@@ -28,7 +27,7 @@ function BootEngine(domain, domainConfig) {
 
     this.boot = async function (callback) {
         try {
-            const loadRawDossier = promisify(resolver.loadDSU);
+            const loadRawDossier = $$.promisify(resolver.loadDSU);
             try {
                 this.rawDossier = await loadRawDossier(domainConfig.constitution);
                 global.rawDossier = this.rawDossier;
@@ -37,10 +36,9 @@ function BootEngine(domain, domainConfig) {
                 return callback(err);
             }
 
-            const readFile = promisify(this.rawDossier.readFile);
+            const readFile = $$.promisify(this.rawDossier.readFile);
 
             const contractConfigs = await getContractConfigs();
-            console.log("contractConfigs", contractConfigs);
 
             let bootHandler;
             const bootContract = contractConfigs.find((contract) => contract.name === "boot");
@@ -52,9 +50,9 @@ function BootEngine(domain, domainConfig) {
                     var bootFileContent = await readFile(bootContract.filePath);
                     const BootClass = eval(`(${bootFileContent.toString()})`);
                     bootHandler = new BootClass(domain, domainConfig);
-                    await promisify(bootHandler.init.bind(bootHandler))();
+                    await $$.promisify(bootHandler.init.bind(bootHandler))();
                 } catch (e) {
-                    console.log("Failed to initialize boot", e);
+                    console.log("[contract-worker] Failed to initialize boot", e);
                     throw e;
                 }
             }
@@ -69,12 +67,12 @@ function BootEngine(domain, domainConfig) {
                     const contract = new ContractClass();
 
                     if (bootHandler) {
-                        await promisify(bootHandler.setContractMixin.bind(bootHandler))(contractConfig.name, contract);
+                        await $$.promisify(bootHandler.setContractMixin.bind(bootHandler))(contractConfig.name, contract);
                     }
 
                     contracts[contractConfig.name] = contract;
                 } catch (e) {
-                    console.log("Failed to eval file", contractConfig.name, e);
+                    console.log("contract-worker Failed to eval file", contractConfig.name, e);
                     throw e;
                 }
             }
@@ -87,21 +85,6 @@ function BootEngine(domain, domainConfig) {
         } catch (error) {
             callback(error);
         }
-    };
-}
-
-function promisify(fn) {
-    return function (...args) {
-        return new Promise((resolve, reject) => {
-            fn(...args, (err, ...res) => {
-                if (err) {
-                    console.log(err);
-                    reject(err);
-                } else {
-                    resolve(...res);
-                }
-            });
-        });
     };
 }
 

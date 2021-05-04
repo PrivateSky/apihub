@@ -1,6 +1,6 @@
-const getContractDomainsConfig = () => {
+const getContractDomainsPath = () => {
     const config = require("../../config");
-    return config.getConfig("endpointsConfig", "contracts", "domains") || {};
+    return config.getConfig("endpointsConfig", "contracts", "domainsPath");
 };
 
 function getNodeWorkerBootScript(domain, domainConfig) {
@@ -41,78 +41,103 @@ function getNodeWorkerBootScript(domain, domainConfig) {
 }
 
 function Contract(server) {
+    const pathName = "path";
+    const path = require(pathName);
+    const fsName = "fs";
+    const fs = require(fsName);
     const syndicate = require("syndicate");
     const { responseModifierMiddleware } = require("../../utils/middlewares");
 
-    const allDomainsConfig = getContractDomainsConfig();
-    let allDomainSyndicates = null;
+    const contractDomainsPath = getContractDomainsPath();
+    const allDomainsWorkerPools = {};
 
-    const bootAllDomainSyndicates = () => {
-        allDomainSyndicates = {};
-        Object.keys(allDomainsConfig).forEach((domain) => {
-            const domainConfig = allDomainsConfig[domain];
+    const getDomainWorkerPool = (domain, callback) => {
+        if (allDomainsWorkerPools[domain]) {
+            return callback(null, allDomainsWorkerPools[domain]);
+        }
 
-            console.log(`[Contract] Starting contract handler for '${domain}' domain...`, domainConfig);
+        const domainConfigFilePath = path.join(server.rootFolder, contractDomainsPath, `${domain}.config`);
 
-            const script = getNodeWorkerBootScript(domain, domainConfig);
-            allDomainSyndicates[domain] = syndicate.createWorkerPool({
-                bootScript: script,
-                // maximumNumberOfWorkers: 1,
-                workerOptions: {
-                    eval: true,
-                },
+        fs.access(domainConfigFilePath, fs.F_OK, (err) => {
+            if (err) {
+                console.error(`[Contracts] Config for domain '${domain}' not found at '${domainConfigFilePath}'`);
+                return callback(err);
+            }
+
+            fs.readFile(domainConfigFilePath, (err, data) => {
+                if (err) {
+                    console.error(`[Contracts] Config for domain '${domain}' found at '${domainConfigFilePath}' but couldn't be read`);
+                    return callback(err);
+                }
+
+                let domainConfig;
+                try {
+                    domainConfig = JSON.parse(data.toString());
+                } catch (error) {
+                    console.error(`[Contracts] Config for domain '${domain}' couldn't be parsed. Content: ${data.toString()}`);
+                    return callback(error);
+                }
+
+                console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
+
+                const script = getNodeWorkerBootScript(domain, domainConfig);
+                allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
+                    bootScript: script,
+                    // maximumNumberOfWorkers: 1,
+                    workerOptions: {
+                        eval: true,
+                    },
+                });
+
+                callback(null, allDomainsWorkerPools[domain]);
             });
         });
-    };
+    }
 
     const runContractMethod = (request, response) => {
-        if(allDomainSyndicates == null) {
-            bootAllDomainSyndicates();
-        }
-
         const { domain, contract, method, params: encodedMethodParams } = request.params;
 
-        const domainSyndicate = allDomainSyndicates[domain];
-        if (!domainSyndicate) {
-            return response.send(400, `Invalid domain ${domain} specfied!`);
-        }
 
-        let methodParams = [];
-        if (encodedMethodParams) {
-            const opendsu = require("opendsu");
-            const crypto = opendsu.loadAPI("crypto");
-
-            try {
-                const decodedMethodParams = crypto.decodeBase58(encodedMethodParams);
-                methodParams = JSON.parse(decodedMethodParams);
-            } catch (error) {
-                console.error(`[Contracts] Failed to decode method params: ${encodedMethodParams}`);
-                return response.send(400, error);
-            }
-        }
-
-        const task = {
-            contract,
-            method,
-            methodParams,
-            isLocalCall: true, // todo: check if the req is comming from localhost or proxy from localhost
-        };
-        domainSyndicate.addTask(task, (err, message) => {
+        getDomainWorkerPool(domain, (err, workerPool) => {
             if (err) {
-                return response.send(500, err);
+                return response.send(400, err);
             }
 
-            let { error, result } = message;
+            let methodParams = [];
+            if (encodedMethodParams) {
+                const opendsu = require("opendsu");
+                const crypto = opendsu.loadAPI("crypto");
 
-            if (error) {
-                return response.send(500, error);
+                try {
+                    const decodedMethodParams = crypto.decodeBase58(encodedMethodParams);
+                    methodParams = JSON.parse(decodedMethodParams);
+                } catch (error) {
+                    console.error(`[Contracts] Failed to decode method params: ${encodedMethodParams}`);
+                    return response.send(400, error);
+                }
             }
 
-            return response.send(200, result);
-        });
+            const task = {
+                contract,
+                method,
+                methodParams,
+                isLocalCall: true, // todo: check if the req is comming from localhost or proxy from localhost
+            };
+            workerPool.addTask(task, (err, message) => {
+                if (err) {
+                    return response.send(500, err);
+                }
+
+                let { error, result } = message;
+
+                if (error) {
+                    return response.send(500, error);
+                }
+
+                return response.send(200, result);
+            });
+        })
     };
-
-    // bootAllDomainSyndicates();
 
     server.use(`/contracts/:domain/*`, responseModifierMiddleware);
 
