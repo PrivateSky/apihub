@@ -12,13 +12,12 @@ function Bricks(server) {
 
     //call brick based on domain. Similar with Anchoring. if is not filled, it will fallback to 'default' domain
     server.put(`/bricking/:domain/put-brick`, uploadBrick);
-    server.put(`/bricking/:domain/put-brick/:domain`, uploadBrick);
 
     server.get(`/bricking/:domain/get-brick/:hashLink`, downloadBrick);
     server.get(`/bricking/:domain/downloadMultipleBricks`, downloadMultipleBricks);
 
-    server.get(`/bricking/:domain/get-brick/:hashLink/:domain`, downloadBrick);
-    server.get(`/bricking/:domain/downloadMultipleBricks/:domain`, downloadMultipleBricks);
+    server.get(`/bricking/:domain/get-brick/:hashLink`, downloadBrick);
+    server.get(`/bricking/:domain/downloadMultipleBricks`, downloadMultipleBricks);
 }
 
 module.exports = Bricks;
