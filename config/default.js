@@ -48,6 +48,12 @@ const defaultConfig = {
                 },
                 "vault": {
                     "path": "/internal-volume/domains/vault/brick-storage"
+                },
+                "test1": {
+                    "path": "/internal-volume/domains/test1/brick-storage"
+                },
+                "test2": {
+                    "path": "/internal-volume/domains/test2/brick-storage"
                 }
             }
         },
@@ -91,6 +97,18 @@ const defaultConfig = {
                     "type": "FS",
                     "option": {
                         "path": "/internal-volume/domains/vault/anchors"
+                    }
+                },
+                "test1": {
+                    "type": "FS",
+                    "option": {
+                        "path": "/internal-volume/domains/test1/anchors"
+                    }
+                },
+                "test2": {
+                    "type": "FS",
+                    "option": {
+                        "path": "/internal-volume/domains/test2/anchors"
                     }
                 }
             }
