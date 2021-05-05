@@ -1,22 +1,55 @@
+const anchoringStrategies = require("./strategies");
 
+function requestStrategyMiddleware(request, response, next) {
+    const receivedDomain = require("./utils").getDomainFromKeySSI(request.params.anchorId);
+    const domainConfig = require("./utils").getAnchoringDomainConfig(receivedDomain);
+    if (!domainConfig) {
+        const error = `[Anchoring] Domain '${receivedDomain}' not found`;
+        console.error(error);
+        return response.send(500, error);
+    }
 
+    const StrategyClass = anchoringStrategies[domainConfig.type];
+    if (!StrategyClass) {
+        const error = `[Anchoring] Strategy for anchoring domain '${domainConfig.type}' not found`;
+        console.error(error);
+        return response.send(500, error);
+    }
+
+    request.strategy = new StrategyClass(request.server, domainConfig, request.params.anchorId, request.body);
+
+    next();
+}
 
 function Anchoring(server) {
+    function requestServerMiddleware(request, response, next) {
+        request.server = server;
+        next();
+    }
 
-    require('./strategies/FS');
-    require('./strategies/ETH');
+    const { createAnchor, appendToAnchor, getAllVersions, publishHandler } = require("./controllers");
 
-    const AnchorSubscribe = require('./subscribe');
-    const AnchorVersions = require('./versions');
-    const  addAnchor = require('./controllers')(server);
-    const { responseModifierMiddleware, requestBodyJSONMiddleware } = require('../../utils/middlewares');
+    const { responseModifierMiddleware, requestBodyJSONMiddleware } = require("../../utils/middlewares");
 
+    server.use(`/anchor/:domain/*`, requestServerMiddleware);
     server.use(`/anchor/:domain/*`, responseModifierMiddleware);
-    server.put(`/anchor/:domain/add/:anchorId`, requestBodyJSONMiddleware);
-    server.put(`/anchor/:domain/add/:anchorId`, addAnchor); // to do : add call in brickledger to store the trasantion call
 
-    AnchorVersions(server);
-    AnchorSubscribe(server);
+    server.put(`/anchor/:domain/create-anchor/:anchorId`, requestBodyJSONMiddleware);
+    server.put(`/anchor/:domain/create-anchor/:anchorId`, requestStrategyMiddleware);
+    server.put(`/anchor/:domain/create-anchor/:anchorId`, createAnchor); // to do : add call in brickledger to store the trasantion call
+
+    server.put(`/anchor/:domain/append-to-anchor/:anchorId`, requestBodyJSONMiddleware);
+    server.put(`/anchor/:domain/append-to-anchor/:anchorId`, requestStrategyMiddleware);
+    server.put(`/anchor/:domain/append-to-anchor/:anchorId`, appendToAnchor); // to do : add call in brickledger to store the trasantion call
+
+    server.get(`/anchor/:domain/get-all-versions/:anchorId`, requestStrategyMiddleware);
+    server.get(`/anchor/:domain/get-all-versions/:anchorId`, getAllVersions);
+
+    server.get(`/anchor/:domain/subscribe/:keyssi`, publishHandler);
+
+    server.delete(`/anchor/:domain/subscribe/:keyssi`, (request, response, next) => {
+        // delete ANCHOR ?subscribeId=
+    });
 }
 
 module.exports = Anchoring;

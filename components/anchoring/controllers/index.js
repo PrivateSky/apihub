@@ -1,12 +1,52 @@
-let pendingRequests = {};
+const { ALIAS_SYNC_ERR_CODE } = require("../utils");
+const { readChannelForLastMessage, readBody, readChannel, publishToChannel } = require("./subscribe-utils");
 
-const readBody = require("../../../utils").readStringFromStream;
+function getHandlerForAnchorCreateOrAppend(response) {
+    return (err, result) => {
+        if (err) {
+            
+            const errorMessage = typeof err === "string" ? err : err.message;
+            if (err.code === "EACCES") {
+                return response.send(409, errorMessage);
+            } else if (err.code === ALIAS_SYNC_ERR_CODE) {
+                // see: https://tools.ietf.org/html/rfc6585#section-3
+                return response.send(428, errorMessage);
+            } else if (err.code === 403) {
+                return response.send(403, errorMessage);
+            }
+
+            return response.send(500, errorMessage);
+        }
+
+        response.send(201);
+    };
+}
+
+function createAnchor(request, response) {
+    request.strategy.createAnchor(getHandlerForAnchorCreateOrAppend(response));
+}
+
+function appendToAnchor(request, response) {
+    request.strategy.appendToAnchor(getHandlerForAnchorCreateOrAppend(response));
+}
+
+function getAllVersions(request, response) {
+    request.strategy.getAllVersions(request.params.anchorId, (err, fileHashes) => {
+        if (err) {
+            return response.send(404, "Anchor not found");
+        }
+
+        response.setHeader("Content-Type", "application/json");
+
+        return response.send(200, fileHashes);
+    });
+}
 
 function readHandler(req, res, next) {
     const channelIdentifier = req.params.channelsIdentifier;
     const lastMessageKnown = req.params.lastMessage;
 
-    readChannel(channelIdentifier, function (err, anchors) {
+    readChannelForLastMessage(channelIdentifier, lastMessageKnown, function (err, anchors) {
         if (err) {
             return res.send(err.code === "EPERM" ? 500 : 404);
         }
@@ -29,35 +69,6 @@ function readHandler(req, res, next) {
     });
 }
 
-function readChannel(name, callback) {
-    const fs = require("fs");
-    const path = require("swarmutils").path;
-
-    fs.readFile(path.join(storageFolder, name), function (err, content) {
-        let anchors;
-
-        if (!err) {
-            anchors = content.split("\m");
-        }
-
-        callback(err, anchors);
-    });
-}
-
-function publishToChannel(name, message, callback) {
-    const fs = require("fs");
-    const path = require("swarmutils").path;
-
-    fs.appendFile(path.join(storageFolder, name), message, function (err) {
-        if (typeof err === "undefined") {
-            //if everything went ok then try to resolve pending requests for that channel
-            tryToResolvePendingRequests(name, message);
-        }
-
-        return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed append in file <${path.join(storageFolder, name)}>`, err));
-    });
-}
-
 function publishHandler(request, reponse, next) {
     const channelIdentifier = request.params.channelsIdentifier;
     const lastMessage = request.params.lastMessage;
@@ -72,7 +83,7 @@ function publishHandler(request, reponse, next) {
                 // this is a new anchor
                 return publishToChannel(channelIdentifier, newAnchor, function (err) {
                     if (err) {
-                        return reponse.send(500, 'Internal error');
+                        return reponse.send(500, "Internal error");
                     }
 
                     return reponse.send(201);
@@ -95,4 +106,10 @@ function publishHandler(request, reponse, next) {
     });
 }
 
-module.exports = { readHandler, publishHandler };
+module.exports = {
+    createAnchor,
+    appendToAnchor,
+    getAllVersions,
+    readHandler,
+    publishHandler,
+};
