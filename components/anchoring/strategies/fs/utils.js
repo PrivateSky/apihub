@@ -85,7 +85,7 @@ function appendHashLink(path, hash, options, callback) {
             const hashes = buffer.toString().trimEnd().split(endOfLine);
             const lastHashLink = hashes[hashes.length - 1];
 
-            if (lastHashLink !== options.lastHashLink) {
+            if (lastHashLink !== '' && lastHashLink !== options.lastHashLink) {
                 // TODO
                 // options.lastHashLink === null
                 const opendsu = require("opendsu");
