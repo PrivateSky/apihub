@@ -89,7 +89,9 @@ function Server(sslOptions) {
             return callback(err);
         });
 
-        req.write(body);
+        if(body) {
+            req.write(body);
+        }
         req.end();
     };
 

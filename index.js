@@ -252,8 +252,8 @@ module.exports.getServerConfig = function () {
 	return config.getConfig();
 };
 
-module.exports.bootContracts = function (domain, domainConfig) {
-    return require("./components/contracts/boot")(domain, domainConfig);
+module.exports.bootContracts = function (domain, domainConfig, rootFolder) {
+    return require("./components/contracts/boot")(domain, domainConfig, rootFolder);
 }
 
 module.exports.anchoringStrategies = require("./components/anchoring/strategies");

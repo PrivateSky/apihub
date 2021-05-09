@@ -4,10 +4,6 @@ const openDSU = require("opendsu");
 
 const { ALIAS_SYNC_ERR_CODE } = require("../../utils");
 
-function getDomainName(keySSI) {
-    return require("../../utils/index").getDomainFromKeySSI(keySSI);
-}
-
 function verifySignature(anchorKeySSI, newSSIIdentifier, lastSSIIdentifier) {
     const newSSI = openDSU.loadAPI("keyssi").parse(newSSIIdentifier);
     const timestamp = newSSI.getTimestamp();
@@ -82,10 +78,11 @@ function appendHashLink(path, hash, options, callback) {
             }
             // compare the last hash in the file with the one received in the request
             // if they are not the same, exit with error
-            const hashes = buffer.toString().trimEnd().split(endOfLine);
+            const fileContent = buffer.toString().trimEnd();
+            const hashes = fileContent ? fileContent.split(endOfLine) : [];
             const lastHashLink = hashes[hashes.length - 1];
 
-            if (lastHashLink !== options.lastHashLink) {
+            if (hashes.length && lastHashLink !== options.lastHashLink) {
                 // TODO
                 // options.lastHashLink === null
                 const opendsu = require("opendsu");
@@ -129,7 +126,6 @@ function appendHashLink(path, hash, options, callback) {
 
 module.exports = {
     ALIAS_SYNC_ERR_CODE,
-    getDomainName,
     verifySignature,
     logWriteRequest,
     appendHashLink,

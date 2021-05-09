@@ -1,4 +1,4 @@
-function boot(domain, domainConfig) {
+function boot(domain, domainConfig, rootFolder) {
     const worker_threads = "worker_threads";
     const { parentPort } = require(worker_threads);
 
@@ -11,7 +11,7 @@ function boot(domain, domainConfig) {
 
     const BootEngine = require("./BootEngine.js");
 
-    const booter = new BootEngine(domain, domainConfig);
+    const booter = new BootEngine(domain, domainConfig, rootFolder);
 
     booter.boot((error, contractHandlers) => {
         if (error) {
@@ -24,7 +24,7 @@ function boot(domain, domainConfig) {
                 return callback("[contract-worker] Received empty message!");
             }
 
-            const { contract: contractName, method, params, isLocalCall } = message;
+            const { contract: contractName, method, methodParams = [], isLocalCall } = message;
             const contractHandler = contractHandlers[contractName];
             if (!contractHandler) {
                 return callback(`[contract-worker] Unkwnown contract '${contractName}'`);
@@ -35,8 +35,6 @@ function boot(domain, domainConfig) {
             }
 
             try {
-                const methodParams = params || [];
-
                 // check if the contract method call is allowed
                 const isContractMethodCallAllowed =
                     typeof contractHandler.allowExecution === "function" &&

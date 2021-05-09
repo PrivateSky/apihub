@@ -4,8 +4,8 @@ const path = require("swarmutils").path;
 const openDSU = require("opendsu");
 const { parse, createTemplateKeySSI } = openDSU.loadApi("keyssi");
 
-const { getDomainName, verifySignature, logWriteRequest, appendHashLink } = require("./utils");
-const { ANCHOR_ALREADY_EXISTS_ERR_CODE } = require("../../utils");
+const { verifySignature, logWriteRequest, appendHashLink } = require("./utils");
+const { ANCHOR_ALREADY_EXISTS_ERR_CODE, getDomainFromKeySSI } = require("../../utils");
 
 //dictionary. key - domain, value path
 let folderStrategy = {};
@@ -24,12 +24,12 @@ function prepareFolderStructure(storageFolder, domainName) {
 
 class FS {
     constructor(server, domainConfig, anchorId, jsonData) {
-        const domainName = getDomainName(anchorId);
+        const domainName = getDomainFromKeySSI(anchorId);
         this.commandData = {};
         this.commandData.option = domainConfig.option;
         this.commandData.domain = domainName;
         this.commandData.anchorId = anchorId;
-        this.commandData.jsonData = jsonData;
+        this.commandData.jsonData = jsonData || {};
         this.commandData.enableBricksLedger =
             typeof domainConfig.option.enableBricksLedger === "undefined"
                 ? false
@@ -57,9 +57,10 @@ class FS {
         this._createOrUpdateAnchor(false, callback);
     }
 
-    getAllVersions(alias, callback) {
+    getAllVersions(callback) {
+        const { anchorId } = this.commandData;
         const anchorsFolders = folderStrategy[this.commandData.domain];
-        const filePath = path.join(anchorsFolders, alias);
+        const filePath = path.join(anchorsFolders, anchorId);
         fs.readFile(filePath, (err, fileHashes) => {
             if (err) {
                 if (err.code === "ENOENT") {
@@ -69,12 +70,14 @@ class FS {
                     createOpenDSUErrorWrapper(`Failed to read file <${filePath}>`, err)
                 );
             }
-            callback(undefined, fileHashes.toString().trimEnd().split(endOfLine));
+            const fileContent = fileHashes.toString().trimEnd();
+            const versions = fileContent ? fileContent.split(endOfLine) : [];
+            callback(undefined, versions);
         });
     }
 
-    getLatestVersion(alias, callback) {
-        this.getAllVersions(alias, (err, results) => {
+    getLatestVersion(callback) {
+        this.getAllVersions((err, results) => {
             if (err) {
                 return callback(err);
             }
@@ -91,11 +94,11 @@ class FS {
         const rootKeySSITypeName = anchorKeySSI.getRootKeySSITypeName();
         const rootKeySSI = createTemplateKeySSI(rootKeySSITypeName, anchorKeySSI.getDLDomain());
 
-        const { hashLinkIds } = this.commandData.jsonData;
-
         if (createWithoutVersion || !rootKeySSI.canSign()) {
             return this._writeToAnchorFile(createWithoutVersion, callback);
         }
+
+        const { hashLinkIds } = this.commandData.jsonData;
 
         let validAnchor;
         try {

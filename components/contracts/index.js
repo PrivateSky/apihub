@@ -3,7 +3,7 @@ const getContractDomainsPath = () => {
     return config.getConfig("endpointsConfig", "contracts", "domainsPath");
 };
 
-function getNodeWorkerBootScript(domain, domainConfig) {
+function getNodeWorkerBootScript(domain, domainConfig, rootFolder) {
     if (!domainConfig.constitution) {
         if (process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI) {
             domainConfig.constitution = process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI;
@@ -34,9 +34,10 @@ function getNodeWorkerBootScript(domain, domainConfig) {
     }
 
     const apihubBundleScriptPath = global.bundlePaths.pskWebServer.replace(/\\/g, "\\\\").replace(".js", "");
+    const rootFolderPath = rootFolder.replace(/\\/g, "\\\\");
     const script = `
         require("${apihubBundleScriptPath}");
-        require('apihub').bootContracts('${domain}', ${JSON.stringify(domainConfig)})`;
+        require('apihub').bootContracts('${domain}', ${JSON.stringify(domainConfig)}, '${rootFolderPath}')`;
     return script;
 }
 
@@ -80,7 +81,7 @@ function Contract(server) {
 
                 console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
-                const script = getNodeWorkerBootScript(domain, domainConfig);
+                const script = getNodeWorkerBootScript(domain, domainConfig, server.rootFolder);
                 allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
                     bootScript: script,
                     // maximumNumberOfWorkers: 1,
@@ -123,6 +124,7 @@ function Contract(server) {
                 methodParams,
                 isLocalCall: true, // todo: check if the req is comming from localhost or proxy from localhost
             };
+            // console.log('[Contracts] Sending task to worker', task)
             workerPool.addTask(task, (err, message) => {
                 if (err) {
                     return response.send(500, err);

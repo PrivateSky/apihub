@@ -24,12 +24,12 @@ class ETH {
         sendToBlockChain(this.commandData, callback);
     }
 
-    getAllVersions(alias, callback) {
+    getAllVersions(callback) {
         readFromBlockChain(this.commandData, anchorID, callback);
     }
 
-    getLatestVersion(alias, callback) {
-        this.getAllVersions(alias, (err, results) => {
+    getLatestVersion(callback) {
+        this.getAllVersions((err, results) => {
             if (err) {
                 return callback(err);
             }

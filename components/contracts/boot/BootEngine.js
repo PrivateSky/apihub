@@ -1,4 +1,4 @@
-function BootEngine(domain, domainConfig) {
+function BootEngine(domain, domainConfig, rootFolder) {
     const openDSU = require("opendsu");
     const { constants } = openDSU;
     const resolver = openDSU.loadApi("resolver");
@@ -49,7 +49,7 @@ function BootEngine(domain, domainConfig) {
                 try {
                     var bootFileContent = await readFile(bootContract.filePath);
                     const BootClass = eval(`(${bootFileContent.toString()})`);
-                    bootHandler = new BootClass(domain, domainConfig);
+                    bootHandler = new BootClass(domain, domainConfig, rootFolder);
                     await $$.promisify(bootHandler.init.bind(bootHandler))();
                 } catch (e) {
                     console.log("[contract-worker] Failed to initialize boot", e);
