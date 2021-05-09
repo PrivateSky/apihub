@@ -90,8 +90,8 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 		queues[queueName].push(notificationObject);
 		
-		if (typeof storageFolderPath) {
-			notificationObject.timeout = setTimeout(function () {
+		if (typeof storageFolderPath !== 'undefined') {
+			return notificationObject.timeout = setTimeout(function () {
 				//maybe we don't need to do this ... bur for safety reasons...
 				for (let notification in queues[queueName]) {
 					if (notification === notificationObject) {
@@ -107,6 +107,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 				});
 			}, notificationLifeTimer);
 		}
+        callback();
 	}
 
 	this.sendMessage = function (queueName, message, callback) {
