@@ -59,21 +59,7 @@ class FS {
 
     getAllVersions(callback) {
         const { anchorId } = this.commandData;
-        const anchorsFolders = folderStrategy[this.commandData.domain];
-        const filePath = path.join(anchorsFolders, anchorId);
-        fs.readFile(filePath, (err, fileHashes) => {
-            if (err) {
-                if (err.code === "ENOENT") {
-                    return callback(undefined, []);
-                }
-                return OpenDSUSafeCallback(callback)(
-                    createOpenDSUErrorWrapper(`Failed to read file <${filePath}>`, err)
-                );
-            }
-            const fileContent = fileHashes.toString().trimEnd();
-            const versions = fileContent ? fileContent.split(endOfLine) : [];
-            callback(undefined, versions);
-        });
+        this._getAllVersionsForAnchorId(anchorId, callback);
     }
 
     getLatestVersion(callback) {
@@ -177,9 +163,27 @@ class FS {
         }
     };
 
+    _getAllVersionsForAnchorId(anchorId, callback) {
+        const anchorsFolders = folderStrategy[this.commandData.domain];
+        const filePath = path.join(anchorsFolders, anchorId);
+        fs.readFile(filePath, (err, fileHashes) => {
+            if (err) {
+                if (err.code === "ENOENT") {
+                    return callback(undefined, []);
+                }
+                return OpenDSUSafeCallback(callback)(
+                    createOpenDSUErrorWrapper(`Failed to read file <${filePath}>`, err)
+                );
+            }
+            const fileContent = fileHashes.toString().trimEnd();
+            const versions = fileContent ? fileContent.split(endOfLine) : [];
+            callback(undefined, versions);
+        });
+    }
+
     _validateZatSSI(zatSSI, newSSIIdentifier, callback) {
         const newSSI = openDSU.loadAPI("keyssi").parse(newSSIIdentifier);
-        this.getAllVersions(zatSSI.getIdentifier(), (err, SSIs) => {
+        this._getAllVersionsForAnchorId(zatSSI.getIdentifier(), (err, SSIs) => {
             if (err) {
                 return OpenDSUSafeCallback(callback)(
                     createOpenDSUErrorWrapper(`Failed to get versions for <${zatSSI.getIdentifier()}>`, err)
