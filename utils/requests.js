@@ -48,7 +48,7 @@ function makeRequest(url, method = 'GET', requestData, requestOptions = {}) {
 function isJSON(data) {
     try {
         JSON.parse(data)
-    } catch {
+    } catch (err) {
         return false;
     }
 
