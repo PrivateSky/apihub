@@ -4,6 +4,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 	const queues = {};
 	const queueMessageLifeTimers = {};
 	const subscribers = {};
+    const cleanupInterval = 100; // ms
 	const swarmUtils = require('swarmutils');
 
 	this.createQueue = function (queueName, timeout, callback) {
@@ -22,7 +23,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 			}
 
 			try {
-				if (typeof storageFolderPath !== undefined) {
+				if (typeof storageFolderPath !== 'undefined') {
 					require('fs').mkdirSync(getQueueStoragePath(queueName), { recursive: true });
 				}
 			} catch (err) {
@@ -76,12 +77,22 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		});
 	}
 
-	function buildNotification(message, timestamp, filename) {
-		return { filename, message, timeout: undefined, timestamp: timestamp ? timestamp : new Date().getTime() };
+	function buildNotification(message, timestamp, filename, ttl) {
+        return {
+            filename,
+            message,
+            timeout: undefined,
+            timestamp: timestamp ? timestamp : new Date().getTime(),
+            ttl
+        };
 	}
 
-	function addMessageToQueue(queueName, message, callback) {
-		const notificationObject = buildNotification(message);
+	function addMessageToQueue(queueName, message, messageTTL, callback) {
+        if (typeof messageTTL === 'function') {
+            callback = messageTTL;
+            messageTTL = undefined;
+        }
+		const notificationObject = buildNotification(message, undefined, undefined, messageTTL);
 		const notificationLifeTimer = queueMessageLifeTimers[queueName];
 
 		if(typeof queues[queueName] === "undefined"){
@@ -110,19 +121,24 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
         callback();
 	}
 
-	this.sendMessage = function (queueName, message, callback) {
+	this.sendMessage = function (queueName, message, messageTTL, callback) {
+        if (typeof messageTTL === 'function') {
+            callback = messageTTL;
+            messageTTL = undefined;
+        }
+
 		let subs = subscribers[queueName];
 		//console.log('sub',queueName, subscribers[queueName])
 		if (typeof subs !== 'undefined' && subs.length > 0) {
 			return deliverMessage(subs, message, (err, counter)=>{
 				if(err || counter === 0){
-					return addMessageToQueue(queueName, message, callback);
+					return addMessageToQueue(queueName, message, messageTTL, callback);
 				}
 				return callback(err, counter);
 			});
 		}
 		
-		return addMessageToQueue(queueName, message, callback);
+		return addMessageToQueue(queueName, message, messageTTL, callback);
 	}
 
 	this.readMessage = function (queueName, callback) {
@@ -187,6 +203,32 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		fs.writeFile(path.join(workingFolderPath, stateStorageFileName), JSON.stringify(state, null, 4), callback);
 	}
 
+    /**
+     * Remove expired queued messages
+     */
+    function startQMsgsCleanup() {
+        setInterval(() => {
+            const keys = Object.keys(queues);
+            const now = new Date().getTime();
+
+            for (const key of keys) {
+                const queue = queues[key];
+
+                for (const msg of queue) {
+                    if (!msg.ttl) {
+                        return;
+                    }
+                    const elapsed = now - msg.timestamp;
+                    // Remove expired message
+                    if (elapsed >= msg.ttl) {
+                        queue.remove(msg);
+                    }
+                }
+            }
+
+        }, cleanupInterval);
+    }
+
 	this.initialize = function (callback) {
 		let fs = require('fs');
 		let path = swarmUtils.path;
@@ -195,6 +237,8 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		if (!fs.existsSync(workingFolderPath)) {
 			fs.mkdirSync(workingFolderPath, { recursive: true });
 		}
+
+        startQMsgsCleanup();
 
 		loadState((err, state) => {
 			if (typeof storageFolderPath === 'undefined') {
