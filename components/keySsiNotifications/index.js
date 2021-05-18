@@ -8,7 +8,6 @@ function KeySSINotifications(server) {
 	const path = require("path");
 	const storage = config.getConfig("storage");
 	const workingDirPath = path.join(storage, config.getConfig('endpointsConfig', 'messaging', 'workingDirPath'));
-	const storageDirPath = path.join(server.rootFolder, config.getConfig('endpointsConfig', 'messaging', 'storageDirPath'));
     const QUEUED_MESSAGE_LIFETIME = 500; // (ms) Delete undelivered messages after this timeout
 
 	function publish(request, response) {
