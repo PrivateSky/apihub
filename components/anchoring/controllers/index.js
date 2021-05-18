@@ -31,7 +31,7 @@ function appendToAnchor(request, response) {
 }
 
 function getAllVersions(request, response) {
-    request.strategy.getAllVersions(request.params.anchorId, (err, fileHashes) => {
+    request.strategy.getAllVersions((err, fileHashes) => {
         if (err) {
             return response.send(404, "Anchor not found");
         }

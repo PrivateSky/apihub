@@ -4,8 +4,8 @@ const path = require("swarmutils").path;
 const openDSU = require("opendsu");
 const { parse, createTemplateKeySSI } = openDSU.loadApi("keyssi");
 
-const { getDomainName, verifySignature, logWriteRequest, appendHashLink } = require("./utils");
-const { ANCHOR_ALREADY_EXISTS_ERR_CODE } = require("../../utils");
+const { verifySignature, logWriteRequest, appendHashLink } = require("./utils");
+const { ANCHOR_ALREADY_EXISTS_ERR_CODE, getDomainFromKeySSI } = require("../../utils");
 
 //dictionary. key - domain, value path
 let folderStrategy = {};
@@ -24,12 +24,12 @@ function prepareFolderStructure(storageFolder, domainName) {
 
 class FS {
     constructor(server, domainConfig, anchorId, jsonData) {
-        const domainName = getDomainName(anchorId);
+        const domainName = getDomainFromKeySSI(anchorId);
         this.commandData = {};
         this.commandData.option = domainConfig.option;
         this.commandData.domain = domainName;
         this.commandData.anchorId = anchorId;
-        this.commandData.jsonData = jsonData;
+        this.commandData.jsonData = jsonData || {};
         this.commandData.enableBricksLedger =
             typeof domainConfig.option.enableBricksLedger === "undefined"
                 ? false
@@ -57,24 +57,13 @@ class FS {
         this._createOrUpdateAnchor(false, callback);
     }
 
-    getAllVersions(alias, callback) {
-        const anchorsFolders = folderStrategy[this.commandData.domain];
-        const filePath = path.join(anchorsFolders, alias);
-        fs.readFile(filePath, (err, fileHashes) => {
-            if (err) {
-                if (err.code === "ENOENT") {
-                    return callback(undefined, []);
-                }
-                return OpenDSUSafeCallback(callback)(
-                    createOpenDSUErrorWrapper(`Failed to read file <${filePath}>`, err)
-                );
-            }
-            callback(undefined, fileHashes.toString().trimEnd().split(endOfLine));
-        });
+    getAllVersions(callback) {
+        const { anchorId } = this.commandData;
+        this._getAllVersionsForAnchorId(anchorId, callback);
     }
 
-    getLatestVersion(alias, callback) {
-        this.getAllVersions(alias, (err, results) => {
+    getLatestVersion(callback) {
+        this.getAllVersions((err, results) => {
             if (err) {
                 return callback(err);
             }
@@ -91,11 +80,11 @@ class FS {
         const rootKeySSITypeName = anchorKeySSI.getRootKeySSITypeName();
         const rootKeySSI = createTemplateKeySSI(rootKeySSITypeName, anchorKeySSI.getDLDomain());
 
-        const { hashLinkIds } = this.commandData.jsonData;
-
         if (createWithoutVersion || !rootKeySSI.canSign()) {
             return this._writeToAnchorFile(createWithoutVersion, callback);
         }
+
+        const { hashLinkIds } = this.commandData.jsonData;
 
         let validAnchor;
         try {
@@ -174,9 +163,27 @@ class FS {
         }
     };
 
+    _getAllVersionsForAnchorId(anchorId, callback) {
+        const anchorsFolders = folderStrategy[this.commandData.domain];
+        const filePath = path.join(anchorsFolders, anchorId);
+        fs.readFile(filePath, (err, fileHashes) => {
+            if (err) {
+                if (err.code === "ENOENT") {
+                    return callback(undefined, []);
+                }
+                return OpenDSUSafeCallback(callback)(
+                    createOpenDSUErrorWrapper(`Failed to read file <${filePath}>`, err)
+                );
+            }
+            const fileContent = fileHashes.toString().trimEnd();
+            const versions = fileContent ? fileContent.split(endOfLine) : [];
+            callback(undefined, versions);
+        });
+    }
+
     _validateZatSSI(zatSSI, newSSIIdentifier, callback) {
         const newSSI = openDSU.loadAPI("keyssi").parse(newSSIIdentifier);
-        this.getAllVersions(zatSSI.getIdentifier(), (err, SSIs) => {
+        this._getAllVersionsForAnchorId(zatSSI.getIdentifier(), (err, SSIs) => {
             if (err) {
                 return OpenDSUSafeCallback(callback)(
                     createOpenDSUErrorWrapper(`Failed to get versions for <${zatSSI.getIdentifier()}>`, err)
