@@ -149,7 +149,11 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 		const subs = subscribers[queueName];
 		subs.push(callback);
-
+		
+		if(typeof queues[queueName] === "undefined"){
+			return callback("Not able to find the queue.");
+		}
+		
 		const notificationObject = queues[queueName].pop();
 
 		if (typeof notificationObject !== 'undefined' && notificationObject !== null) {
