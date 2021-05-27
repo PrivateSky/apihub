@@ -68,7 +68,11 @@ function BootEngine(domain, domainConfig, rootFolder) {
 
                     // ensure that all contract methods (invarious of how there are called) have "this" bound to the contract instance
                     const classMethodNames = Object.getOwnPropertyNames(ContractClass.prototype).filter(
-                        (methodName) => methodName !== "constructor" && typeof ContractClass.prototype[methodName] === "function"
+                        (methodName) =>
+                            methodName &&
+                            methodName[0] !== "_" &&
+                            methodName !== "constructor" &&
+                            typeof ContractClass.prototype[methodName] === "function"
                     );
                     classMethodNames.forEach((methodName) => {
                         contract[methodName] = contract[methodName].bind(contract);
