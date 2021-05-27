@@ -48,19 +48,25 @@ class Contract {
             methodParams = null;
         }
 
-        if (methodParams) {
-            const crypto = require("opendsu").loadAPI("crypto");
-            methodParams = crypto.encodeBase58(JSON.stringify(methodParams));
-        }
-
-        const requestMethod = "GET";
-        const url = `/contracts/${domain}/anchoring/${method}/${methodParams ? methodParams : ""}`;
+        const requestMethod = "POST";
+        const url = `/contracts/${domain}/public-command`;
+        const contractCommand = JSON.stringify({
+            domain,
+            contract: "anchoring",
+            method,
+            params: methodParams,
+        });
+        const requestHeaders = {
+            "Content-Type": "application/json",
+            "Content-Length": contractCommand.length,
+        };
 
         try {
-            let response = await $$.promisify(this.server.makeLocalRequest.bind(this.server))(requestMethod, url);
-            if(response) {
+            const makeLocalRequest = $$.promisify(this.server.makeLocalRequest.bind(this.server));
+            let response = await makeLocalRequest(requestMethod, url, contractCommand, requestHeaders);
+            if (response) {
                 try {
-                    response = JSON.parse(response);                    
+                    response = JSON.parse(response);
                 } catch (error) {
                     // if the parsing failed, then we will keep the original response as is
                 }
@@ -68,9 +74,7 @@ class Contract {
 
             callback(null, response);
         } catch (err) {
-            console.error(
-                `[Anchoring] Failed to call method '${method}' for contract 'anchoring' for domain '${domain}'`
-            );
+            console.error(`[Anchoring] Failed to call method '${method}' for contract 'anchoring' for domain '${domain}'`);
             callback(err);
         }
     }
