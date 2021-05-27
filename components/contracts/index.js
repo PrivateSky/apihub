@@ -1,45 +1,9 @@
-const getContractDomainsPath = () => {
-    const config = require("../../config");
-    return config.getConfig("endpointsConfig", "contracts", "domainsPath");
-};
-
-function getNodeWorkerBootScript(domain, domainConfig, rootFolder) {
-    if (!domainConfig.constitution) {
-        if (process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI) {
-            domainConfig.constitution = process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI;
-            console.log(
-                `[Contracts] no constitution found for domain ${domain}. Found process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI: ${domainConfig.constitution}`
-            );
-        } else {
-            const pathName = "path";
-            const path = require(pathName);
-            const fsName = "fs";
-            const fs = require(fsName);
-
-            const pskFolder = process.env.PSK_ROOT_INSTALATION_FOLDER || path.resolve("." + __dirname + "/../../../..");
-            const defaultDomainSeedPath = path.join(pskFolder, "modules/apihub-contracts/domain-seed");
-
-            console.log(
-                `[Contracts] no constitution found for domain ${domain}. Trying to load constitution at ${defaultDomainSeedPath}...`
-            );
-
-            try {
-                fs.accessSync(defaultDomainSeedPath, fs.F_OK);
-                const defaultDomainSeedData = fs.readFileSync(defaultDomainSeedPath);
-                domainConfig.constitution = defaultDomainSeedData.toString();
-            } catch (error) {
-                console.log(`Cannot access default domain-seed at: ${defaultDomainSeedPath}`, error);
-            }
-        }
-    }
-
-    const apihubBundleScriptPath = global.bundlePaths.pskWebServer.replace(/\\/g, "\\\\").replace(".js", "");
-    const rootFolderPath = rootFolder.replace(/\\/g, "\\\\");
-    const script = `
-        require("${apihubBundleScriptPath}");
-        require('apihub').bootContracts('${domain}', ${JSON.stringify(domainConfig)}, '${rootFolderPath}')`;
-    return script;
-}
+const {
+    getContractDomainsPath,
+    getNodeWorkerBootScript,
+    validatePublicCommandInput,
+    validateRequireNonceCommandInput,
+} = require("./utils");
 
 function Contract(server) {
     const pathName = "path";
@@ -47,7 +11,7 @@ function Contract(server) {
     const fsName = "fs";
     const fs = require(fsName);
     const syndicate = require("syndicate");
-    const { responseModifierMiddleware } = require("../../utils/middlewares");
+    const { requestBodyJSONMiddleware, responseModifierMiddleware } = require("../../utils/middlewares");
 
     const contractDomainsPath = getContractDomainsPath();
     const allDomainsWorkerPools = {};
@@ -67,7 +31,9 @@ function Contract(server) {
 
             fs.readFile(domainConfigFilePath, (err, data) => {
                 if (err) {
-                    console.error(`[Contracts] Config for domain '${domain}' found at '${domainConfigFilePath}' but couldn't be read`);
+                    console.error(
+                        `[Contracts] Config for domain '${domain}' found at '${domainConfigFilePath}' but couldn't be read`
+                    );
                     return callback(err);
                 }
 
@@ -93,39 +59,16 @@ function Contract(server) {
                 callback(null, allDomainsWorkerPools[domain]);
             });
         });
-    }
+    };
 
-    const runContractMethod = (request, response) => {
-        const { domain, contract, method, params: encodedMethodParams } = request.params;
-
-
-        getDomainWorkerPool(domain, (err, workerPool) => {
+    const sendCommandToWorker = (command, response) => {
+        getDomainWorkerPool(command.domain, (err, workerPool) => {
             if (err) {
                 return response.send(400, err);
             }
 
-            let methodParams = [];
-            if (encodedMethodParams) {
-                const opendsu = require("opendsu");
-                const crypto = opendsu.loadAPI("crypto");
-
-                try {
-                    const decodedMethodParams = crypto.decodeBase58(encodedMethodParams);
-                    methodParams = JSON.parse(decodedMethodParams);
-                } catch (error) {
-                    console.error(`[Contracts] Failed to decode method params: ${encodedMethodParams}`);
-                    return response.send(400, error);
-                }
-            }
-
-            const task = {
-                contract,
-                method,
-                methodParams,
-                isLocalCall: true, // todo: check if the req is comming from localhost or proxy from localhost
-            };
-            // console.log('[Contracts] Sending task to worker', task)
-            workerPool.addTask(task, (err, message) => {
+            // console.log("[Contracts] Sending command to worker", command);
+            workerPool.addTask(command, (err, message) => {
                 if (err) {
                     return response.send(500, err);
                 }
@@ -138,13 +81,34 @@ function Contract(server) {
 
                 return response.send(200, result);
             });
-        })
+        });
+    };
+
+    const sendPublicCommandToWorker = (request, response) => {
+        const { domain } = request.params;
+        const { contract, method, params } = request.body;
+        const command = { domain, contract, method, params };
+
+        sendCommandToWorker(command, response);
+    };
+
+    const sendRequireNonceCommandToWorker = (request, response) => {
+        const { domain } = request.params;
+        const { contract, method, params, nonce, signerDID, signature } = request.body;
+        const command = { domain, contract, method, params, nonce, signerDID, signature };
+
+        sendCommandToWorker(command, response);
     };
 
     server.use(`/contracts/:domain/*`, responseModifierMiddleware);
 
-    server.get(`/contracts/:domain/:contract/:method`, runContractMethod);
-    server.get(`/contracts/:domain/:contract/:method/:params`, runContractMethod);
+    server.post(`/contracts/:domain/public-command`, requestBodyJSONMiddleware);
+    server.post(`/contracts/:domain/public-command`, validatePublicCommandInput);
+    server.post(`/contracts/:domain/public-command`, sendPublicCommandToWorker);
+
+    server.post(`/contracts/:domain/require-nonce-command`, requestBodyJSONMiddleware);
+    server.post(`/contracts/:domain/require-nonce-command`, validateRequireNonceCommandInput);
+    server.post(`/contracts/:domain/require-nonce-command`, sendRequireNonceCommandToWorker);
 }
 
 module.exports = Contract;

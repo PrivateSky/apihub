@@ -19,60 +19,89 @@ function boot(domain, domainConfig, rootFolder) {
             throw error;
         }
 
-        const handleMessage = (message, callback) => {
+        // keep for each contract the describeMethods method results in order to validate the method calls
+        const allContractsMethodsInfo = {};
+        Object.keys(contractHandlers).forEach((contractName) => {
+            const contract = contractHandlers[contractName];
+            allContractsMethodsInfo[contractName] = contract.describeMethods ? contract.describeMethods() : null;
+        });
+
+        const handleMessage = async (message, callback) => {
             if (!message) {
                 return callback("[contract-worker] Received empty message!");
             }
 
-            const { contract: contractName, method, methodParams = [], isLocalCall } = message;
+            console.log("[contract-worker] Received message: ", message);
+
+            const { contract: contractName, method, nonce, signerDID: signerDIDIdentifier } = message;
+            const params = message.params || [];
             const contractHandler = contractHandlers[contractName];
             if (!contractHandler) {
                 return callback(`[contract-worker] Unkwnown contract '${contractName}'`);
             }
 
             if (!contractHandler[method]) {
-                return callback(`[worker] Unkwnown contract method '${method}' for contract '${contractName}'`);
+                return callback(`[contract-worker] Unkwnown contract method '${method}' for contract '${contractName}'`);
+            }
+
+            const contractMethodsInfo = allContractsMethodsInfo[contractName];
+            if (!contractMethodsInfo) {
+                return callback(`[contract-worker] Missing describeMethods for contract '${contractName}'`);
+            }
+
+            const isOnlyInternCallsAllowedForMethod = contractMethodsInfo.intern && contractMethodsInfo.intern.includes(method);
+            if (isOnlyInternCallsAllowedForMethod) {
+                // intern methods cannot be called outside the worker
+                return callback(
+                    `[contract-worker] Only intern calls are allowed for contract '${contractName}' and method '${method}'`
+                );
+            }
+
+            const isPublicCallAllowedForMethod = contractMethodsInfo.public && contractMethodsInfo.public.includes(method);
+            if (isPublicCallAllowedForMethod) {
+                // public method can be called directly without signature restrictions
+                return contractHandler[method].call(contractHandler, ...params, callback);
+            }
+
+            const isRequireNonceCallAllowedForMethod =
+                contractMethodsInfo.requireNonce && contractMethodsInfo.requireNonce.includes(method);
+            if (!isRequireNonceCallAllowedForMethod) {
+                // if we arrive at this point, then the requested method is not configured inside describeMethods
+                // so we block it
+                return callback(
+                    `[contract-worker] Unconfigured describeMethods for contract '${contractName}' and method '${method}'`
+                );
+            }
+
+            // for requireNonce methods we need to validate the nonce in order to run it
+            if (!nonce || !signerDIDIdentifier) {
+                return callback(`[contract-worker] missing inputs required for signature validation`);
             }
 
             try {
-                // check if the contract method call is allowed
-                const isContractMethodCallAllowed =
-                    typeof contractHandler.allowExecution === "function" &&
-                    contractHandler.allowExecution(isLocalCall, method, methodParams);
-                if (!isContractMethodCallAllowed) {
-                    return callback(`[contract-worker] method '${method}' for contract '${contractName}' is not allowed`);
-                }
-
-                // check if the contract method can be executed immediately, otherwise run consensus
-                const canExecuteContractMethodImmediately =
-                    typeof contractHandler.canExecuteImmediately === "function" &&
-                    contractHandler.canExecuteImmediately(isLocalCall, method, methodParams);
-                if (canExecuteContractMethodImmediately) {
-                    return contractHandler[method].call(contractHandler, ...methodParams, callback);
-                }
-
-                // run consensus
+                // validate nonce
                 const consensusHandler = contractHandlers.consensus;
                 if (!consensusHandler) {
                     return callback(`[contract-worker] missing consensus contract!`);
                 }
 
+                const isValidNonce = await $$.promisify(consensusHandler.validateNonce)(signerDIDIdentifier, nonce);
+                if (!isValidNonce) {
+                    return callback(`[contract-worker] invalid nonce ${nonce} specified`);
+                }
+
+                // run consensus
                 const command = {
                     contract: contractName,
                     method,
-                    params: methodParams,
+                    params,
                 };
-                consensusHandler.proposeCommand(command, (error, result) => {
-                    if (error) {
-                        return callback(error);
-                    }
+                const result = await $$.promisify(consensusHandler.proposeCommand)(command);
+                if (result) {
+                    return contractHandler[method].call(contractHandler, ...params, callback);
+                }
 
-                    if (result) {
-                        return contractHandler[method].call(contractHandler, ...methodParams, callback);
-                    }
-
-                    return callback("[contract-worker] consensus wasn't reached");
-                });
+                return callback("[contract-worker] consensus wasn't reached");
             } catch (error) {
                 callback(error);
             }

@@ -66,8 +66,21 @@ function BootEngine(domain, domainConfig, rootFolder) {
                     const ContractClass = eval(`(${fileContent.toString()})`);
                     const contract = new ContractClass();
 
+                    // ensure that all contract methods (invarious of how there are called) have "this" bound to the contract instance
+                    const classMethodNames = Object.getOwnPropertyNames(ContractClass.prototype).filter(
+                        (methodName) => methodName !== "constructor" && typeof ContractClass.prototype[methodName] === "function"
+                    );
+                    classMethodNames.forEach((methodName) => {
+                        contract[methodName] = contract[methodName].bind(contract);
+                    });
+
                     if (bootHandler) {
                         await $$.promisify(bootHandler.setContractMixin.bind(bootHandler))(contractConfig.name, contract);
+                    }
+
+                    // run initialization step if the init function is defined
+                    if (typeof contract.init === "function") {
+                        await $$.promisify(contract.init)();
                     }
 
                     contracts[contractConfig.name] = contract;
