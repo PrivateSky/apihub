@@ -2,23 +2,15 @@ const stateStorageFileName = 'queues.json';
 
 function NotificationsManager(workingFolderPath, storageFolderPath) {
 	const queues = {};
-	const queueMessageLifeTimers = {};
 	const subscribers = {};
-	const cleanupInterval = 250; // ms
 	const swarmUtils = require('swarmutils');
 
-	this.createQueue = function (queueName, timeout, callback) {
-		if (typeof timeout === 'function') {
-			callback = timeout;
-			//timeout = 30 * 1000; //number of seconds * ms
-            timeout = 500; // ms
-		}
-
+	this.createQueue = function (queueName, callback) {
 		if (typeof queues[queueName] !== "undefined") {
 			return callback({ message: 'Queue already exists.', statusCode: 409 });
 		}
 
-		createQueue(queueName, timeout, (err) => {
+		createQueue(queueName, (err) => {
 			if (err) {
 				return callback(err);
 			}
@@ -35,9 +27,8 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		});
 	}
 
-	function createQueue(name, timeout, callback) {
+	function createQueue(name, callback) {
 		queues[name] = new swarmUtils.Queue();
-		queueMessageLifeTimers[name] = timeout;
 		if (callback) {
 			saveState(callback);
 		}
@@ -82,7 +73,6 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		return {
 			filename,
 			message,
-			timeout: undefined,
 			timestamp: timestamp ? timestamp : new Date().getTime(),
 			ttl
 		};
@@ -94,7 +84,6 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 			messageTTL = undefined;
 		}
 		const notificationObject = buildNotification(message, undefined, undefined, messageTTL);
-		const notificationLifeTimer = queueMessageLifeTimers[queueName];
 
 		if(typeof queues[queueName] === "undefined"){
 			return callback(new Error(`There is no queue called ${queueName}`));
@@ -103,21 +92,12 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		queues[queueName].push(notificationObject);
 
 		if (typeof storageFolderPath !== 'undefined') {
-			return notificationObject.timeout = setTimeout(function () {
-				//maybe we don't need to do this ... bur for safety reasons...
-				for (let notification in queues[queueName]) {
-					if (notification === notificationObject) {
-						return;
-					}
+			return storeMessage(queueName, message, (err, fileName) => {
+				if (fileName) {
+					notificationObject.filename = fileName;
 				}
-
-				return storeMessage(queueName, message, (err, fileName) => {
-					if (fileName) {
-						notificationObject.filename = fileName;
-					}
-					callback(err);
-				});
-			}, notificationLifeTimer);
+				callback(err);
+			});
 		}
         callback();
 	}
@@ -129,7 +109,6 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		}
 
 		let subs = subscribers[queueName];
-		//console.log('sub',queueName, subscribers[queueName])
 		if (typeof subs !== 'undefined' && subs.length > 0) {
 			return deliverMessage(subs, message, (err, counter)=>{
 				if(err || counter === 0){
@@ -159,11 +138,6 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		if (typeof notificationObject !== 'undefined' && notificationObject !== null) {
 			deliverMessage(subs, notificationObject.message, (err, counter) => {
 				if (counter > 0) {
-					//message delivered... let's check if has a timer waiting to persist it
-					if (typeof notificationObject.timeout !== 'undefined') {
-						clearTimeout(notificationObject.timeout);
-						return;
-					}
 					//message delivered... let's remove from storage if it was persisted
 					if (typeof notificationObject.filename !== 'undefined') {
 						try {
@@ -189,7 +163,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		if (typeof state !== 'undefined') {
 			for (let i = 0; i < state.queues.length; i++) {
 				let queueName = state.queues[i];
-				createQueue(queueName, state.timeouts[queueName]);
+				createQueue(queueName);
 			}
 		}
 
@@ -198,7 +172,6 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 	function saveState(callback) {
 		let state = {
-			timeouts: queueMessageLifeTimers,
 			queues: Object.keys(queues)
 		}
 
@@ -210,18 +183,34 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 	/**
 	 * Remove expired queued notifications
-	 * TODO: Do cleanup in async batches in order to
+	 * Do async cleanup in batches in order to
 	 * prevent hogging the event loop
 	 */
-	function startMQsgsCleanup() {
-		setInterval(() => {
+	function startMQCleanup() {
+		const batchCleanup = (startIndex, subBatchSize, msgBatchSize, done) => {
 			const keys = Object.keys(queues);
 			const now = new Date().getTime();
-
-			for (const key of keys) {
+			if (!keys.length) {
+				return done(0);
+			}
+			let i = startIndex;
+			let max = i + subBatchSize;
+			for (i; i < max; i++) {
+				key = keys[i];
+				if (!key) {
+					break;
+				}
 				const queue = queues[key];
+				if (!queue.length) {
+					continue;
+				}
 
+				let counter = 0;
+				let totalCount = 0;
 				for (const msg of queue) {
+					if (++counter > msgBatchSize) {
+						break;
+					}
 					if (!msg.ttl) {
 						continue;
 					}
@@ -229,11 +218,28 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 					// Remove expired message
 					if (elapsed >= msg.ttl) {
 						queue.remove(msg);
+						totalCount++;
 					}
 				}
 			}
-		}, cleanupInterval);
 
+			let resumeIndex = i;
+			if (i >= keys.length - 1) {
+				resumeIndex = 0;
+			}
+			done(resumeIndex);
+		}
+
+
+		const runCleanup = (startIndex = 0) => {
+			setTimeout(() => {
+				batchCleanup(startIndex, 10, 100, (resumeIndex) => {
+					runCleanup(resumeIndex);
+				})
+			}, 250);
+		}
+
+		runCleanup();
 	}
 
 	this.initialize = function (callback) {
@@ -245,7 +251,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 			fs.mkdirSync(workingFolderPath, { recursive: true });
 		}
 
-		startMQsgsCleanup();
+		startMQCleanup();
 
 		loadState((err, state) => {
 			if (typeof storageFolderPath === 'undefined') {
