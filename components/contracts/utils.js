@@ -1,8 +1,3 @@
-const getContractDomainsPath = () => {
-    const config = require("../../config");
-    return config.getConfig("endpointsConfig", "contracts", "domainsPath");
-};
-
 function getNodeWorkerBootScript(domain, domainConfig, rootFolder) {
     if (!domainConfig.constitution) {
         if (process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI) {
@@ -108,7 +103,6 @@ const validateRequireNonceCommandInput = (request, response, next) => {
 };
 
 module.exports = {
-    getContractDomainsPath,
     getNodeWorkerBootScript,
     validatePublicCommandInput,
     validateRequireNonceCommandInput,

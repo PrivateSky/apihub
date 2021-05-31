@@ -1,7 +1,7 @@
 
 const getBricksFabricStrategy = () => {
     const config = require("../../../config");
-    return config.getConfig('endpointsConfig', 'bricksFabric', 'domainStrategies', 'default');
+    return config.getDomainConfig('default', ['bricksFabric'], ['endpointsConfig', 'bricksFabric', 'domainStrategies']);
 };
 
 const getRootFolder = () => {

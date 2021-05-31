@@ -1,5 +1,6 @@
 let serverConfig;
 let tokenIssuers;
+let domainConfigs = {};
 
 function getConfig(...keys) {
     const path = require("swarmutils").path;
@@ -109,4 +110,70 @@ function getTokenIssuers(callback) {
     });
 }
 
-module.exports = {getConfig, getTokenIssuers}
+function getDomainConfigFilePath(domain) {
+    const path = require("swarmutils").path;
+    const domainConfigPath = path.join(path.resolve(process.env.PSK_CONFIG_LOCATION), `domains/${domain}.json`);
+    return domainConfigPath;
+}
+
+function getDomainConfig(domain, configKeys, fallbackServerConfigKeys) {
+    if(!domain) {
+        return {};
+    }
+
+    const getConfigResult = (config) => {
+        if(!configKeys) {
+            configKeys = [];
+        }
+        let configResult = config ? getSource(configKeys, config) : null;
+        
+        // try to fallback to server.config
+        if(!configResult && fallbackServerConfigKeys) {            
+            configResult = getConfig(...fallbackServerConfigKeys, domain);
+        }
+
+
+        return configResult;
+    }
+
+    const loadedDomainConfig = domainConfigs[domain];
+    if(loadedDomainConfig) {
+        return getConfigResult(loadedDomainConfig);
+    }
+
+    if (typeof process.env.PSK_CONFIG_LOCATION === "undefined") {
+        console.log('PSK_CONFIG_LOCATION env variable not set. Not able to load domain config. Using default configuration.')
+        return getConfigResult({});
+    }
+
+    const domainConfigPath = getDomainConfigFilePath(domain);
+    console.log(`Trying to read the config for domain '${domain}' at location: ${domainConfigPath}`);
+
+    try {
+        const fsName = "fs";
+        const domainConfigContent = require(fsName).readFileSync(domainConfigPath);
+        const domainConfig = JSON.parse(domainConfigContent);
+        domainConfigs[domain] = domainConfig;
+        return getConfigResult(domainConfig);        
+    } catch (error) {
+        console.log(`Config for domain '${domain}' cannot be loaded from location: ${domainConfigPath}. Using default configuration.`);
+        domainConfigs[domain] = null;
+        return getConfigResult(domainConfigs[domain]);
+    }
+}
+
+function updateDomainConfig(domain, config, callback) {
+    const domainConfigPath = getDomainConfigFilePath(domain);
+    const fsName = "fs";
+    require(fsName).writeFile(domainConfigPath, JSON.stringify(config), (error) => {
+        if(error) {
+            return callback(error);
+        }
+
+        // update the domain config cache
+        domainConfigs[domain] = config;
+        callback();
+    })
+}
+
+module.exports = {getConfig, getTokenIssuers, getDomainConfig, updateDomainConfig};
