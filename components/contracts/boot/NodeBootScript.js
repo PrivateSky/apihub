@@ -31,7 +31,7 @@ function boot(domain, domainConfig, rootFolder) {
                 return callback("[contract-worker] Received empty message!");
             }
 
-            console.log("[contract-worker] Received message: ", message);
+            // console.log("[contract-worker] Received message: ", message);
 
             const { contract: contractName, method, nonce, signerDID: signerDIDIdentifier } = message;
             const params = message.params || [];
@@ -57,15 +57,14 @@ function boot(domain, domainConfig, rootFolder) {
                 );
             }
 
-            const isPublicCallAllowedForMethod = contractMethodsInfo.public && contractMethodsInfo.public.includes(method);
-            if (isPublicCallAllowedForMethod) {
-                // public method can be called directly without signature restrictions
+            const isSafeCallAllowedForMethod = contractMethodsInfo.safe && contractMethodsInfo.safe.includes(method);
+            if (isSafeCallAllowedForMethod) {
+                // safe method can be called directly without signature restrictions
                 return contractHandler[method].call(contractHandler, ...params, callback);
             }
 
-            const isRequireNonceCallAllowedForMethod =
-                contractMethodsInfo.requireNonce && contractMethodsInfo.requireNonce.includes(method);
-            if (!isRequireNonceCallAllowedForMethod) {
+            const isNoncedCallAllowedForMethod = contractMethodsInfo.nonced && contractMethodsInfo.nonced.includes(method);
+            if (!isNoncedCallAllowedForMethod) {
                 // if we arrive at this point, then the requested method is not configured inside describeMethods
                 // so we block it
                 return callback(
@@ -73,7 +72,7 @@ function boot(domain, domainConfig, rootFolder) {
                 );
             }
 
-            // for requireNonce methods we need to validate the nonce in order to run it
+            // for nonced methods we need to validate the nonce in order to run it
             if (!nonce || !signerDIDIdentifier) {
                 return callback(`[contract-worker] missing inputs required for signature validation`);
             }

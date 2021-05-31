@@ -1,4 +1,4 @@
-const { getNodeWorkerBootScript, validatePublicCommandInput, validateRequireNonceCommandInput } = require("./utils");
+const { getNodeWorkerBootScript, validateSafeCommandInput, validateNoncedCommandInput } = require("./utils");
 
 function Contract(server) {
     const syndicate = require("syndicate");
@@ -19,7 +19,7 @@ function Contract(server) {
         const script = getNodeWorkerBootScript(domain, domainConfig, server.rootFolder);
         allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
             bootScript: script,
-            // maximumNumberOfWorkers: 1,
+            maximumNumberOfWorkers: 1,
             workerOptions: {
                 eval: true,
             },
@@ -51,7 +51,7 @@ function Contract(server) {
         });
     };
 
-    const sendPublicCommandToWorker = (request, response) => {
+    const sendSafeCommandToWorker = (request, response) => {
         const { domain } = request.params;
         const { contract, method, params } = request.body;
         const command = { domain, contract, method, params };
@@ -59,7 +59,7 @@ function Contract(server) {
         sendCommandToWorker(command, response);
     };
 
-    const sendRequireNonceCommandToWorker = (request, response) => {
+    const sendNoncedCommandToWorker = (request, response) => {
         const { domain } = request.params;
         const { contract, method, params, nonce, signerDID, signature } = request.body;
         const command = { domain, contract, method, params, nonce, signerDID, signature };
@@ -69,13 +69,13 @@ function Contract(server) {
 
     server.use(`/contracts/:domain/*`, responseModifierMiddleware);
 
-    server.post(`/contracts/:domain/public-command`, requestBodyJSONMiddleware);
-    server.post(`/contracts/:domain/public-command`, validatePublicCommandInput);
-    server.post(`/contracts/:domain/public-command`, sendPublicCommandToWorker);
+    server.post(`/contracts/:domain/safe-command`, requestBodyJSONMiddleware);
+    server.post(`/contracts/:domain/safe-command`, validateSafeCommandInput);
+    server.post(`/contracts/:domain/safe-command`, sendSafeCommandToWorker);
 
-    server.post(`/contracts/:domain/require-nonce-command`, requestBodyJSONMiddleware);
-    server.post(`/contracts/:domain/require-nonce-command`, validateRequireNonceCommandInput);
-    server.post(`/contracts/:domain/require-nonce-command`, sendRequireNonceCommandToWorker);
+    server.post(`/contracts/:domain/nonced-command`, requestBodyJSONMiddleware);
+    server.post(`/contracts/:domain/nonced-command`, validateNoncedCommandInput);
+    server.post(`/contracts/:domain/nonced-command`, sendNoncedCommandToWorker);
 }
 
 module.exports = Contract;

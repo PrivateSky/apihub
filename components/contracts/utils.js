@@ -36,7 +36,7 @@ function getNodeWorkerBootScript(domain, domainConfig, rootFolder) {
     return script;
 }
 
-const validatePublicCommandInput = (request, response, next) => {
+const validateSafeCommandInput = (request, response, next) => {
     const { domain } = request.params;
     if (!domain || typeof domain !== "string") {
         return response.send(400, "Invalid domain specified");
@@ -62,8 +62,8 @@ const validatePublicCommandInput = (request, response, next) => {
     next();
 };
 
-const validateRequireNonceCommandInput = (request, response, next) => {
-    validatePublicCommandInput(request, response, async () => {
+const validateNoncedCommandInput = (request, response, next) => {
+    validateSafeCommandInput(request, response, async () => {
         const { contract, method, params, nonce, signerDID: signerDIDIdentifier, signature } = request.body;
 
         if (!nonce) {
@@ -104,6 +104,6 @@ const validateRequireNonceCommandInput = (request, response, next) => {
 
 module.exports = {
     getNodeWorkerBootScript,
-    validatePublicCommandInput,
-    validateRequireNonceCommandInput,
+    validateSafeCommandInput,
+    validateNoncedCommandInput,
 };
