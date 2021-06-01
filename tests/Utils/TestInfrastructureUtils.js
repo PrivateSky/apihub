@@ -1,7 +1,8 @@
 const path = require("swarmutils").path;
 
+require("../../../../psknode/bundles/testsRuntime");
 require("../../../../psknode/bundles/pskruntime");
-require("../../../../psknode/bundles/virtualMQ");
+// require("../../../../psknode/bundles/virtualMQ");
 
 const VirtualMQ = require("../../index");
 const doubleCheck = require('../../../double-check');
