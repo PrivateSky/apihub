@@ -1,3 +1,3 @@
 {
-  "ignore": ["oldies", "Utils", "zeromqsockettests"]
+  "ignore": ["oldies", "Utils", "zeromqsockettests", "old-zeromq"]
 }
