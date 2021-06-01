@@ -1,4 +1,4 @@
-const { getNodeWorkerBootScript, validateSafeCommandInput, validateNoncedCommandInput } = require("./utils");
+const { getNodeWorkerBootScript, validateCommandInput } = require("./utils");
 
 function Contract(server) {
     const syndicate = require("syndicate");
@@ -13,10 +13,12 @@ function Contract(server) {
 
         const config = require("../../config");
 
-        const domainConfig = config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "contracts", "domainsPath"]);
+        let domainConfig = config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "contracts", "domainsPath"]) || {};
+        domainConfig.rootFolder = server.rootFolder;
+
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
-        const script = getNodeWorkerBootScript(domain, domainConfig, server.rootFolder);
+        const script = getNodeWorkerBootScript(domain, domainConfig);
         allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
             bootScript: script,
             maximumNumberOfWorkers: 1,
@@ -53,28 +55,24 @@ function Contract(server) {
 
     const sendSafeCommandToWorker = (request, response) => {
         const { domain } = request.params;
-        const { contract, method, params } = request.body;
-        const command = { domain, contract, method, params };
-
+        const command = { ...request.body, domain, type: "safe" };
         sendCommandToWorker(command, response);
     };
 
     const sendNoncedCommandToWorker = (request, response) => {
         const { domain } = request.params;
-        const { contract, method, params, nonce, signerDID, signature } = request.body;
-        const command = { domain, contract, method, params, nonce, signerDID, signature };
-
+        const command = { ...request.body, domain, type: "nonced" };
         sendCommandToWorker(command, response);
     };
 
     server.use(`/contracts/:domain/*`, responseModifierMiddleware);
 
     server.post(`/contracts/:domain/safe-command`, requestBodyJSONMiddleware);
-    server.post(`/contracts/:domain/safe-command`, validateSafeCommandInput);
+    server.post(`/contracts/:domain/safe-command`, validateCommandInput);
     server.post(`/contracts/:domain/safe-command`, sendSafeCommandToWorker);
 
     server.post(`/contracts/:domain/nonced-command`, requestBodyJSONMiddleware);
-    server.post(`/contracts/:domain/nonced-command`, validateNoncedCommandInput);
+    server.post(`/contracts/:domain/nonced-command`, validateCommandInput);
     server.post(`/contracts/:domain/nonced-command`, sendNoncedCommandToWorker);
 }
 

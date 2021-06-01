@@ -1,4 +1,4 @@
-function getNodeWorkerBootScript(domain, domainConfig, rootFolder) {
+function getNodeWorkerBootScript(domain, domainConfig) {
     if (!domainConfig.constitution) {
         if (process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI) {
             domainConfig.constitution = process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI;
@@ -29,14 +29,13 @@ function getNodeWorkerBootScript(domain, domainConfig, rootFolder) {
     }
 
     const apihubBundleScriptPath = global.bundlePaths.pskWebServer.replace(/\\/g, "\\\\").replace(".js", "");
-    const rootFolderPath = rootFolder.replace(/\\/g, "\\\\");
     const script = `
         require("${apihubBundleScriptPath}");
-        require('apihub').bootContracts('${domain}', ${JSON.stringify(domainConfig)}, '${rootFolderPath}')`;
+        require('apihub').bootContracts('${domain}', ${JSON.stringify(domainConfig)})`;
     return script;
 }
 
-const validateSafeCommandInput = (request, response, next) => {
+const validateCommandInput = (request, response, next) => {
     const { domain } = request.params;
     if (!domain || typeof domain !== "string") {
         return response.send(400, "Invalid domain specified");
@@ -46,64 +45,10 @@ const validateSafeCommandInput = (request, response, next) => {
         return response.send(400, "Missing required body");
     }
 
-    const { contract, method, params } = request.body;
-
-    if (!contract || typeof contract !== "string") {
-        return response.send(400, `Invalid contract specified`);
-    }
-    if (!method || typeof method !== "string") {
-        return response.send(400, `Invalid method specified`);
-    }
-
-    if (params && !Array.isArray(params)) {
-        return response.send(400, `Invalid params specified`);
-    }
-
     next();
-};
-
-const validateNoncedCommandInput = (request, response, next) => {
-    validateSafeCommandInput(request, response, async () => {
-        const { contract, method, params, nonce, signerDID: signerDIDIdentifier, signature } = request.body;
-
-        if (!nonce) {
-            return response.send(400, `Missing required nonce`);
-        }
-        if (!signerDIDIdentifier || typeof signerDIDIdentifier !== "string") {
-            return response.send(400, `Invalid signerDID specified`);
-        }
-
-        if (!signature || typeof signature !== "string") {
-            return response.send(400, `Invalid signature specified`);
-        }
-
-        const { domain } = request.params;
-        const paramsString = params ? JSON.stringify(params) : null;
-        const fieldsToHash = [domain, contract, method, paramsString, nonce].filter((x) => x != null);
-        const hash = fieldsToHash.join(".");
-
-        let signerDID;
-        try {
-            const w3cDID = require("opendsu").loadApi("w3cdid");
-            signerDID = await $$.promisify(w3cDID.resolveDID)(signerDIDIdentifier);
-        } catch (error) {
-            return response.send(400, error);
-        }
-        try {
-            const isValidSignature = await $$.promisify(signerDID.verify)(hash, signature);
-            if (!isValidSignature) {
-                return response.send(400, "Invalid signature specified");
-            }
-        } catch (error) {
-            return response.send(400, error);
-        }
-
-        next();
-    });
 };
 
 module.exports = {
     getNodeWorkerBootScript,
-    validateSafeCommandInput,
-    validateNoncedCommandInput,
+    validateCommandInput,
 };

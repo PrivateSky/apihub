@@ -39,7 +39,7 @@ class Contract {
         this._makeLocalContractRequest("getLatestVersion", [anchorId], callback);
     }
 
-    async _makeLocalContractRequest(method, methodParams, callback) {
+    async _makeLocalContractRequest(methodName, methodParams, callback) {
         const { domain } = this.commandData;
 
         if (typeof methodParams === "function") {
@@ -51,8 +51,8 @@ class Contract {
         const url = `/contracts/${domain}/safe-command`;
         const contractCommand = JSON.stringify({
             domain,
-            contract: "anchoring",
-            method,
+            contractName: "anchoring",
+            methodName,
             params: methodParams,
         });
         const requestHeaders = {
