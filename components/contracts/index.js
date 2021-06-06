@@ -19,9 +19,9 @@ function Contract(server) {
         let domainConfig = {
             contracts: config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "contracts"]) || {},
             anchoring: config.getDomainConfig(domain, ["anchoring"], ["endpointsConfig", "anchoring", "domainStrategies"]) || {},
-            bricking: config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "bricking", "domains"]) || {},
+            bricking: config.getDomainConfig(domain, ["bricking"], ["endpointsConfig", "bricking", "domains"]) || {},
             bricksFabric:
-                config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "bricksFabric", "domainStrategies"]) || {},
+                config.getDomainConfig(domain, ["bricksFabric"], ["endpointsConfig", "bricksFabric", "domainStrategies"]) || {},
         };
 
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);

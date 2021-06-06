@@ -63,11 +63,22 @@ class Contract {
         try {
             const makeLocalRequest = $$.promisify(this.server.makeLocalRequest.bind(this.server));
             let response = await makeLocalRequest(requestMethod, url, contractCommand, requestHeaders);
+
             if (response) {
                 try {
                     response = JSON.parse(response);
                 } catch (error) {
-                    // if the parsing failed, then we will keep the original response as is
+                    // the response isn't a JSON so we keep it as it is
+                }
+
+                if (response.optimisticResult) {
+                    try {
+                        response.optimisticResult = JSON.parse(response.optimisticResult);
+                    } catch (error) {
+                        // the response isn't a JSON so we keep it as it is
+                    }
+
+                    return callback(null, response.optimisticResult);
                 }
             }
 
