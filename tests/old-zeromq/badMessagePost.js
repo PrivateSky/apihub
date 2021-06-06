@@ -1,7 +1,8 @@
 const crypto = require("crypto");
 const http = require("http");
 
-require("../../../psknode/bundles/pskruntime");
+require("../../../psknode/bundles/testsRuntime");
+// require("../../../psknode/bundles/pskruntime");
 
 const doubleCheck = require('../../double-check');
 const assert = doubleCheck.assert;

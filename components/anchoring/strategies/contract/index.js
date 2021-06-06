@@ -12,18 +12,17 @@ class Contract {
     }
 
     createAnchor(callback) {
-        const { domain, anchorId } = this.commandData;
+        const { anchorId } = this.commandData;
         this._makeLocalContractRequest("createAnchor", [anchorId], callback);
     }
 
     createNFT(callback) {
-        const { domain, anchorId } = this.commandData;
+        const { anchorId } = this.commandData;
         this._makeLocalContractRequest("createNFT", [anchorId], callback);
     }
 
     appendToAnchor(callback) {
         const {
-            domain,
             anchorId,
             jsonData: { hashLinkIds, digitalProof, zkp },
         } = this.commandData;
@@ -31,16 +30,16 @@ class Contract {
     }
 
     getAllVersions(callback) {
-        const { domain, anchorId } = this.commandData;
+        const { anchorId } = this.commandData;
         this._makeLocalContractRequest("getAllVersions", [anchorId], callback);
     }
 
     getLatestVersion(callback) {
-        const { domain, anchorId } = this.commandData;
+        const { anchorId } = this.commandData;
         this._makeLocalContractRequest("getLatestVersion", [anchorId], callback);
     }
 
-    async _makeLocalContractRequest(method, methodParams, callback) {
+    async _makeLocalContractRequest(methodName, methodParams, callback) {
         const { domain } = this.commandData;
 
         if (typeof methodParams === "function") {
@@ -49,11 +48,11 @@ class Contract {
         }
 
         const requestMethod = "POST";
-        const url = `/contracts/${domain}/public-command`;
+        const url = `/contracts/${domain}/safe-command`;
         const contractCommand = JSON.stringify({
             domain,
-            contract: "anchoring",
-            method,
+            contractName: "anchoring",
+            methodName,
             params: methodParams,
         });
         const requestHeaders = {

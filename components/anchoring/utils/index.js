@@ -1,6 +1,6 @@
 const getAnchoringDomainConfig = (domain) => {
     const config = require("../../../config");
-    return config.getConfig("endpointsConfig", "anchoring", "domainStrategies", domain);
+    return config.getDomainConfig(domain, ["anchoring"], ["endpointsConfig", "anchoring", "domainStrategies"]);
 };
 
 const getDomainFromKeySSI = function (ssiString) {

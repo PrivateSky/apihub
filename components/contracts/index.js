@@ -1,19 +1,9 @@
-const {
-    getContractDomainsPath,
-    getNodeWorkerBootScript,
-    validatePublicCommandInput,
-    validateRequireNonceCommandInput,
-} = require("./utils");
+const { getNodeWorkerBootScript, validateCommandInput } = require("./utils");
 
 function Contract(server) {
-    const pathName = "path";
-    const path = require(pathName);
-    const fsName = "fs";
-    const fs = require(fsName);
     const syndicate = require("syndicate");
     const { requestBodyJSONMiddleware, responseModifierMiddleware } = require("../../utils/middlewares");
 
-    const contractDomainsPath = getContractDomainsPath();
     const allDomainsWorkerPools = {};
 
     const getDomainWorkerPool = (domain, callback) => {
@@ -21,44 +11,23 @@ function Contract(server) {
             return callback(null, allDomainsWorkerPools[domain]);
         }
 
-        const domainConfigFilePath = path.join(server.rootFolder, contractDomainsPath, `${domain}.config`);
+        const config = require("../../config");
 
-        fs.access(domainConfigFilePath, fs.F_OK, (err) => {
-            if (err) {
-                console.error(`[Contracts] Config for domain '${domain}' not found at '${domainConfigFilePath}'`);
-                return callback(err);
-            }
+        let domainConfig = config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "contracts", "domainsPath"]) || {};
+        domainConfig.rootFolder = server.rootFolder;
 
-            fs.readFile(domainConfigFilePath, (err, data) => {
-                if (err) {
-                    console.error(
-                        `[Contracts] Config for domain '${domain}' found at '${domainConfigFilePath}' but couldn't be read`
-                    );
-                    return callback(err);
-                }
+        console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
-                let domainConfig;
-                try {
-                    domainConfig = JSON.parse(data.toString());
-                } catch (error) {
-                    console.error(`[Contracts] Config for domain '${domain}' couldn't be parsed. Content: ${data.toString()}`);
-                    return callback(error);
-                }
-
-                console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
-
-                const script = getNodeWorkerBootScript(domain, domainConfig, server.rootFolder);
-                allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
-                    bootScript: script,
-                    // maximumNumberOfWorkers: 1,
-                    workerOptions: {
-                        eval: true,
-                    },
-                });
-
-                callback(null, allDomainsWorkerPools[domain]);
-            });
+        const script = getNodeWorkerBootScript(domain, domainConfig);
+        allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
+            bootScript: script,
+            maximumNumberOfWorkers: 1,
+            workerOptions: {
+                eval: true,
+            },
         });
+
+        callback(null, allDomainsWorkerPools[domain]);
     };
 
     const sendCommandToWorker = (command, response) => {
@@ -84,31 +53,27 @@ function Contract(server) {
         });
     };
 
-    const sendPublicCommandToWorker = (request, response) => {
+    const sendSafeCommandToWorker = (request, response) => {
         const { domain } = request.params;
-        const { contract, method, params } = request.body;
-        const command = { domain, contract, method, params };
-
+        const command = { ...request.body, domain, type: "safe" };
         sendCommandToWorker(command, response);
     };
 
-    const sendRequireNonceCommandToWorker = (request, response) => {
+    const sendNoncedCommandToWorker = (request, response) => {
         const { domain } = request.params;
-        const { contract, method, params, nonce, signerDID, signature } = request.body;
-        const command = { domain, contract, method, params, nonce, signerDID, signature };
-
+        const command = { ...request.body, domain, type: "nonced" };
         sendCommandToWorker(command, response);
     };
 
     server.use(`/contracts/:domain/*`, responseModifierMiddleware);
 
-    server.post(`/contracts/:domain/public-command`, requestBodyJSONMiddleware);
-    server.post(`/contracts/:domain/public-command`, validatePublicCommandInput);
-    server.post(`/contracts/:domain/public-command`, sendPublicCommandToWorker);
+    server.post(`/contracts/:domain/safe-command`, requestBodyJSONMiddleware);
+    server.post(`/contracts/:domain/safe-command`, validateCommandInput);
+    server.post(`/contracts/:domain/safe-command`, sendSafeCommandToWorker);
 
-    server.post(`/contracts/:domain/require-nonce-command`, requestBodyJSONMiddleware);
-    server.post(`/contracts/:domain/require-nonce-command`, validateRequireNonceCommandInput);
-    server.post(`/contracts/:domain/require-nonce-command`, sendRequireNonceCommandToWorker);
+    server.post(`/contracts/:domain/nonced-command`, requestBodyJSONMiddleware);
+    server.post(`/contracts/:domain/nonced-command`, validateCommandInput);
+    server.post(`/contracts/:domain/nonced-command`, sendNoncedCommandToWorker);
 }
 
 module.exports = Contract;
