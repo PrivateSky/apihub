@@ -1,4 +1,4 @@
-async function boot(domain, domainConfig) {
+async function boot(validatorDID, domain, domainConfig, rootFolder) {
     console.log(
         `[contract-worker] booting contracts for domain ${domain} and domainConfig ${JSON.stringify(domainConfig)} booting...`,
         domainConfig
@@ -10,16 +10,41 @@ async function boot(domain, domainConfig) {
 
     try {
         const initiliseBrickLedger = await $$.promisify(bricksledger.initiliseBrickLedger);
-        const bricksledgerInstance = await initiliseBrickLedger(domain, domainConfig, null);
+        const bricksledgerInstance = await initiliseBrickLedger(validatorDID, domain, domainConfig, rootFolder, null);
 
         const handleCommand = async (command, callback) => {
+            const commandExecutionCallback = async (error, commandExecution) => {
+                if (error) {
+                    return callback(error);
+                }
+
+                const promises = [commandExecution.requireConsensus(), commandExecution.getOptimisticExecutionResult()];
+
+                try {
+                    let [requireConsensus, optimisticExecutionResult] = await Promise.all(promises);
+                    // in order to ensure result serializability we JSON.stringify it if isn't a Buffer
+                    if (!$$.Buffer.isBuffer(optimisticExecutionResult)) {
+                        optimisticExecutionResult = JSON.stringify(optimisticExecutionResult);
+                    }
+
+                    const result = {
+                        requireConsensus,
+                        optimisticResult: optimisticExecutionResult,
+                        validatedResult: requireConsensus ? optimisticExecutionResult : null,
+                    };
+                    callback(null, result);
+                } catch (error) {
+                    callback(error);
+                }
+            };
+
             if (command.type === "safe") {
-                return bricksledgerInstance.executeSafeCommand(command, callback);
+                return bricksledgerInstance.executeSafeCommand(command, commandExecutionCallback);
             }
             if (command.type === "nonced") {
-                return bricksledgerInstance.executeNoncedCommand(command, callback);
+                return bricksledgerInstance.executeNoncedCommand(command, commandExecutionCallback);
             }
-            return callback(`Unknown command type '${type}' specified`)
+            return callback(`Unknown command type '${type}' specified`);
         };
 
         parentPort.on("message", (message) => {
@@ -27,7 +52,8 @@ async function boot(domain, domainConfig) {
                 return callback("[contract-worker] Received empty message!");
             }
 
-            handleCommand(message, (error, result) => {
+            const command = bricksledger.createCommand(message);
+            handleCommand(command, (error, result) => {
                 console.log(`[contract-worker] Finished work ${message}`, error, result);
                 parentPort.postMessage({ error, result });
             });

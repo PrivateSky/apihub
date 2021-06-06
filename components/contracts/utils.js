@@ -1,9 +1,16 @@
-function getNodeWorkerBootScript(domain, domainConfig) {
-    if (!domainConfig.constitution) {
+function escapePath(path) {
+    return path ? path.replace(/\\/g, "\\\\").replace(".js", "") : "";
+}
+
+function getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder) {
+    const contractsConfig = domainConfig.contracts;
+    
+    if (!contractsConfig.constitution) {
+        // ensure we have the SSI for the contracts DSU speficied inside domainConfig.contracts.constitution
         if (process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI) {
-            domainConfig.constitution = process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI;
+            contractsConfig.constitution = process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI;
             console.log(
-                `[Contracts] no constitution found for domain ${domain}. Found process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI: ${domainConfig.constitution}`
+                `[Contracts] no constitution found for domain ${domain}. Found process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI: ${contractsConfig.constitution}`
             );
         } else {
             const pathName = "path";
@@ -21,17 +28,19 @@ function getNodeWorkerBootScript(domain, domainConfig) {
             try {
                 fs.accessSync(defaultDomainSeedPath, fs.F_OK);
                 const defaultDomainSeedData = fs.readFileSync(defaultDomainSeedPath);
-                domainConfig.constitution = defaultDomainSeedData.toString();
+                contractsConfig.constitution = defaultDomainSeedData.toString();
             } catch (error) {
                 console.log(`Cannot access default domain-seed at: ${defaultDomainSeedPath}`, error);
             }
         }
     }
 
-    const apihubBundleScriptPath = global.bundlePaths.pskWebServer.replace(/\\/g, "\\\\").replace(".js", "");
+    const apihubBundleScriptPath = escapePath(global.bundlePaths.pskWebServer);
+    const rootFolderPath = escapePath(rootFolder);
     const script = `
         require("${apihubBundleScriptPath}");
-        require('apihub').bootContracts('${domain}', ${JSON.stringify(domainConfig)})`;
+        require('apihub').bootContracts('${validatorDID}', '${domain}', ${JSON.stringify(domainConfig)}, '${rootFolderPath}');
+    `;
     return script;
 }
 

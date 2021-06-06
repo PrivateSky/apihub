@@ -13,12 +13,22 @@ function Contract(server) {
 
         const config = require("../../config");
 
-        let domainConfig = config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "contracts", "domainsPath"]) || {};
-        domainConfig.rootFolder = server.rootFolder;
+        // TODO: the domain config should be loaded in the following way when the domain configuration will be united/stable
+        // let domainConfig = config.getDomainConfig(domain)
+
+        let domainConfig = {
+            contracts: config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "contracts"]) || {},
+            anchoring: config.getDomainConfig(domain, ["anchoring"], ["endpointsConfig", "anchoring", "domainStrategies"]) || {},
+            bricking: config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "bricking", "domains"]) || {},
+            bricksFabric:
+                config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "bricksFabric", "domainStrategies"]) || {},
+        };
 
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
-        const script = getNodeWorkerBootScript(domain, domainConfig);
+        const validatorDID = null;
+        const { rootFolder } = server;
+        const script = getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder);
         allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
             bootScript: script,
             maximumNumberOfWorkers: 1,

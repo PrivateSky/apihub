@@ -257,8 +257,8 @@ module.exports.getDomainConfig = function (domain, configKeys, fallbackServerCon
 	return config.getDomainConfig(domain, configKeys, fallbackServerConfigKeys);
 };
 
-module.exports.bootContracts = function (domain, domainConfig) {
-    return require("./components/contracts/boot").boot(domain, domainConfig);
+module.exports.bootContracts = function (...params) {
+    return require("./components/contracts/boot").boot(...params);
 }
 
 module.exports.anchoringStrategies = require("./components/anchoring/strategies");
