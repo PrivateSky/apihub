@@ -13,6 +13,10 @@ async function boot(validatorDID, domain, domainConfig, rootFolder) {
         const bricksledgerInstance = await initiliseBrickLedger(validatorDID, domain, domainConfig, rootFolder, null);
 
         const handleCommand = async (command, callback) => {
+            if (command.type === "lastestBlockInfo") {
+                return bricksledgerInstance.getLatestBlockInfo(callback);
+            }
+
             const commandExecutionCallback = async (error, commandExecution) => {
                 if (error) {
                     return callback(error);

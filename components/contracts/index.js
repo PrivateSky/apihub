@@ -6,7 +6,7 @@ function Contract(server) {
 
     const allDomainsWorkerPools = {};
 
-    const getDomainWorkerPool = (domain, callback) => {
+    const getDomainWorkerPool = async (domain, callback) => {
         if (allDomainsWorkerPools[domain]) {
             return callback(null, allDomainsWorkerPools[domain]);
         }
@@ -26,7 +26,11 @@ function Contract(server) {
 
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
-        const validatorDID = null;
+        // temporary create the validator here
+        // TODO: move the validator did inside a config
+        const w3cDID = require("opendsu").loadApi("w3cdid");
+        const validatorDID = (await $$.promisify(w3cDID.createIdentity)("demo", "id")).getIdentifier();
+
         const { rootFolder } = server;
         const script = getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder);
         allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
@@ -63,6 +67,12 @@ function Contract(server) {
         });
     };
 
+    const sendLatestBlockInfoCommandToWorker = (request, response) => {
+        const { domain } = request.params;
+        const command = { domain, type: "lastestBlockInfo" };
+        sendCommandToWorker(command, response);
+    };
+
     const sendSafeCommandToWorker = (request, response) => {
         const { domain } = request.params;
         const command = { ...request.body, domain, type: "safe" };
@@ -76,13 +86,11 @@ function Contract(server) {
     };
 
     server.use(`/contracts/:domain/*`, responseModifierMiddleware);
+    server.use(`/contracts/:domain/*`, requestBodyJSONMiddleware);
+    server.use(`/contracts/:domain/*`, validateCommandInput);
 
-    server.post(`/contracts/:domain/safe-command`, requestBodyJSONMiddleware);
-    server.post(`/contracts/:domain/safe-command`, validateCommandInput);
+    server.get(`/contracts/:domain/latest-block-info`, sendLatestBlockInfoCommandToWorker);
     server.post(`/contracts/:domain/safe-command`, sendSafeCommandToWorker);
-
-    server.post(`/contracts/:domain/nonced-command`, requestBodyJSONMiddleware);
-    server.post(`/contracts/:domain/nonced-command`, validateCommandInput);
     server.post(`/contracts/:domain/nonced-command`, sendNoncedCommandToWorker);
 }
 
