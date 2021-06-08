@@ -4,7 +4,7 @@ function getBrick(request, response) {
 
     request.fsBrickStorage.getBrick(request.params.hashLink, (error, result) => {
         if (error) {
-            const message = `[Bricking] Brick '${request.params.hashLink}' not found`;
+            const message = `[Bricking] Brick '${request.params.hashLink}' not found!`;
             console.error('[Bricking]', error, message);
             return response.send(404, message);
         }
@@ -17,13 +17,13 @@ function getBrick(request, response) {
 function putBrick(request, response) {
     request.fsBrickStorage.utils.convertReadableStreamToBuffer(request, (error, brickData) => {
         if (error) {
-            console.error('[Bricking] Fail to convert Stream to Buffer', error);
+            console.error('[Bricking] Fail to convert Stream to Buffer!', error);
             return response.send(500);
         }
 
         request.fsBrickStorage.addBrick(brickData, (error, brickHash) => {
             if (error) {
-                console.error('[Bricking] Fail to manage current brick', error);
+                console.error('[Bricking] Fail to manage current brick!', error);
                 return response.send(error.code === 'EACCES' ? 409 : 500);
             }
 
