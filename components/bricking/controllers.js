@@ -15,7 +15,8 @@ function getBrick(request, response) {
 }
 
 function putBrick(request, response) {
-    request.fsBrickStorage.utils.convertReadableStreamToBuffer(request, (error, brickData) => {
+    const utils = require("./utils");
+    utils.convertReadableStreamToBuffer(request, (error, brickData) => {
         if (error) {
             console.error('[Bricking] Fail to convert Stream to Buffer!', error);
             return response.send(500);

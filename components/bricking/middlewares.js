@@ -19,4 +19,4 @@ function requestFSBrickStorageMiddleware(request, response, next) {
 
 module.exports = {
     requestFSBrickStorageMiddleware
-}
+};
