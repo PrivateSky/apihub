@@ -1,24 +1,22 @@
 function Bricks(server) {
-    function requestServerMiddleware(request, response, next) {
-        request.server = server;
-        next();
-    }
+    require('./flows/BricksManager');
 
-    const { headersMiddleware, responseModifierMiddleware } = require('../../utils/middlewares');
-
-    const { requestFSBrickStorageMiddleware } = require('./middlewares');
-
-    const { getBrick, putBrick, downloadMultipleBricks } = require('./controllers');
+    const {headersMiddleware, responseModifierMiddleware} = require('../../utils/middlewares');
+    const {createHandlerDownloadBrick, createHandlerDownloadMultipleBricks, createHandlerUploadBrick} = require('./controllers');
+    const uploadBrick = createHandlerUploadBrick(server);
+    const downloadBrick = createHandlerDownloadBrick(server);
+    const downloadMultipleBricks = createHandlerDownloadMultipleBricks(server);
 
     server.use(`/bricking/:domain/*`, headersMiddleware);
     server.use(`/bricking/:domain/*`, responseModifierMiddleware);
-    server.use(`/bricking/:domain/*`, requestServerMiddleware); // request.server
-    server.use(`/bricking/:domain/*`, requestFSBrickStorageMiddleware); // request.fsBrickStorage
 
-    server.put(`/bricking/:domain/put-brick`, putBrick);
+    //call brick based on domain. Similar with Anchoring. if is not filled, it will fallback to 'default' domain
+    server.put(`/bricking/:domain/put-brick`, uploadBrick);
 
-    server.get(`/bricking/:domain/get-brick/:hashLink`, getBrick);
+    server.get(`/bricking/:domain/get-brick/:hashLink`, downloadBrick);
+    server.get(`/bricking/:domain/downloadMultipleBricks`, downloadMultipleBricks);
 
+    server.get(`/bricking/:domain/get-brick/:hashLink`, downloadBrick);
     server.get(`/bricking/:domain/downloadMultipleBricks`, downloadMultipleBricks);
 }
 
