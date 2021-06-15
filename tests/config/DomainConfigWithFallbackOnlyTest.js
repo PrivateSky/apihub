@@ -14,7 +14,7 @@ assert.callback(
             const folder = await $$.promisify(dc.createTestFolder)("dsu");
 
             const serverConfig = {
-                endpointsConfig: {
+                componentsConfig: {
                     anchoring: {
                         domainStrategies: {
                             test: {
@@ -61,10 +61,10 @@ assert.callback(
             const loadedAnchoringDomainConfigWithFallback = apihub.getDomainConfig(
                 "test",
                 [],
-                ["endpointsConfig", "anchoring", "domainStrategies"]
+                ["componentsConfig", "anchoring", "domainStrategies"]
             );
             assert.equal(
-                JSON.stringify(serverConfig.endpointsConfig.anchoring.domainStrategies.test),
+                JSON.stringify(serverConfig.componentsConfig.anchoring.domainStrategies.test),
                 JSON.stringify(loadedAnchoringDomainConfigWithFallback),
                 "test domain anchoring config should be present since fallback is provided"
             );
@@ -72,10 +72,10 @@ assert.callback(
             const loadedBrickingDomainConfigWithFallback = apihub.getDomainConfig(
                 "test",
                 [],
-                ["endpointsConfig", "bricking", "domains"]
+                ["componentsConfig", "bricking", "domains"]
             );
             assert.equal(
-                JSON.stringify(serverConfig.endpointsConfig.bricking.domains.test),
+                JSON.stringify(serverConfig.componentsConfig.bricking.domains.test),
                 JSON.stringify(loadedBrickingDomainConfigWithFallback),
                 "test domain bricking config should be present since fallback is provided"
             );
@@ -83,10 +83,10 @@ assert.callback(
             const loadedBricksFabricDomainConfigWithFallback = apihub.getDomainConfig(
                 "test",
                 [],
-                ["endpointsConfig", "bricksFabric", "domainStrategies"]
+                ["componentsConfig", "bricksFabric", "domainStrategies"]
             );
             assert.equal(
-                JSON.stringify(serverConfig.endpointsConfig.bricksFabric.domainStrategies.test),
+                JSON.stringify(serverConfig.componentsConfig.bricksFabric.domainStrategies.test),
                 JSON.stringify(loadedBricksFabricDomainConfigWithFallback),
                 "test domain bricksFabric config should be present since fallback is provided"
             );

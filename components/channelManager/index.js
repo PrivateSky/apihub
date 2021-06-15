@@ -12,7 +12,7 @@ function ChannelsManager(server) {
     const config = require("../../config").getConfig();
     const channelKeyFileName = "channel_key";
 
-    const rootFolder = path.join(path.resolve(config.storage), config.endpointsConfig.virtualMQ.channelsFolderName);
+    const rootFolder = path.join(path.resolve(config.storage), config.componentsConfig.virtualMQ.channelsFolderName);
 
     if (!fs.existsSync(rootFolder)) {
         fs.mkdirSync(rootFolder, { recursive: true });
@@ -37,7 +37,7 @@ function ChannelsManager(server) {
     }
 
     function generateToken() {
-        let buffer = crypto.randomBytes(config.endpointsConfig.virtualMQ.tokenSize);
+        let buffer = crypto.randomBytes(config.componentsConfig.virtualMQ.tokenSize);
         return buffer.toString('hex');
     }
 
@@ -127,7 +127,7 @@ function ChannelsManager(server) {
 
             createChannel(channelName, publicKey, (err, token) => {
                 if (!err) {
-                    res.setHeader('Cookie', [`${config.endpointsConfig.virtualMQ.tokenSize}=${token}`]);
+                    res.setHeader('Cookie', [`${config.componentsConfig.virtualMQ.tokenSize}=${token}`]);
                 }
                 handler(err, res);
             });
@@ -156,7 +156,7 @@ function ChannelsManager(server) {
         readBody(req, (err, message) => {
             const { enable } = message;
             const channelName = req.params.channelName;
-            const signature = req.headers[config.endpointsConfig.virtualMQ.signatureHeaderName];
+            const signature = req.headers[config.componentsConfig.virtualMQ.signatureHeaderName];
 
             if (typeof channelName !== "string" || typeof signature !== "string") {
                 return sendStatus(res, 400);
@@ -304,7 +304,7 @@ function ChannelsManager(server) {
                                 dispatched = writeMessage(subscribers, message);
                             }
                             if (!dispatched) {
-                                if (queue.length < config.endpointsConfig.virtualMQ.maxSize) {
+                                if (queue.length < config.componentsConfig.virtualMQ.maxSize) {
                                     queue.push(message);
                                 } else {
                                     //queue is full

@@ -11,16 +11,16 @@ function Authorisation(server) {
   console.log(`Registering Authorisation middleware`);
 
   const config = require("../../config");
-  const skipAuthorisation = config.getConfig("skipAuthorisation");
+  const skipJWTAuthorisation = config.getConfig("skipJWTAuthorisation");
 
-  const urlsToSkip = skipAuthorisation && Array.isArray(skipAuthorisation) ? skipAuthorisation : [];
+  const urlsToSkip = skipJWTAuthorisation && Array.isArray(skipJWTAuthorisation) ? skipJWTAuthorisation : [];
 
   server.use(function (req, res, next) {
     let { url } = req;
     let jwt = req.headers['authorization'];
 
-    const canSkipAuthorisation = urlsToSkip.some((urlToSkip) => url.indexOf(urlToSkip) === 0);
-    if (url === "/" || canSkipAuthorisation) {
+    const canSkipJWTAuthorisation = urlsToSkip.some((urlToSkip) => url.indexOf(urlToSkip) === 0);
+    if (url === "/" || canSkipJWTAuthorisation) {
       next();
       return;
     }

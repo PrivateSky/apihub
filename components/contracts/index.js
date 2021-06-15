@@ -13,17 +13,7 @@ function Contract(server) {
 
         const config = require("../../config");
 
-        // TODO: the domain config should be loaded in the following way when the domain configuration will be united/stable
-        // let domainConfig = config.getDomainConfig(domain)
-
-        let domainConfig = {
-            contracts: config.getDomainConfig(domain, ["contracts"], ["endpointsConfig", "contracts"]) || {},
-            anchoring: config.getDomainConfig(domain, ["anchoring"], ["endpointsConfig", "anchoring", "domainStrategies"]) || {},
-            bricking: config.getDomainConfig(domain, ["bricking"], ["endpointsConfig", "bricking", "domains"]) || {},
-            bricksFabric:
-                config.getDomainConfig(domain, ["bricksFabric"], ["endpointsConfig", "bricksFabric", "domainStrategies"]) || {},
-        };
-
+        let domainConfig = config.getDomainConfig(domain) || {};
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
         // temporary create the validator here
