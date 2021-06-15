@@ -140,7 +140,9 @@ function migrate(oldConfig, configFolderPath) {
     fs.writeFileSync(apihubJsonConfigPath, JSON.stringify(config, null, 2));
 
     const domainConfigsFolderPath = path.join(configFolderPath, "domains");
-    fs.mkdirSync(domainConfigsFolderPath);
+    if (!fs.existsSync(domainConfigsFolderPath)){
+        fs.mkdirSync(domainConfigsFolderPath);
+    }
 
     Object.keys(domainConfigs).forEach((domain) => {
         const domainConfig = domainConfigs[domain];
