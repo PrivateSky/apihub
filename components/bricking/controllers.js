@@ -4,12 +4,10 @@ function getBrick(request, response) {
 
     request.fsBrickStorage.getBrick(request.params.hashLink, (error, result) => {
         if (error) {
-            const message = `[Bricking] Brick '${request.params.hashLink}' not found!`;
-            console.error('[Bricking]', error, message);
-            return response.send(404, message);
+            return response.send(404, 'Brick not found');
         }
 
-        response.write(result)
+        response.write(result);
         return response.send(200);
     });
 }
@@ -18,13 +16,13 @@ function putBrick(request, response) {
     const utils = require("./utils");
     utils.convertReadableStreamToBuffer(request, (error, brickData) => {
         if (error) {
-            console.error('[Bricking] Fail to convert Stream to Buffer!', error);
+            console.error('[Bricking] Fail to convert Stream to Buffer!', error.message);
             return response.send(500);
         }
 
         request.fsBrickStorage.addBrick(brickData, (error, brickHash) => {
             if (error) {
-                console.error('[Bricking] Fail to manage current brick!', error);
+                console.error('[Bricking] Fail to manage current brick!', error.message);
                 return response.send(error.code === 'EACCES' ? 409 : 500);
             }
 
@@ -46,11 +44,11 @@ function downloadMultipleBricks(request, response) {
     const responses = hashes.map(hash => request.fsBrickStorage.getBrickAsync(hash))
     Promise.all(responses)
         .then((bricks) => {
-            response.write(bricks);
-            return response.send(200);
+            const data = bricks.map(brick => brick.toString())
+            return response.send(200, data);
         })
         .catch((error) => {
-            console.error('[Bricking] Fail to get multiple bricks!', error);
+            console.error('[Bricking] Fail to get multiple bricks!', error.message);
             return response.send(500);
         });
 }
