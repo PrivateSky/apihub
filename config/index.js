@@ -13,7 +13,34 @@ function checkIfFileExists(filePath) {
     return false;
 }
 
-function getConfig(...keys) {
+function loadAllDomainConfigs(configFolderPath) {
+    const path = require("swarmutils").path;
+    const fs = require("fs");
+    const domainsFolderPath = path.join(configFolderPath, 'domains');
+    if(checkIfFileExists(domainsFolderPath)) {
+        try {
+            fs.readdirSync(domainsFolderPath)
+                .filter((domainFile) => domainFile.endsWith(".json"))
+                .forEach((domainFile) => {
+                    const domain = domainFile.substring(0, domainFile.lastIndexOf("."));
+                    console.log(`Loading config for domain '${domain}'`);
+
+                    try {
+                        const domainConfig = fs.readFileSync(path.join(domainsFolderPath, domainFile));
+                        domainConfigs[domain] = JSON.parse(domainConfig);
+                    } catch (error) {
+                        console.log(`Could not read config for domain '${domain}'`, error);
+                    }
+                });
+        } catch (error) {
+            console.log(`Could not read domain configs at ${domainsFolderPath}`, error);
+        }
+    } else {
+        console.log(`Domain configs folder not found at ${domainsFolderPath}`, error);
+    }
+}
+
+function ensureConfigsAreLoaded() {
     const path = require("swarmutils").path;
 
     if(!apihubConfig) {
@@ -44,12 +71,16 @@ function getConfig(...keys) {
             }
 
             apihubJson = JSON.parse(fs.readFileSync(apihubConfigPath));
+            loadAllDomainConfigs(configFolderPath);
         }
 
         apihubJson = apihubJson || {};
         apihubConfig = new ApihubConfig(apihubJson);
     }
+}
 
+function getConfig(...keys) {
+    ensureConfigsAreLoaded();
 
     if (!Array.isArray(keys) || !keys) {
         return apihubConfig;
@@ -149,7 +180,13 @@ function getDomainConfigFilePath(domain) {
     return domainConfigPath;
 }
 
+function getConfiguredDomains() {
+    ensureConfigsAreLoaded();
+    return Object.keys(domainConfigs);
+}
+
 function getDomainConfig(domain, ...configKeys) {
+    ensureConfigsAreLoaded();
     if(!domain) {
         return {};
     }
@@ -189,6 +226,7 @@ function getDomainConfig(domain, ...configKeys) {
 }
 
 function updateDomainConfig(domain, config, callback) {
+    ensureConfigsAreLoaded();
     const domainConfigPath = getDomainConfigFilePath(domain);
     const fsName = "fs";
     require(fsName).writeFile(domainConfigPath, JSON.stringify(config), (error) => {
@@ -202,4 +240,4 @@ function updateDomainConfig(domain, config, callback) {
     })
 }
 
-module.exports = {getConfig, getTokenIssuers, getDomainConfig, updateDomainConfig};
+module.exports = {getConfig, getTokenIssuers, getConfiguredDomains, getDomainConfig, updateDomainConfig};

@@ -140,7 +140,7 @@ function migrate(oldConfig, configFolderPath) {
     fs.writeFileSync(apihubJsonConfigPath, JSON.stringify(config, null, 2));
 
     const domainConfigsFolderPath = path.join(configFolderPath, "domains");
-    if (!fs.existsSync(domainConfigsFolderPath)){
+    if (!fs.existsSync(domainConfigsFolderPath)) {
         fs.mkdirSync(domainConfigsFolderPath);
     }
 
@@ -150,6 +150,13 @@ function migrate(oldConfig, configFolderPath) {
         console.log(`Generating config file for domain '${domain}' at ${domainConfigPath}...`);
         fs.writeFileSync(domainConfigPath, JSON.stringify(domainConfig, null, 2));
     });
+
+    try {
+        const serverJsonConfigPath = path.join(configFolderPath, "server.json");
+        fs.unlinkSync(serverJsonConfigPath);
+    } catch (error) {
+        console.error("Could not delete old server.json file", error);
+    }
 }
 
 module.exports = {

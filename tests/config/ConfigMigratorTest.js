@@ -264,10 +264,12 @@ assert.callback(
             ];
 
             // check that each of the available domain has a separated config file
-            availableDomains.forEach(domain => {
+            availableDomains.forEach((domain) => {
                 const domainConfigFilePath = path.join(configFolderPath, "domains", `${domain}.json`);
                 fs.accessSync(domainConfigFilePath);
-            })
+            });
+
+            
 
             testFinished();
         } catch (error) {

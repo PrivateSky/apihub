@@ -115,6 +115,14 @@ assert.callback(
             // since the property values are arrays, neiter assert.objectHasFields nor assert.arraysMatch does a deep comparison
             assert.equal(JSON.stringify(updatedDomainConfigResponse), JSON.stringify(expectedDomainConfig));
 
+            try {
+                fs.accessSync(path.join(folder, "/external-volume/config/server.json"));
+                assert.true(false, "should delete server.json file after migration");
+            } catch (error) {
+                console.log(error);
+                assert.notNull(error);
+            }
+
             testFinished();
         } catch (error) {
             console.error(error);
