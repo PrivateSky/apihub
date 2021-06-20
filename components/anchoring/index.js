@@ -16,7 +16,12 @@ function requestStrategyMiddleware(request, response, next) {
         return response.send(500, error);
     }
 
-    request.strategy = new StrategyClass(request.server, domainConfig, request.params.anchorId, request.body);
+    try {
+        request.strategy = new StrategyClass(request.server, domainConfig, request.params.anchorId, request.body);
+    } catch (e) {
+        console.error(error);
+        return response.send(500, 'Unable to initialize anchoring strategy')
+    }
 
     next();
 }

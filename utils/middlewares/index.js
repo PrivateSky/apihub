@@ -13,7 +13,19 @@ function requestBodyJSONMiddleware(request, response, next) {
     });
 
     request.on('end', () => {
-        request.body = data.length ? JSON.parse(data) : {};
+        if (!data.length) {
+            request.body = {};
+            return next();
+        }
+
+        let body;
+
+        try {
+            body = JSON.parse(data);
+        } catch (e) {
+            return response.send(500, 'Unable to decode JSON request body')
+        }
+        request.body = body;
         next();
     });
 }
