@@ -1,17 +1,15 @@
 
 const defaultConfig = {
     "storage":  require("swarmutils").path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "tmp"),
+    "externalStorage": "./external-volume",
     "sslFolder":  require("swarmutils").path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "conf", "ssl"),
     "port": 8080,
     "host": "0.0.0.0",
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeEndpoints": ["config", "virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricksLedger", "bricking", "anchoring", "bricksFabric", "contracts", "dsu-wizard", 'debugLogger', "staticServer"],
-    "endpointsConfig": {
-        "config": {
-            "module": "./components/config",
-        },
+    "activeComponents": ["config", "virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricksLedger", "bricking", "anchoring", "bricksFabric", "contracts", "dsu-wizard", 'debugLogger', "staticServer"],
+    "componentsConfig": {
         "messaging": {
             "module": "./components/mqManager",
             "workingDirPath": "./messaging",
@@ -42,23 +40,6 @@ const defaultConfig = {
         },
         "bricking": {
             "module": "./components/bricking",
-            "domains": {
-                "default": {
-                    "path": "/internal-volume/domains/default/brick-storage"
-                },
-                "predefined": {
-                    "path": "/internal-volume/domains/predefined/brick-storage"
-                },
-                "vault": {
-                    "path": "/internal-volume/domains/vault/brick-storage"
-                },
-                "test1": {
-                    "path": "/internal-volume/domains/test1/brick-storage"
-                },
-                "test2": {
-                    "path": "/internal-volume/domains/test2/brick-storage"
-                }
-            }
         },
         "filesManager": {
             "module": "./components/fileManager"
@@ -66,55 +47,15 @@ const defaultConfig = {
         "bricksFabric": {
             "module": "./components/bricksFabric",
             "path": "./",
-            "domainStrategies": {
-                "default": {
-                    "name": "BrickStorage",
-                    "option": {
-                        "timeout": 15000,
-                        "transactionsPerBlock": 5
-                    }
-                }
+            "bricksFabricStrategy": "BrickStorage",
+            "bricksFabricStrategyOption": {
+                "timeout": 15000,
+                "transactionsPerBlock": 5
             }
         },
         "anchoring": {
             "module": "./components/anchoring",
-            "domainStrategies": {
-                "default": {
-                    "type": "FS",
-                    "option": {
-                        "path": "/internal-volume/domains/default/anchors",
-                        "enableBricksLedger": false
-                    },
-                    "commands": {
-                        "addAnchor": "anchor"
-                    }
-
-                },
-                "predefined": {
-                    "type": "FS",
-                    "option": {
-                        "path": "/internal-volume/domains/predefined/anchors"
-                    }
-                },
-                "vault": {
-                    "type": "FS",
-                    "option": {
-                        "path": "/internal-volume/domains/vault/anchors"
-                    }
-                },
-                "test1": {
-                    "type": "FS",
-                    "option": {
-                        "path": "/internal-volume/domains/test1/anchors"
-                    }
-                },
-                "test2": {
-                    "type": "FS",
-                    "option": {
-                        "path": "/internal-volume/domains/test2/anchors"
-                    }
-                }
-            }
+            "anchoringStrategy": "FS"
         },
         "debugLogger": {
             "module": './components/debugLogger',
@@ -150,9 +91,9 @@ const defaultConfig = {
     },
     "enableInstallationDetails": true,
     "enableRequestLogger": true,
-    "enableAuthorisation": false,
+    "enableJWTAuthorisation": false,
     "enableLocalhostAuthorization": false,
-    "skipAuthorisation": [
+    "skipJWTAuthorisation": [
         "/leaflet-wallet",
         "/config",
         "/anchor",

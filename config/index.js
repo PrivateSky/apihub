@@ -1,38 +1,102 @@
-let serverConfig;
+let apihubConfig;
 let tokenIssuers;
 let domainConfigs = {};
 
-function getConfig(...keys) {
-    const path = require("swarmutils").path;
-
-    if (!serverConfig) {
-        let serverJson;
-        if (typeof process.env.PSK_CONFIG_LOCATION === "undefined") {
-            console.log("PSK_CONFIG_LOCATION env variable not set. Not able to load any external config. Using default configuration.")
-            serverJson = {};
-        } else {
-            console.log("Trying to read the server.json file from the location pointed by PSK_CONFIG_LOCATION env variable.");
-            serverJson = typeof serverConfig === "undefined" ? require(path.join(path.resolve(process.env.PSK_CONFIG_LOCATION), 'server.json')) : '';
-        }
-
-        serverConfig = new ServerConfig(serverJson);
+function checkIfFileExists(filePath) {
+    try {
+        const fs = require("fs");
+        fs.accessSync(filePath);
+        return true;
+    } catch (error) {
+        console.error(`File ${filePath} doesn't exists or no access is possible!`);
     }
-
-    if (!Array.isArray(keys) || !keys) {
-        return serverConfig;
-    }
-
-    return getSource(keys, serverConfig);
+    return false;
 }
 
-function ServerConfig(conf) {
+function loadAllDomainConfigs(configFolderPath) {
+    const path = require("swarmutils").path;
+    const fs = require("fs");
+    const domainsFolderPath = path.join(configFolderPath, 'domains');
+    if(checkIfFileExists(domainsFolderPath)) {
+        try {
+            fs.readdirSync(domainsFolderPath)
+                .filter((domainFile) => domainFile.endsWith(".json"))
+                .forEach((domainFile) => {
+                    const domain = domainFile.substring(0, domainFile.lastIndexOf("."));
+                    console.log(`Loading config for domain '${domain}'`);
+
+                    try {
+                        const domainConfig = fs.readFileSync(path.join(domainsFolderPath, domainFile));
+                        domainConfigs[domain] = JSON.parse(domainConfig);
+                    } catch (error) {
+                        console.log(`Could not read config for domain '${domain}'`, error);
+                    }
+                });
+        } catch (error) {
+            console.log(`Could not read domain configs at ${domainsFolderPath}`, error);
+        }
+    } else {
+        console.log(`Domain configs folder not found at ${domainsFolderPath}`, error);
+    }
+}
+
+function ensureConfigsAreLoaded() {
+    const path = require("swarmutils").path;
+
+    if(!apihubConfig) {
+        let apihubJson;
+        if (typeof process.env.PSK_CONFIG_LOCATION === "undefined") {
+            console.log("PSK_CONFIG_LOCATION env variable not set. Not able to load any external config. Using default configuration.")
+            apihubJson = {};
+        } else {
+            const fs = require("fs");
+            const configFolderPath = path.resolve(process.env.PSK_CONFIG_LOCATION);
+            console.log("Trying to read the apihub.json file from the location pointed by PSK_CONFIG_LOCATION env variable.");
+            const apihubConfigPath = path.join(configFolderPath, 'apihub.json');
+
+            if(!checkIfFileExists(apihubConfigPath)) {
+                console.log("Trying to read the server.json file from the location pointed by PSK_CONFIG_LOCATION env variable.");
+                const serverJsonConfigPath = path.join(configFolderPath, 'server.json');
+
+                let serverJson;
+                if(checkIfFileExists(serverJsonConfigPath)) {
+                    serverJson = JSON.parse(fs.readFileSync(serverJsonConfigPath));
+                } else {
+                    serverJson = {};
+                }
+
+                // migrate server.json to apihub.json
+                const configMigrator = require("./config-migrator");
+                configMigrator.migrate(serverJson, configFolderPath);
+            }
+
+            apihubJson = JSON.parse(fs.readFileSync(apihubConfigPath));
+            loadAllDomainConfigs(configFolderPath);
+        }
+
+        apihubJson = apihubJson || {};
+        apihubConfig = new ApihubConfig(apihubJson);
+    }
+}
+
+function getConfig(...keys) {
+    ensureConfigsAreLoaded();
+
+    if (!Array.isArray(keys) || !keys) {
+        return apihubConfig;
+    }
+
+    return getSource(keys, apihubConfig);
+}
+
+function ApihubConfig(conf) {
     const defaultConf = require('./default');
 
     function createConfig(config, defaultConfig) {
         if (typeof config === "undefined") {
             return defaultConfig;
         }
-
+    
         //ensure that the config object will contain all the necessary keys for server configuration
         for (let mandatoryKey in defaultConfig) {
             if (typeof config[mandatoryKey] === "undefined") {
@@ -40,7 +104,7 @@ function ServerConfig(conf) {
             }
         }
         return __createConfigRecursively(conf, defaultConf);
-
+    
         function __createConfigRecursively(config, defaultConfig) {
             for (let prop in defaultConfig) {
                 if (typeof config[prop] === "object" && !Array.isArray(config[prop])) {
@@ -57,7 +121,7 @@ function ServerConfig(conf) {
     }
 
     conf = createConfig(conf, defaultConf);
-    conf.defaultEndpoints = defaultConf.activeEndpoints;
+    conf.defaultComponents = defaultConf.activeComponents;
     return conf;
 }
 
@@ -116,7 +180,13 @@ function getDomainConfigFilePath(domain) {
     return domainConfigPath;
 }
 
-function getDomainConfig(domain, configKeys, fallbackServerConfigKeys) {
+function getConfiguredDomains() {
+    ensureConfigsAreLoaded();
+    return Object.keys(domainConfigs);
+}
+
+function getDomainConfig(domain, ...configKeys) {
+    ensureConfigsAreLoaded();
     if(!domain) {
         return {};
     }
@@ -126,13 +196,6 @@ function getDomainConfig(domain, configKeys, fallbackServerConfigKeys) {
             configKeys = [];
         }
         let configResult = config ? getSource(configKeys, config) : null;
-        
-        // try to fallback to server.config
-        if(!configResult && fallbackServerConfigKeys) {            
-            configResult = getConfig(...fallbackServerConfigKeys, domain);
-        }
-
-
         return configResult;
     }
 
@@ -163,6 +226,7 @@ function getDomainConfig(domain, configKeys, fallbackServerConfigKeys) {
 }
 
 function updateDomainConfig(domain, config, callback) {
+    ensureConfigsAreLoaded();
     const domainConfigPath = getDomainConfigFilePath(domain);
     const fsName = "fs";
     require(fsName).writeFile(domainConfigPath, JSON.stringify(config), (error) => {
@@ -176,4 +240,4 @@ function updateDomainConfig(domain, config, callback) {
     })
 }
 
-module.exports = {getConfig, getTokenIssuers, getDomainConfig, updateDomainConfig};
+module.exports = {getConfig, getTokenIssuers, getConfiguredDomains, getDomainConfig, updateDomainConfig};
