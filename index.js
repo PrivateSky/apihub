@@ -210,7 +210,13 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
             // take only the components that have configurations and that are not part of the required components
 			const middlewareList = [...conf.activeComponents]
-                .filter(activeComponentName => conf.componentsConfig[activeComponentName])
+                .filter(activeComponentName => {
+                	let include = conf.componentsConfig[activeComponentName];
+                	if(!include){
+                		console.log(`[API-HUB] Not able to find config for component called < ${activeComponentName} >. Excluding it from the active components list!`);
+					}
+                	return include;
+				})
                 .filter(activeComponentName => !requiredComponentNames.includes(activeComponentName));
 
 			middlewareList.forEach(componentName => {
