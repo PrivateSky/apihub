@@ -2,9 +2,12 @@ function escapePath(path) {
     return path ? path.replace(/\\/g, "\\\\").replace(".js", "") : "";
 }
 
-function getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder) {
-    const contractsConfig = domainConfig.contracts;
+function ensureContractConstitutionIsPresent(domain, domainConfig) {
+    if (!domainConfig.contracts) {
+        domainConfig.contracts = {};
+    }
 
+    const contractsConfig = domainConfig.contracts;
     if (!contractsConfig.constitution) {
         // ensure we have the SSI for the contracts DSU speficied inside domainConfig.contracts.constitution
         if (process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI) {
@@ -34,7 +37,9 @@ function getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder)
             }
         }
     }
+}
 
+function getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder) {
     const apihubBundleScriptPath = escapePath(global.bundlePaths.pskWebServer);
     const rootFolderPath = escapePath(rootFolder);
     const script = `
@@ -64,6 +69,7 @@ const validateCommandInput = (request, response, next) => {
 };
 
 module.exports = {
+    ensureContractConstitutionIsPresent,
     getNodeWorkerBootScript,
     validateCommandInput,
 };

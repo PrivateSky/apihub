@@ -1,4 +1,4 @@
-const { getNodeWorkerBootScript, validateCommandInput } = require("./utils");
+const { ensureContractConstitutionIsPresent, getNodeWorkerBootScript, validateCommandInput } = require("./utils");
 
 function Contract(server) {
     const syndicate = require("syndicate");
@@ -13,7 +13,9 @@ function Contract(server) {
 
         const config = require("../../config");
 
-        let domainConfig = config.getDomainConfig(domain) || {};
+        const domainConfig = { ...(config.getDomainConfig(domain) || {}) };
+        ensureContractConstitutionIsPresent(domain, domainConfig);
+
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
         // temporary create the validator here
