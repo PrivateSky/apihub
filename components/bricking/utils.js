@@ -1,3 +1,5 @@
+const { clone } = require("../../utils");
+
 function convertReadableStreamToBuffer(readStream, callback) {
     let buffers = [];
 
@@ -10,7 +12,12 @@ function convertReadableStreamToBuffer(readStream, callback) {
 
 function getBricksDomainConfig(domain) {
     const config = require("../../config");
-    return config.getDomainConfig(domain, ['bricking'], ['endpointsConfig', 'bricking', 'domains']);
+    let domainConfig = config.getDomainConfig(domain, "bricking");
+
+    domainConfig = clone(domainConfig || {});
+    domainConfig.path = require("path").join(config.getConfig("externalStorage"), `domains/${domain}/brick-storage`);
+
+    return domainConfig;
 }
 
 module.exports = {

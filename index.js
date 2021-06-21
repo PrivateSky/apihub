@@ -122,7 +122,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 		server.use(function (req, res, next) {
 			res.setHeader('Access-Control-Allow-Origin', req.headers.origin || req.headers.host);
 			res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-			res.setHeader('Access-Control-Allow-Headers', `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, ${conf.endpointsConfig.virtualMQ.signatureHeaderName}`);
+			res.setHeader('Access-Control-Allow-Headers', `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, ${conf.componentsConfig.virtualMQ.signatureHeaderName}`);
 			res.setHeader('Access-Control-Allow-Credentials', true);
 			next();
 		});
@@ -160,60 +160,73 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 			headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, DELETE, OPTIONS';
 			headers['Access-Control-Allow-Credentials'] = true;
 			headers['Access-Control-Max-Age'] = '3600'; //one hour
-			headers['Access-Control-Allow-Headers'] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${conf.endpointsConfig.virtualMQ.signatureHeaderName}}`;
+			headers['Access-Control-Allow-Headers'] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, ${conf.componentsConfig.virtualMQ.signatureHeaderName}}`;
 			res.writeHead(200, headers);
 			res.end();
-    });
+        });
     
-    function addRootMiddlewares() {
-      if(conf.enableRequestLogger) {
-        new LoggerMiddleware(server);
-      }
-      if(conf.enableAuthorisation) {
-        new AuthorisationMiddleware(server);
-      }
-      if(conf.iframeHandlerDsuBootPath) {
-        new IframeHandlerMiddleware(server);
-      }
-      if(conf.enableInstallationDetails) {
-      	const enableInstallationDetails = require("./components/installation-details");
-      	enableInstallationDetails(server);
-	  }
-    }
+        function addRootMiddlewares() {
+            if(conf.enableRequestLogger) {
+                new LoggerMiddleware(server);
+            }
+            if(conf.enableJWTAuthorisation) {
+                new AuthorisationMiddleware(server);
+            }
+            if(conf.iframeHandlerDsuBootPath) {
+                new IframeHandlerMiddleware(server);
+            }
+            if(conf.enableInstallationDetails) {
+                const enableInstallationDetails = require("./components/installation-details");
+                enableInstallationDetails(server);
+            }
+        }
 
-		function addMiddlewares() {
-			const middlewareList = conf.activeEndpoints;
-			const path = require("swarmutils").path;
-			middlewareList.forEach(middleware => {
-				const middlewareConfigName = Object.keys(conf.endpointsConfig).find(endpointName => endpointName === middleware);
-				const middlewareConfig = conf.endpointsConfig[middlewareConfigName];
-				let middlewarePath;
-				if (middlewareConfigName) {
-					middlewarePath = middlewareConfig.module;
-					//console.log(middlewareConfig, middlewarePath);
-					//console.log(conf.defaultEndpoints);
-					if (middlewarePath.startsWith('.') && conf.defaultEndpoints.indexOf(middleware) === -1) {
-						middlewarePath = path.resolve(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, middlewarePath));
-					}
-					console.log(`Preparing to register middleware from path ${middlewarePath}`);
-					let middlewareImplementation;
-					try{
-						middlewareImplementation = require(middlewarePath);
-					}catch(e){
-						throw e;
-					}
-					if (typeof middlewareConfig.function !== 'undefined') {
-						middlewareImplementation[middlewareConfig.function](server);
-					} else {
-						middlewareImplementation(server);
-					}
-				}
-			})
+        function addComponent(componentName, componentConfig) {
+            const path = require("swarmutils").path;
+            
+            let componentPath = componentConfig.module;
+            if (componentPath.startsWith('.') && conf.defaultComponents.indexOf(componentName) === -1) {
+                componentPath = path.resolve(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, componentPath));
+            }
+            console.log(`Preparing to register middleware from path ${componentPath}`);
 
+            let middlewareImplementation;
+            try{
+                middlewareImplementation = require(componentPath);
+            } catch(e){
+                throw e;
+            }
+
+            if (typeof componentConfig.function !== 'undefined') {
+                middlewareImplementation[componentConfig.function](server);
+            } else {
+                middlewareImplementation(server);
+            }
+        }
+
+		function addComponents() {
+            const requiredComponentNames = ["config"];
+            addComponent("config", {module: "./components/config"});
+
+            // take only the components that have configurations and that are not part of the required components
+			const middlewareList = [...conf.activeComponents]
+                .filter(activeComponentName => {
+                	let include = conf.componentsConfig[activeComponentName];
+                	if(!include){
+                		console.log(`[API-HUB] Not able to find config for component called < ${activeComponentName} >. Excluding it from the active components list!`);
+					}
+                	return include;
+				})
+                .filter(activeComponentName => !requiredComponentNames.includes(activeComponentName));
+
+			middlewareList.forEach(componentName => {
+                const componentConfig = conf.componentsConfig[componentName];
+                addComponent(componentName, componentConfig);
+            });
 		}
 
-    addRootMiddlewares();
-		addMiddlewares();
+        addRootMiddlewares();
+		addComponents();
 		setTimeout(function () {
 			//allow other endpoints registration before registering fallback handler
 			server.use(function (req, res) {
@@ -252,9 +265,9 @@ module.exports.getServerConfig = function () {
 	return config.getConfig();
 };
 
-module.exports.getDomainConfig = function (domain, configKeys, fallbackServerConfigKeys) {
+module.exports.getDomainConfig = function (domain, ...configKeys) {
 	const config = require('./config');
-	return config.getDomainConfig(domain, configKeys, fallbackServerConfigKeys);
+	return config.getDomainConfig(domain, ...configKeys);
 };
 
 module.exports.bootContracts = function (...params) {

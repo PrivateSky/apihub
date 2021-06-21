@@ -76,7 +76,13 @@ class FS {
     _createOrUpdateAnchor(createWithoutVersion, callback) {
         const self = this;
         const anchorId = this.commandData.anchorId;
-        const anchorKeySSI = parse(anchorId);
+        let anchorKeySSI;
+
+        try {
+            anchorKeySSI = parse(anchorId);
+        } catch (e) {
+            return callback({ error:e, code: 500 });
+        }
         const rootKeySSITypeName = anchorKeySSI.getRootKeySSITypeName();
         const rootKeySSI = createTemplateKeySSI(rootKeySSITypeName, anchorKeySSI.getDLDomain());
 

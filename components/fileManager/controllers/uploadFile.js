@@ -62,7 +62,7 @@ function upload(req, callback) {
 
     writeStream.on('finish', () => {
         writeStream.close();
-        return callback(null, { 'path': path.posix.join(folder, filename) });
+        return callback(null, { 'path': path.join(folder, filename) });
     });
 
     writeStream.on('error', (err) => {

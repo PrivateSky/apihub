@@ -1,7 +1,7 @@
 function getCmdConfig(commandType)
 {
     const config = require('../../../config');
-    const cfg = config.getConfig('endpointsConfig', 'bricksLedger');
+    const cfg = config.getConfig('componentsConfig', 'bricksLedger');
     const cmdConfig = 'do' + capitalize(commandType);
     return cfg[cmdConfig];
 
