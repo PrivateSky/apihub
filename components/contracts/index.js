@@ -88,8 +88,6 @@ function Contract(server) {
         sendPBlockToValidateToWorker(command, response);
     };
 
-    // todo: if command if for an unregistered domain => throw 404 -> on OPENDSU use bdns when receiving 404 => 
-
     server.use(`/contracts/:domain/*`, responseModifierMiddleware);
     server.use(`/contracts/:domain/*`, requestBodyJSONMiddleware);
     server.use(`/contracts/:domain/*`, validateCommandInput);

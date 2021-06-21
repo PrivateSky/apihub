@@ -4,7 +4,7 @@ function escapePath(path) {
 
 function getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder) {
     const contractsConfig = domainConfig.contracts;
-    
+
     if (!contractsConfig.constitution) {
         // ensure we have the SSI for the contracts DSU speficied inside domainConfig.contracts.constitution
         if (process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI) {
@@ -48,6 +48,12 @@ const validateCommandInput = (request, response, next) => {
     const { domain } = request.params;
     if (!domain || typeof domain !== "string") {
         return response.send(400, "Invalid domain specified");
+    }
+
+    const config = require("../../config");
+    const configuredDomains = config.getConfiguredDomains();
+    if (!configuredDomains.includes(domain)) {
+        return response.send(404, `Unsupported domain '${domain}' specified`);
     }
 
     if (!request.body) {
