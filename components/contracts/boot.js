@@ -13,8 +13,16 @@ async function boot(validatorDID, domain, domainConfig, rootFolder) {
         const bricksledgerInstance = await initiliseBrickLedger(validatorDID, domain, domainConfig, rootFolder, null);
 
         const handleCommand = async (command, callback) => {
+            const args = command.args || [];
+
             if (command.type === "lastestBlockInfo") {
                 return bricksledgerInstance.getLatestBlockInfo(callback);
+            }
+            if (command.type === "getPBlock") {
+                return bricksledgerInstance.getPBlock(...args, callback);
+            }
+            if (command.type === "checkPBlockFromNetwork") {
+                return bricksledgerInstance.getPBlock(...args, callback);
             }
 
             const commandExecutionCallback = async (error, commandExecution) => {

@@ -73,6 +73,12 @@ function Contract(server) {
         sendCommandToWorker(command, response);
     };
 
+    const sendGetPBlockCommandToWorker = (request, response) => {
+        const { domain, pBlockHashLinkSSI } = request.params;
+        const command = { domain, type: "getPBlock", args: [pBlockHashLinkSSI] };
+        sendCommandToWorker(command, response);
+    };
+
     const sendSafeCommandToWorker = (request, response) => {
         const { domain } = request.params;
         const command = { ...request.body, domain, type: "safe" };
@@ -85,13 +91,25 @@ function Contract(server) {
         sendCommandToWorker(command, response);
     };
 
+    const sendPBlockToValidateToWorker = (request, response) => {
+        const { domain } = request.params;
+        const pBlock = request.body;
+        const command = { domain, type: "checkPBlockFromNetwork", args: [pBlock] };
+        sendPBlockToValidateToWorker(command, response);
+    };
+
+    // todo: if command if for an unregistered domain => throw 404 -> on OPENDSU use bdns when receiving 404 => 
+
     server.use(`/contracts/:domain/*`, responseModifierMiddleware);
     server.use(`/contracts/:domain/*`, requestBodyJSONMiddleware);
     server.use(`/contracts/:domain/*`, validateCommandInput);
 
     server.get(`/contracts/:domain/latest-block-info`, sendLatestBlockInfoCommandToWorker);
+    server.get(`/contracts/:domain/pblock/:pBlockHashLinkSSI`, sendGetPBlockCommandToWorker);
+
     server.post(`/contracts/:domain/safe-command`, sendSafeCommandToWorker);
     server.post(`/contracts/:domain/nonced-command`, sendNoncedCommandToWorker);
+    server.post(`/contracts/:domain/validate`, sendPBlockToValidateToWorker);
 }
 
 module.exports = Contract;
