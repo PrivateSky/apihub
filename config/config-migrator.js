@@ -155,7 +155,7 @@ function migrate(oldConfig, configFolderPath) {
         const serverJsonConfigPath = path.join(configFolderPath, "server.json");
         fs.unlinkSync(serverJsonConfigPath);
     } catch (error) {
-        console.error("Could not delete old server.json file", error);
+        console.log("Could not delete old server.json file", error);
     }
 }
 
