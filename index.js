@@ -22,7 +22,6 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	require('./components/channelManager');
 	require('./components/bdns');
 	require('./components/fileManager');
-	require('./components/bricksLedger');
 	require('./components/bricksFabric');
 	require('./components/staticServer');
 	require('./components/mqManager');

@@ -4,7 +4,7 @@ const path = require("swarmutils").path;
 const openDSU = require("opendsu");
 const { parse, createTemplateKeySSI } = openDSU.loadApi("keyssi");
 
-const { verifySignature, logWriteRequest, appendHashLink } = require("./utils");
+const { verifySignature, appendHashLink } = require("./utils");
 const { ANCHOR_ALREADY_EXISTS_ERR_CODE, getDomainFromKeySSI } = require("../../utils");
 
 //dictionary. key - domain, value path
@@ -30,10 +30,6 @@ class FS {
         this.commandData.domain = domainName;
         this.commandData.anchorId = anchorId;
         this.commandData.jsonData = jsonData || {};
-        this.commandData.enableBricksLedger =
-            typeof domainConfig.option.enableBricksLedger === "undefined"
-                ? false
-                : domainConfig.option.enableBricksLedger;
 
         //because we work instance based, ensure that folder structure is done only once per domain
         //skip, folder structure is already done for this domain type
@@ -81,7 +77,7 @@ class FS {
         try {
             anchorKeySSI = parse(anchorId);
         } catch (e) {
-            return callback({ error:e, code: 500 });
+            return callback({ error: e, code: 500 });
         }
         const rootKeySSITypeName = anchorKeySSI.getRootKeySSITypeName();
         const rootKeySSI = createTemplateKeySSI(rootKeySSITypeName, anchorKeySSI.getDLDomain());
@@ -118,7 +114,6 @@ class FS {
         const {
             anchorId,
             domain,
-            enableBricksLedger,
             jsonData: { hashLinkIds },
         } = this.commandData;
 
@@ -162,11 +157,6 @@ class FS {
                 callback
             );
         });
-
-        if (enableBricksLedger) {
-            //send log info
-            logWriteRequest(this.server, this.commandData);
-        }
     };
 
     _getAllVersionsForAnchorId(anchorId, callback) {
@@ -177,9 +167,7 @@ class FS {
                 if (err.code === "ENOENT") {
                     return callback(undefined, []);
                 }
-                return OpenDSUSafeCallback(callback)(
-                    createOpenDSUErrorWrapper(`Failed to read file <${filePath}>`, err)
-                );
+                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to read file <${filePath}>`, err));
             }
             const fileContent = fileHashes.toString().trimEnd();
             const versions = fileContent ? fileContent.split(endOfLine) : [];

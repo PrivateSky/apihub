@@ -25,34 +25,6 @@ function verifySignature(anchorKeySSI, newSSIIdentifier, lastSSIIdentifier) {
     throw Error(`Invalid newSSI type provided`);
 }
 
-function logWriteRequest(server, data) {
-    const runCommandBody = {
-        commandType: "anchor",
-        data: data,
-    };
-    const bodyData = JSON.stringify(runCommandBody);
-    //build path
-    const runCommandPath = require("../../../bricksLedger/constants").URL_PREFIX + "/runCommand";
-    //run Command method
-    const runCmdMethod = "POST";
-    // run Command headers
-    const runCmdHeaders = {
-        "Content-Type": "application/json",
-        "Content-Length": bodyData.length,
-    };
-    try {
-        server.makeLocalRequest(runCmdMethod, runCommandPath, bodyData, runCmdHeaders, (err, result) => {
-            //callback is for local only if we register only access logs
-            if (err) {
-                console.log(err);
-            }
-            //console.log(result);
-        });
-    } catch (err) {
-        console.log("anchoring ", err);
-    }
-}
-
 /**
  * Append `hash` to file only
  * if the `lastHashLink` is the last hash in the file
@@ -110,9 +82,7 @@ function appendHashLink(path, hash, options, callback) {
                 fs.write(fd, hash + endOfLine, options.fileSize, (err) => {
                     if (err) {
                         console.log("__appendHashLink-write : ", err);
-                        return OpenDSUSafeCallback(callback)(
-                            createOpenDSUErrorWrapper(`Failed write in file <${path}>`, err)
-                        );
+                        return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed write in file <${path}>`, err));
                     }
 
                     fs.close(fd, callback);
@@ -127,6 +97,5 @@ function appendHashLink(path, hash, options, callback) {
 module.exports = {
     ALIAS_SYNC_ERR_CODE,
     verifySignature,
-    logWriteRequest,
     appendHashLink,
 };

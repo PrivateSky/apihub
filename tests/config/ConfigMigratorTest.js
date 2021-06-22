@@ -20,7 +20,6 @@ const initialConfig = {
         "notifications",
         "filesManager",
         "bdns",
-        "bricksLedger",
         "bricksFabric",
         "bricking",
         "anchoring",
@@ -75,7 +74,6 @@ const initialConfig = {
                     type: "FS",
                     option: {
                         path: "/external-volume/domains/epi/anchors",
-                        enableBricksLedger: false,
                     },
                     commands: {
                         addAnchor: "anchor",
@@ -85,7 +83,6 @@ const initialConfig = {
                     type: "FS",
                     option: {
                         path: "/external-volume/domains/epidev/anchors",
-                        enableBricksLedger: false,
                     },
                     commands: {
                         addAnchor: "anchor",
@@ -95,7 +92,6 @@ const initialConfig = {
                     type: "FS",
                     option: {
                         path: "/external-volume/domains/mah1.epidev/anchors",
-                        enableBricksLedger: false,
                     },
                     commands: {
                         addAnchor: "anchor",
@@ -105,7 +101,6 @@ const initialConfig = {
                     type: "FS",
                     option: {
                         path: "/external-volume/domains/mah2.epidev/anchors",
-                        enableBricksLedger: false,
                     },
                     commands: {
                         addAnchor: "anchor",
@@ -115,7 +110,6 @@ const initialConfig = {
                     type: "FS",
                     option: {
                         path: "/internal-volume/domains/default/anchors",
-                        enableBricksLedger: false,
                     },
                     commands: {
                         addAnchor: "anchor",
@@ -165,7 +159,6 @@ const initialConfig = {
         "/anchor/vault",
         "/bricking",
         "/bricksFabric",
-        "/bricksledger",
         "/create-channel",
         "/forward-zeromq",
         "/send-message",
@@ -186,7 +179,6 @@ const expectedConfig = {
         "notifications",
         "filesManager",
         "bdns",
-        "bricksLedger",
         "bricksFabric",
         "bricking",
         "anchoring",
@@ -225,7 +217,6 @@ const expectedConfig = {
         "/anchor/vault",
         "/bricking",
         "/bricksFabric",
-        "/bricksledger",
         "/create-channel",
         "/forward-zeromq",
         "/send-message",

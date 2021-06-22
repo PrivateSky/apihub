@@ -1,9 +1,7 @@
 const defaultDomainConfig = {
     anchoring: {
         type: "FS",
-        option: {
-            enableBricksLedger: false,
-        },
+        option: {},
         commands: {
             addAnchor: "anchor",
         },

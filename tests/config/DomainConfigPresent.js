@@ -22,7 +22,6 @@ assert.callback(
                                 type: "FS",
                                 option: {
                                     path: "/internal-volume/domains/test/anchors",
-                                    enableBricksLedger: false,
                                 },
                                 commands: {
                                     addAnchor: "anchor",
@@ -56,7 +55,6 @@ assert.callback(
                     type: "FS",
                     option: {
                         path: "/internal-volume/domains/test/anchors",
-                        enableBricksLedger: false,
                     },
                     commands: {
                         addAnchor: "anchor",
