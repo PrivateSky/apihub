@@ -139,6 +139,14 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 				subscribers[queueName] = [];
 			}
 
+			const capacityLimit = Number(settings.mq_fsQueueLength);
+
+			if(capacity > capacityLimit){
+				const err = new Error("Queue size exceeded!");
+				err.sendToUser = true;
+				return callback(err);
+			}
+
 			if (capacity > 0) {
 				return storeMessage(queueName, message, callback);
 			}
@@ -205,10 +213,24 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 				console.log(`Caught an error during body reading from put message request`, err);
 				return send(response, 500);
 			}
+
+			if(typeof settings.mq_fsMessageMaxSize !== "undefined"){
+				const messageMaxSize = Number(settings.mq_fsMessageMaxSize);
+				try{
+					let messageAsBuffer = Buffer.from(message);
+					if(messageAsBuffer.length > messageMaxSize){
+						send(response, 403, "Message size exceeds domain specific limit.");
+						return;
+					}
+				}catch(err){
+					console.log("Not able to confirm message size. Going on with the flow...");
+				}
+			}
+
 			putMessage(queueName, message, (err) => {
 				if (err) {
 					console.log(`Caught an error during adding message to queue`, err);
-					return send(response, 500);
+					return send(response, 500, err.sendToUser ? err.message : undefined);
 				}
 				send(response, 200);
 			});

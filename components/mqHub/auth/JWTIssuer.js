@@ -2,14 +2,23 @@ const DOMAIN_NAME = "MQ_DOMAIN";
 const SEEDER_FILE_NAME = "mq_JWT_Auth_Seeder";
 
 const defaultSettings = {
+	//todo: implement them later!!!
 	mq_nonce_from_smart_contract: false,
 	mq_nonce_from_expiring_uuid: true,
+
 	mq_nonce_expiration_time: 10 * 1000//sec
 }
 
 function JWTIssuer() {
 
 	let seeder;
+	const config = require("./../../../config");
+
+	function getDomainSpecificConfig(domainName){
+		let domainSpecificConfig = JSON.parse(JSON.stringify(defaultSettings));
+		Object.assign(domainSpecificConfig, config.getDomainConfig(domainName));
+		return domainSpecificConfig;
+	}
 
 	async function init() {
 		const fs = require("fs");
@@ -60,8 +69,9 @@ function JWTIssuer() {
 					return callback(err);
 				}
 				options.subject = subject;
+				const cfg = getDomainSpecificConfig(domain);
 				//setting the JWT token valid period based on the config
-				options.valability = defaultSettings.mq_nonce_expiration_time;
+				options.valability = cfg.mq_nonce_expiration_time;
 
 				return crypto.createJWT(seeder, scope, credentials, options, (err, token)=>{
 					if(err){
