@@ -63,7 +63,17 @@ function JWTIssuer() {
 				//setting the JWT token valid period based on the config
 				options.valability = defaultSettings.mq_nonce_expiration_time;
 
-				return crypto.createJWT(seeder, scope, credentials, options, callback);
+				return crypto.createJWT(seeder, scope, credentials, options, (err, token)=>{
+					if(err){
+						return callback(err);
+					}
+					crypto.parseJWTSegments(token, (err, segments)=>{
+						if(err){
+							return callback(err);
+						}
+						return callback(undefined, {token, expires: segments.body.exp*1000});
+					});
+				});
 			});
 		}
 

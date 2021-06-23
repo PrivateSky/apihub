@@ -35,7 +35,7 @@ function MQHub(server) {
 
 	function getTokenHandler(request, response) {
 		const domain = request.params.domain;
-		issuer.createToken(domain, {credentials: request.params.hashDID}, (err, token) => {
+		issuer.createToken(domain, {credentials: request.params.hashDID}, (err, tokenObj) => {
 			if (err) {
 				console.log("Not able to create a new token.", err);
 				response.statusCode = 500;
@@ -43,7 +43,7 @@ function MQHub(server) {
 			}
 
 			response.statusCode = 200;
-			response.write(token);
+			response.write(JSON.stringify(tokenObj));
 			response.end();
 		});
 	}
