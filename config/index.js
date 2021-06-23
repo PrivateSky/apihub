@@ -8,7 +8,7 @@ function checkIfFileExists(filePath) {
         fs.accessSync(filePath);
         return true;
     } catch (error) {
-        console.error(`File ${filePath} doesn't exists or no access is possible!`);
+        console.log(`File ${filePath} doesn't exists or no access is possible!`);
     }
     return false;
 }
@@ -160,7 +160,7 @@ function getTokenIssuers(callback) {
 
         fs.readFile(filePath, "utf8", function (err, data) {
             if (err) {
-                console.error(`Cannot load ${filePath}`, err);
+                console.log(`Cannot load ${filePath}`, err);
                 return;
             }
 
