@@ -39,7 +39,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
 	checkPortInUse(port, sslConfig, (err, status) => {
 		if (status === true) {
-			throw Error(`Port ${port} is used by another server.`);
+            const err = new Error(`Port ${port} is used by another server.`);
+            err.code = 'EADDRINUSE';
+			throw err;
 		}
 
         server.setTimeout(10 * 60 * 1000);
@@ -72,7 +74,6 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	}, CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL);
 
 	server.on('listening', bindFinished);
-	server.on('error', bindErrorHandler);
 
 	function checkPortInUse(port, sslConfig, callback) {
 		let commType = 'http';
@@ -82,21 +83,11 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
 		console.log(`Checking if port ${port} is available. Please wait...`);
 
-		require(commType).request({ port }, (res) => {
+        require(commType).request({ port }, (res) => {
 			callback(undefined, true);
 		}).on('error', (err) => {
 			callback(undefined, false);
-		});
-	}
-
-	function bindErrorHandler(error) {
-		if (error.code === 'EADDRINUSE') {
-			server.close();
-			if (callback) {
-				return callback(error);
-			}
-			throw error;
-		}
+		}).end();
 	}
 
 	function bindFinished(err) {
