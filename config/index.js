@@ -36,7 +36,7 @@ function loadAllDomainConfigs(configFolderPath) {
             console.log(`Could not read domain configs at ${domainsFolderPath}`, error);
         }
     } else {
-        console.log(`Domain configs folder not found at ${domainsFolderPath}`, error);
+        console.log(`Domain configs folder not found at ${domainsFolderPath}`);
     }
 }
 
