@@ -37,14 +37,14 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
 
-	checkPortInUse(port, sslConfig, (err, status) => {
+	checkPortInUse(port, sslConfig, (_, status) => {
 		if (status === true) {
-            const err = new Error(`Port ${port} is used by another server.`);
-            err.code = 'EADDRINUSE';
+			const err = new Error(`Port ${port} is used by another server.`);
+			err.code = 'EADDRINUSE';
 			throw err;
 		}
 
-        server.setTimeout(10 * 60 * 1000);
+		server.setTimeout(10 * 60 * 1000);
 		server.listen(port, conf.host, (err) => {
 			if (err) {
 				console.log(err);
@@ -83,11 +83,17 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
 		console.log(`Checking if port ${port} is available. Please wait...`);
 
-        require(commType).request({ port }, (res) => {
-			callback(undefined, true);
-		}).on('error', (err) => {
+		const req = require(commType).request({ port }, (res) => {
+			res.on('data', (_) => {});
+			res.on('end', () => {
+				callback(undefined, true);
+			})
+		});
+		req.on('error', (err) => {
 			callback(undefined, false);
-		}).end();
+		});
+
+		req.end();
 	}
 
 	function bindFinished(err) {
