@@ -10,20 +10,22 @@ function BDNS(server) {
            return true;
         }
         init_process_runned = true;
-        try{
-            const fs = require("fs");
-            const path = require("path");
+        const fs = require("fs");
+        const path = require("path");
 
-            const bdnsHostsPath = path.join(process.env.PSK_CONFIG_LOCATION, "bdns.hosts");
+        const bdnsHostsPath = path.join(process.env.PSK_CONFIG_LOCATION, "bdns.hosts");
 
-            bdnsCache = fs.readFileSync(bdnsHostsPath).toString();
-        }catch(e){
-            throw e;
-        }
+        bdnsCache = fs.readFileSync(bdnsHostsPath).toString();
     }
 
     function bdnsHandler(request, response, next) {
-        initialize();
+        try {
+            initialize();
+        } catch (e) {
+            response.statusCode = 500;
+            return response.end('Failed to initialize BDNS');
+        }
+
         if (typeof bdnsCache !== "undefined") {
             response.setHeader('content-type', 'application/json');
             response.statusCode = 200;
