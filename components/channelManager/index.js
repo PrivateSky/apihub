@@ -56,7 +56,11 @@ function ChannelsManager(server) {
             return callback(e);
         }
 
-        fs.mkdirSync(channelFolder);
+        try {
+            fs.mkdirSync(channelFolder);
+        } catch (e) {
+            return callback(e);
+        }
 
         if (fs.existsSync(keyFile)) {
             let e = new Error("channel exists!");
