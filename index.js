@@ -96,15 +96,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 		req.end();
 	}
 
-	function bindFinished(err) {
-		if (err) {
-			console.log(err);
-			if (callback) {
-				return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to bind on port <${port}>`, err));
-			}
-			return;
-		}
-
+	function bindFinished() {
 		registerEndpoints(callback);
 	}
 
