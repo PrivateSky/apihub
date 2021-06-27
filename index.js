@@ -97,11 +97,11 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	}
 
 	function bindFinished() {
-		registerEndpoints(callback);
+		registerEndpoints();
 	}
 
 	let endpointsAlreadyRegistered = false;
-	function registerEndpoints(callback) {
+	function registerEndpoints() {
 		//The purpose of this flag is to prevent endpoints registering again
 		//in case of a restart requested by file needServerRestart present in rootFolder
 		if(endpointsAlreadyRegistered){
@@ -222,9 +222,6 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 				res.statusCode = 404;
 				res.end();
 			});
-			if (callback) {
-				return callback();
-			}
 		}, 100);
 	}
 	return server;
