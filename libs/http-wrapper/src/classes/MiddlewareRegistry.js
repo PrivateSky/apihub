@@ -110,7 +110,13 @@ function MiddlewareRegistry() {
      * @param {Object} res
      */
     this.go = function go(req, res) {
-        execute(0, req.method.toLowerCase(), req.url, req, res);
+        try {
+            execute(0, req.method.toLowerCase(), req.url, req, res);
+        } catch (e) {
+            console.error(e);
+            res.statusCode = 500;
+            res.end("Internal server error");
+        }
     };
 
     /**
