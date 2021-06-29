@@ -15,13 +15,8 @@ const defaultSettings = {
 	mq_client_timeout: 60 * 1000,//sec
 	// not sure about the response.setTimeout(msecs[, callback]) available on nodejs docs
 
-	mq_nonce_from_smart_contract: false,
-	mq_nonce_from_expiring_uuid: true,
-	mq_nonce_expiration_time: 10 * 1000,//sec
-
 	mq_throttling: 2, //2 per second
-	mq_allow_unregistered_did: false,
-	mq_max_size: 10000 //10k
+	mq_allow_unregistered_did: false
 }
 
 function MQHub(server) {
@@ -35,7 +30,7 @@ function MQHub(server) {
 
 	function getTokenHandler(request, response) {
 		const domain = request.params.domain;
-		issuer.createToken(domain, {credentials: request.params.hashDID}, (err, token) => {
+		issuer.createToken(domain, {credentials: request.params.hashDID}, (err, tokenObj) => {
 			if (err) {
 				console.log("Not able to create a new token.", err);
 				response.statusCode = 500;
@@ -43,19 +38,38 @@ function MQHub(server) {
 			}
 
 			response.statusCode = 200;
-			response.write(token);
+			response.write(JSON.stringify(tokenObj));
 			response.end();
 		});
 	}
 
+	function allowUnregisteredDID(domainName){
+		const domainConfig = config.getDomainConfig(domainName);
+		let allowUnregisteredDID = defaultSettings.mq_allow_unregistered_did;
+		if(domainConfig && typeof domainConfig.mq_allow_unregistered_did !== undefined){
+			allowUnregisteredDID = !!domainConfig.mq_allow_unregistered_did;
+		}
+		return allowUnregisteredDID;
+	}
+
 	function putMessageHandler(request, response, next) {
-		if (domains.indexOf(request.params.domain) === -1) {
+		const domainName = request.params.domain;
+		if (domains.indexOf(domainName) === -1) {
+			console.log(`Caught an request to the MQs for domain ${domainName}. Looks like the domain doesn't have mq component enabled.`);
 			response.statusCode = 405;
 			response.end();
 			return;
 		}
 
 		let token = request.headers['authorization'];
+
+		if(!allowUnregisteredDID(domainName) && !token){
+			console.log(`No token was available on the request and the domain ${domainName} configuration prohibits unregisteredDIDs to use the MQ api.`);
+			response.statusCode = 403;
+			response.end();
+			return;
+		}
+
 		issuer.validateToken(token, (err, valid) => {
 			let errorMsg = "Not able to validate token: ";
 			if (!valid) {
@@ -74,13 +88,23 @@ function MQHub(server) {
 	}
 
 	function getMessageHandler(request, response, next) {
-		if (domains.indexOf(request.params.domain) === -1) {
+		const domainName = request.params.domain;
+		if (domains.indexOf(domainName) === -1) {
+			console.log(`Caught an request to the MQs for domain ${domainName}. Looks like the domain doesn't have mq component enabled.`);
 			response.statusCode = 405;
 			response.end();
 			return;
 		}
 
 		let token = request.headers['authorization'];
+
+		if(!allowUnregisteredDID(domainName) && !token){
+			console.log(`No token was available on the request and the domain ${domainName} configuration prohibits unregisteredDIDs to use the MQ api.`);
+			response.statusCode = 403;
+			response.end();
+			return;
+		}
+
 		issuer.isOwner(token, request.params.hashDID, (err, isOwner) => {
 			let errorMsg = "Not able to validate authorization token: ";
 			if (!isOwner) {
