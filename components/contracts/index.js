@@ -1,6 +1,15 @@
-const { ensureContractConstitutionIsPresent, getNodeWorkerBootScript, validateCommandInput } = require("./utils");
+const {
+    ensureContractConstitutionIsPresent,
+    getNodeWorkerBootScript,
+    validateCommandInput,
+    validatePostCommandInput,
+} = require("./utils");
 
 function Contract(server) {
+    const config = require("../../config");
+
+    const serverUrl = `${server.protocol}://${config.getConfig("host")}:${config.getConfig("port")}`;
+
     const syndicate = require("syndicate");
     const { requestBodyJSONMiddleware, responseModifierMiddleware } = require("../../utils/middlewares");
 
@@ -10,8 +19,6 @@ function Contract(server) {
         if (allDomainsWorkerPools[domain]) {
             return callback(null, allDomainsWorkerPools[domain]);
         }
-
-        const config = require("../../config");
 
         const domainConfig = { ...(config.getDomainConfig(domain) || {}) };
         ensureContractConstitutionIsPresent(domain, domainConfig);
@@ -24,7 +31,7 @@ function Contract(server) {
         const validatorDID = (await $$.promisify(w3cDID.createIdentity)("demo", "id")).getIdentifier();
 
         const { rootFolder } = server;
-        const script = getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder);
+        const script = getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder, serverUrl);
         allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
             bootScript: script,
             maximumNumberOfWorkers: 1,
@@ -61,13 +68,7 @@ function Contract(server) {
 
     const sendLatestBlockInfoCommandToWorker = (request, response) => {
         const { domain } = request.params;
-        const command = { domain, type: "lastestBlockInfo" };
-        sendCommandToWorker(command, response);
-    };
-
-    const sendGetPBlockCommandToWorker = (request, response) => {
-        const { domain, pBlockHashLinkSSI } = request.params;
-        const command = { domain, type: "getPBlock", args: [pBlockHashLinkSSI] };
+        const command = { domain, type: "latestBlockInfo" };
         sendCommandToWorker(command, response);
     };
 
@@ -85,21 +86,20 @@ function Contract(server) {
 
     const sendPBlockToValidateToWorker = (request, response) => {
         const { domain } = request.params;
-        const pBlock = request.body;
-        const command = { domain, type: "checkPBlockFromNetwork", args: [pBlock] };
-        sendPBlockToValidateToWorker(command, response);
+        const pBlockMessage = request.body;
+        const command = { domain, type: "validatePBlockFromNetwork", args: [pBlockMessage] };
+        sendCommandToWorker(command, response);
     };
 
     server.use(`/contracts/:domain/*`, responseModifierMiddleware);
     server.use(`/contracts/:domain/*`, requestBodyJSONMiddleware);
     server.use(`/contracts/:domain/*`, validateCommandInput);
+    server.post(`/contracts/:domain/*`, validatePostCommandInput);
 
     server.get(`/contracts/:domain/latest-block-info`, sendLatestBlockInfoCommandToWorker);
-    server.get(`/contracts/:domain/pblock/:pBlockHashLinkSSI`, sendGetPBlockCommandToWorker);
-
     server.post(`/contracts/:domain/safe-command`, sendSafeCommandToWorker);
     server.post(`/contracts/:domain/nonced-command`, sendNoncedCommandToWorker);
-    server.post(`/contracts/:domain/validate`, sendPBlockToValidateToWorker);
+    server.post(`/contracts/:domain/pblock-added`, sendPBlockToValidateToWorker);
 }
 
 module.exports = Contract;
