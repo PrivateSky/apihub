@@ -39,12 +39,15 @@ function ensureContractConstitutionIsPresent(domain, domainConfig) {
     }
 }
 
-function getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder) {
+function getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder, serverUrl) {
     const apihubBundleScriptPath = escapePath(global.bundlePaths.pskWebServer);
     const rootFolderPath = escapePath(rootFolder);
+    serverUrl = escapePath(serverUrl);
+    domainConfig = JSON.stringify(domainConfig);
+
     const script = `
         require("${apihubBundleScriptPath}");
-        require('apihub').bootContracts('${validatorDID}', '${domain}', ${JSON.stringify(domainConfig)}, '${rootFolderPath}');
+        (${require('./boot').toString()})('${validatorDID}', '${serverUrl}', '${domain}', ${domainConfig}, '${rootFolderPath}');
     `;
     return script;
 }
@@ -61,6 +64,10 @@ const validateCommandInput = (request, response, next) => {
         return response.send(404, `Unsupported domain '${domain}' specified`);
     }
 
+    next();
+};
+
+const validatePostCommandInput = (request, response, next) => {
     if (!request.body) {
         return response.send(400, "Missing required body");
     }
@@ -72,4 +79,5 @@ module.exports = {
     ensureContractConstitutionIsPresent,
     getNodeWorkerBootScript,
     validateCommandInput,
+    validatePostCommandInput,
 };

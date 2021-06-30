@@ -37,14 +37,12 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	const server = new Server(sslConfig);
 	server.rootFolder = rootFolder;
 
-	checkPortInUse(port, sslConfig, (_, status) => {
+	checkPortInUse(port, sslConfig, (err, status) => {
 		if (status === true) {
-			const err = new Error(`Port ${port} is used by another server.`);
-			err.code = 'EADDRINUSE';
-			throw err;
+			throw Error(`Port ${port} is used by another server.`);
 		}
 
-		server.setTimeout(10 * 60 * 1000);
+        server.setTimeout(10 * 60 * 1000);
 		server.listen(port, conf.host, (err) => {
 			if (err) {
 				console.log(err);
@@ -74,6 +72,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	}, CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL);
 
 	server.on('listening', bindFinished);
+	server.on('error', bindErrorHandler);
 
 	function checkPortInUse(port, sslConfig, callback) {
 		let commType = 'http';
@@ -92,16 +91,33 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 		req.on('error', (err) => {
 			callback(undefined, false);
 		});
-
 		req.end();
 	}
 
-	function bindFinished() {
-		registerEndpoints();
+	function bindErrorHandler(error) {
+		if (error.code === 'EADDRINUSE') {
+			server.close();
+			if (callback) {
+				return callback(error);
+			}
+			throw error;
+		}
+	}
+
+	function bindFinished(err) {
+		if (err) {
+			console.log(err);
+			if (callback) {
+				return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to bind on port <${port}>`, err));
+			}
+			return;
+		}
+
+		registerEndpoints(callback);
 	}
 
 	let endpointsAlreadyRegistered = false;
-	function registerEndpoints() {
+	function registerEndpoints(callback) {
 		//The purpose of this flag is to prevent endpoints registering again
 		//in case of a restart requested by file needServerRestart present in rootFolder
 		if(endpointsAlreadyRegistered){
@@ -222,6 +238,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 				res.statusCode = 404;
 				res.end();
 			});
+			if (callback) {
+				return callback();
+			}
 		}, 100);
 	}
 	return server;
