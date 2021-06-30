@@ -275,8 +275,4 @@ module.exports.getDomainConfig = function (domain, ...configKeys) {
 	return config.getDomainConfig(domain, ...configKeys);
 };
 
-module.exports.bootContracts = function (...params) {
-    return require("./components/contracts/boot").boot(...params);
-}
-
 module.exports.anchoringStrategies = require("./components/anchoring/strategies");
