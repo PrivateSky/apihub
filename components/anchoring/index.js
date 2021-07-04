@@ -32,7 +32,7 @@ function Anchoring(server) {
         next();
     }
 
-    const { createAnchor, appendToAnchor, getAllVersions, publishHandler } = require("./controllers");
+    const { createAnchor, appendToAnchor, getAllVersions } = require("./controllers");
 
     const { responseModifierMiddleware, requestBodyJSONMiddleware } = require("../../utils/middlewares");
 
@@ -49,12 +49,6 @@ function Anchoring(server) {
 
     server.get(`/anchor/:domain/get-all-versions/:anchorId`, requestStrategyMiddleware);
     server.get(`/anchor/:domain/get-all-versions/:anchorId`, getAllVersions);
-
-    server.get(`/anchor/:domain/subscribe/:keyssi`, publishHandler);
-
-    server.delete(`/anchor/:domain/subscribe/:keyssi`, (request, response, next) => {
-        // delete ANCHOR ?subscribeId=
-    });
 }
 
 module.exports = Anchoring;
