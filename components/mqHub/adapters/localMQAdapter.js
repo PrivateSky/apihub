@@ -264,7 +264,8 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 	}
 
 	function takeMessageHandler(request, response) {
-		readMessage(request.params.queueName, (err, message) => {
+		const queueName = request.params.queueName;
+		readMessage(queueName, (err, message) => {
 			if (err) {
 				console.log(`Caught an error during message reading from ${queueName}`, err);
 				send(response, 500);
