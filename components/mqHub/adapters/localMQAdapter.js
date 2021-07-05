@@ -153,12 +153,17 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 
 			//if queue is empty we should try to deliver the message to a potential subscriber that waits
 			const subs = subscribers[queueName];
-			deliverMessage(subs, message, (err, counter) => {
-				if (err || counter === 0) {
-					storeMessage(queueName, message, callback);
+			storeMessage(queueName, message, (err)=>{
+				if (err) {
+					return callback(err);
 				}
-				callback(undefined);
-			});
+				return _readMessage(queueName, (err, _message) => {
+					if (err) {
+						return callback(err);
+					}
+					deliverMessage(subs, _message, callback);
+				});
+			})
 		});
 	}
 
@@ -259,7 +264,8 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 	}
 
 	function takeMessageHandler(request, response) {
-		readMessage(request.params.queueName, (err, message) => {
+		const queueName = request.params.queueName;
+		readMessage(queueName, (err, message) => {
 			if (err) {
 				console.log(`Caught an error during message reading from ${queueName}`, err);
 				send(response, 500);
