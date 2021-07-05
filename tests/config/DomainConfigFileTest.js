@@ -1,9 +1,6 @@
 require("../../../../psknode/bundles/testsRuntime");
 const testIntegration = require("../../../../psknode/tests/util/tir");
 
-const fs = require("fs");
-const path = require("path");
-
 const dc = require("double-check");
 const assert = dc.assert;
 
@@ -11,11 +8,6 @@ assert.callback(
     "DomainConfigFileTest",
     async (testFinished) => {
         try {
-            const folder = await $$.promisify(dc.createTestFolder)("dsu");
-            const domainsConfigPath = path.join(folder, "/external-volume/config/domains");
-
-            serverConfig = {};
-
             const testDomainConfig = {
                 anchoring: {
                     type: "FS",
@@ -37,12 +29,12 @@ assert.callback(
                     },
                 },
             };
-            await $$.promisify(testIntegration.storeFile)(domainsConfigPath, "test.json", JSON.stringify(testDomainConfig));
-            await $$.promisify(testIntegration.storeServerConfig)(folder, serverConfig);
-            await $$.promisify(testIntegration.launchApiHubTestNode)(10, folder);
+
+            await testIntegration.launchConfigurableApiHubTestNodeAsync({
+                domains: [{ name: "test", config: testDomainConfig }],
+            });
 
             const apihub = require("apihub");
-
             const loadedtestDomainConfig = apihub.getDomainConfig("test");
 
             // since the property values are arrays, neiter assert.objectHasFields nor assert.arraysMatch does a deep comparison
