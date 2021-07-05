@@ -153,12 +153,17 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 
 			//if queue is empty we should try to deliver the message to a potential subscriber that waits
 			const subs = subscribers[queueName];
-			deliverMessage(subs, message, (err, counter) => {
-				if (err || counter === 0) {
-					storeMessage(queueName, message, callback);
+			storeMessage(queueName, message, (err)=>{
+				if (err) {
+					return callback(err);
 				}
-				callback(undefined);
-			});
+				return _readMessage(queueName, (err, _message) => {
+					if (err) {
+						return callback(err);
+					}
+					deliverMessage(subs, _message, callback);
+				});
+			})
 		});
 	}
 
