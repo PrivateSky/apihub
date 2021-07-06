@@ -137,11 +137,14 @@ function migrate(oldConfig, configFolderPath) {
     const apihubJsonConfigPath = path.join(configFolderPath, "apihub.json");
     console.log(`Generating apihub.json config file at ${apihubJsonConfigPath}...`);
 
+    if (!fs.existsSync(configFolderPath)) {
+        fs.mkdirSync(configFolderPath, { recursive: true });
+    }
     fs.writeFileSync(apihubJsonConfigPath, JSON.stringify(config, null, 2));
 
     const domainConfigsFolderPath = path.join(configFolderPath, "domains");
     if (!fs.existsSync(domainConfigsFolderPath)) {
-        fs.mkdirSync(domainConfigsFolderPath);
+        fs.mkdirSync(domainConfigsFolderPath, { recursive: true });
     }
 
     Object.keys(domainConfigs).forEach((domain) => {

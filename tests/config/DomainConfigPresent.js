@@ -11,9 +11,6 @@ assert.callback(
     "DomainConfigPresent",
     async (testFinished) => {
         try {
-            const folder = await $$.promisify(dc.createTestFolder)("dsu");
-            const domainsConfigPath = path.join(folder, "/external-volume/config/domains");
-
             const serverConfig = {
                 componentsConfig: {
                     anchoring: {
@@ -72,11 +69,13 @@ assert.callback(
                 },
             };
 
-            await $$.promisify(testIntegration.storeServerConfig)(folder, serverConfig);
-            await $$.promisify(testIntegration.storeFile)(domainsConfigPath, "test.json", JSON.stringify(testDomainConfig));
-            await $$.promisify(testIntegration.launchApiHubTestNode)(10, folder);
+            await testIntegration.launchConfigurableApiHubTestNodeAsync({
+                serverConfig,
+                domains: [{ name: "test", config: testDomainConfig }],
+            });
 
             const apihub = require("apihub");
+            // since the property values are arrays, neiter assert.objectHasFields nor assert.arraysMatch does a deep comparison
 
             const loadedAnchoringDomainConfig = apihub.getDomainConfig("test", "anchoring");
             assert.equal(
@@ -113,8 +112,6 @@ assert.callback(
                 JSON.stringify(loadedBricksFabricDomainConfig),
                 "test domain bricksFabric config should be present since fallback is provided"
             );
-
-            // since the property values are arrays, neiter assert.objectHasFields nor assert.arraysMatch does a deep comparison
 
             testFinished();
         } catch (error) {

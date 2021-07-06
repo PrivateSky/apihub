@@ -67,8 +67,6 @@ assert.callback(
     async (testFinished) => {
         try {
             const domain = "test";
-            const folder = await $$.promisify(dc.createTestFolder)("dsu");
-            const domainsConfigPath = path.join(folder, "/external-volume/config/domains");
 
             const initialDomainConfig = {
                 anchoring: "dummy",
@@ -97,13 +95,10 @@ assert.callback(
                     },
                 },
             };
-            await $$.promisify(testIntegration.storeFile)(
-                domainsConfigPath,
-                `${domain}.json`,
-                JSON.stringify(initialDomainConfig)
-            );
-            await $$.promisify(testIntegration.storeServerConfig)(folder, {});
-            const port = await $$.promisify(testIntegration.launchApiHubTestNode)(10, folder);
+
+            const { port, storageFolder } = await testIntegration.launchConfigurableApiHubTestNodeAsync({
+                domains: [{ name: domain, config: initialDomainConfig }],
+            });
 
             const firstDomainConfigResponse = await $$.promisify(getDomainConfigFromApihub)(port, domain);
             assert.objectHasFields(firstDomainConfigResponse, initialDomainConfig);
@@ -115,7 +110,7 @@ assert.callback(
             assert.equal(JSON.stringify(updatedDomainConfigResponse), JSON.stringify(expectedDomainConfig));
 
             try {
-                fs.accessSync(path.join(folder, "/external-volume/config/server.json"));
+                fs.accessSync(path.join(storageFolder, "/external-volume/config/server.json"));
                 assert.true(false, "should delete server.json file after migration");
             } catch (error) {
                 console.log(error);
