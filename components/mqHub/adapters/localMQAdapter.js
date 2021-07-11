@@ -9,7 +9,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 
 	const settings = {
 		mq_fsStrategyStorageFolder: path.join(path.resolve(serverConfig.getConfig("storage")), "mqs", domain),
-		mq_fsMessageMaxSize: 1024,
+		mq_fsMessageMaxSize: 10 * 1024,
 		mq_fsQueueLength: 100
 	}
 
