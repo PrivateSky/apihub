@@ -39,15 +39,16 @@ function ensureContractConstitutionIsPresent(domain, domainConfig) {
     }
 }
 
-function getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder, serverUrl) {
+function getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder, externalStorageFolder, serverUrl) {
     const apihubBundleScriptPath = escapePath(global.bundlePaths.pskWebServer);
     const rootFolderPath = escapePath(rootFolder);
+    const externalStorageFolderPath = escapePath(externalStorageFolder);
     serverUrl = escapePath(serverUrl);
     domainConfig = JSON.stringify(domainConfig);
 
     const script = `
         require("${apihubBundleScriptPath}");
-        (${require('./boot').toString()})('${validatorDID}', '${serverUrl}', '${domain}', ${domainConfig}, '${rootFolderPath}');
+        (${require("./boot").toString()})('${validatorDID}', '${serverUrl}', '${domain}', ${domainConfig}, '${rootFolderPath}', '${externalStorageFolderPath}');
     `;
     return script;
 }

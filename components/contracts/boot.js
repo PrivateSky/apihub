@@ -1,4 +1,4 @@
-async function boot(validatorDID, domain, domainConfig, rootFolder, serverUrl) {
+async function boot(validatorDID, serverUrl, domain, domainConfig, rootFolder, storageFolder) {
     console.log(
         `[contract-worker] booting contracts for domain ${domain} and domainConfig ${JSON.stringify(domainConfig)} booting...`,
         domainConfig
@@ -10,7 +10,7 @@ async function boot(validatorDID, domain, domainConfig, rootFolder, serverUrl) {
 
     try {
         const initiliseBrickLedger = await $$.promisify(bricksledger.initiliseBrickLedger);
-        const bricksledgerInstance = await initiliseBrickLedger(validatorDID, domain, domainConfig, rootFolder, serverUrl, null);
+        const bricksledgerInstance = await initiliseBrickLedger(validatorDID, serverUrl, domain, domainConfig, rootFolder, storageFolder);
 
         const handleCommand = async (command, callback) => {
             const args = command.args || [];
@@ -20,6 +20,9 @@ async function boot(validatorDID, domain, domainConfig, rootFolder, serverUrl) {
             }
             if (command.type === "validatePBlockFromNetwork") {
                 return bricksledgerInstance.validatePBlockFromNetwork(...args, callback);
+            }
+            if (command.type === "setValidatorNonInclusion") {
+                return bricksledgerInstance.setValidatorNonInclusion(...args, callback);
             }
 
             const commandExecutionCallback = async (error, commandExecution) => {

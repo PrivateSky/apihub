@@ -31,7 +31,8 @@ function Contract(server) {
         const validatorDID = (await $$.promisify(w3cDID.createIdentity)("demo", "id")).getIdentifier();
 
         const { rootFolder } = server;
-        const script = getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder, serverUrl);
+        const externalStorageFolder = require("path").join(rootFolder, config.getConfig("externalStorage"));
+        const script = getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder, externalStorageFolder, serverUrl);
         allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
             bootScript: script,
             maximumNumberOfWorkers: 1,
@@ -86,8 +87,15 @@ function Contract(server) {
 
     const sendPBlockToValidateToWorker = (request, response) => {
         const { domain } = request.params;
-        const pBlockMessage = request.body;
-        const command = { domain, type: "validatePBlockFromNetwork", args: [pBlockMessage] };
+        const message = request.body;
+        const command = { domain, type: "validatePBlockFromNetwork", args: [message] };
+        sendCommandToWorker(command, response);
+    };
+
+    const sendValidatorNonInclusionToWorker = (request, response) => {
+        const { domain } = request.params;
+        const message = request.body;
+        const command = { domain, type: "setValidatorNonInclusion", args: [message] };
         sendCommandToWorker(command, response);
     };
 
@@ -100,6 +108,7 @@ function Contract(server) {
     server.post(`/contracts/:domain/safe-command`, sendSafeCommandToWorker);
     server.post(`/contracts/:domain/nonced-command`, sendNoncedCommandToWorker);
     server.post(`/contracts/:domain/pblock-added`, sendPBlockToValidateToWorker);
+    server.post(`/contracts/:domain/validator-non-inclusion`, sendValidatorNonInclusionToWorker);
 }
 
 module.exports = Contract;
