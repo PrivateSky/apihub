@@ -1,8 +1,24 @@
 const anchoringStrategies = require("./strategies");
+const utils = require('./utils');
 
 function requestStrategyMiddleware(request, response, next) {
-    const receivedDomain = require("./utils").getDomainFromKeySSI(request.params.anchorId);
-    const domainConfig = require("./utils").getAnchoringDomainConfig(receivedDomain);
+    let receivedDomain;
+
+    try {
+        receivedDomain = utils.getDomainFromKeySSI(request.params.anchorId);
+    } catch (e) {
+        const error = `[Anchoring] Unable to parse anchor id`;
+        console.error(error)
+        return response.send(500, error);
+    }
+
+    if (receivedDomain !== request.params.domain) {
+        const error = `[Anchoring] Domain mismatch: '${receivedDomain}' != '${request.params.domain}'`;
+        console.error(error);
+        return response.send(403, error);
+    }
+
+    const domainConfig = utils.getAnchoringDomainConfig(receivedDomain);
     if (!domainConfig) {
         const error = `[Anchoring] Domain '${receivedDomain}' not found`;
         console.error(error);
@@ -19,8 +35,10 @@ function requestStrategyMiddleware(request, response, next) {
     try {
         request.strategy = new StrategyClass(request.server, domainConfig, request.params.anchorId, request.body);
     } catch (e) {
+        const error = `[Anchoring] Unable to initialize anchoring strategy`;
         console.error(error);
-        return response.send(500, 'Unable to initialize anchoring strategy')
+        console.error(e);
+        return response.send(500, error);
     }
 
     next();
@@ -32,7 +50,7 @@ function Anchoring(server) {
         next();
     }
 
-    const { createAnchor, appendToAnchor, getAllVersions, publishHandler } = require("./controllers");
+    const { createAnchor, appendToAnchor, getAllVersions } = require("./controllers");
 
     const { responseModifierMiddleware, requestBodyJSONMiddleware } = require("../../utils/middlewares");
 
@@ -49,12 +67,6 @@ function Anchoring(server) {
 
     server.get(`/anchor/:domain/get-all-versions/:anchorId`, requestStrategyMiddleware);
     server.get(`/anchor/:domain/get-all-versions/:anchorId`, getAllVersions);
-
-    server.get(`/anchor/:domain/subscribe/:keyssi`, publishHandler);
-
-    server.delete(`/anchor/:domain/subscribe/:keyssi`, (request, response, next) => {
-        // delete ANCHOR ?subscribeId=
-    });
 }
 
 module.exports = Anchoring;
