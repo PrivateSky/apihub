@@ -15,7 +15,11 @@ function ChannelsManager(server) {
     const rootFolder = path.join(path.resolve(config.storage), config.componentsConfig.virtualMQ.channelsFolderName);
 
     if (!fs.existsSync(rootFolder)) {
-        fs.mkdirSync(rootFolder, { recursive: true });
+        // A possible race condition exists between the call to
+        // `exists` and `mkdir`. Catch the exception if that happens
+        try {
+            fs.mkdirSync(rootFolder, { recursive: true });
+        } catch (_) {}
     }
 
     const channelKeys = {};
@@ -52,7 +56,11 @@ function ChannelsManager(server) {
             return callback(e);
         }
 
-        fs.mkdirSync(channelFolder);
+        try {
+            fs.mkdirSync(channelFolder);
+        } catch (e) {
+            return callback(e);
+        }
 
         if (fs.existsSync(keyFile)) {
             let e = new Error("channel exists!");

@@ -82,11 +82,16 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
 		console.log(`Checking if port ${port} is available. Please wait...`);
 
-		require(commType).request({ port }, (res) => {
-			callback(undefined, true);
-		}).on('error', (err) => {
+		const req = require(commType).request({ port }, (res) => {
+			res.on('data', (_) => {});
+			res.on('end', () => {
+				callback(undefined, true);
+			})
+		});
+		req.on('error', (err) => {
 			callback(undefined, false);
 		});
+		req.end();
 	}
 
 	function bindErrorHandler(error) {
