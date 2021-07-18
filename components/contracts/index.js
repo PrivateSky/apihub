@@ -25,10 +25,10 @@ function Contract(server) {
 
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
-        // temporary create the validator here
-        // TODO: move the validator did inside a config
+        // temporary create the validator here in case the config doesn't have one specified
         const w3cDID = require("opendsu").loadApi("w3cdid");
-        const validatorDID = (await $$.promisify(w3cDID.createIdentity)("demo", "id")).getIdentifier();
+        const validatorDID =
+            config.getConfig("validatorDID") || (await $$.promisify(w3cDID.createIdentity)("demo", "id")).getIdentifier();
 
         const { rootFolder } = server;
         const externalStorageFolder = require("path").join(rootFolder, config.getConfig("externalStorage"));
@@ -50,7 +50,7 @@ function Contract(server) {
                 return response.send(400, err);
             }
 
-            // console.log("[Contracts] Sending command to worker", command);
+            // console.log(`[${config.getConfig("validatorDID")}][Contracts] api worker sending`, command);
             workerPool.addTask(command, (err, message) => {
                 if (err) {
                     return response.send(500, err);
@@ -59,7 +59,13 @@ function Contract(server) {
                 let { error, result } = message;
 
                 if (error) {
+                    console.log("@ command error", error, command);
                     return response.send(500, error);
+                }
+
+                if (result && result.optimisticResult && result.optimisticResult instanceof Uint8Array) {
+                    // convert Buffers to String to that the result could be send correctly
+                    result.optimisticResult = Buffer.from(result.optimisticResult).toString("utf-8");
                 }
 
                 return response.send(200, result);
@@ -88,14 +94,14 @@ function Contract(server) {
     const sendPBlockToValidateToWorker = (request, response) => {
         const { domain } = request.params;
         const message = request.body;
-        const command = { domain, type: "validatePBlockFromNetwork", args: [message] };
+        const command = { domain, type: "validatePBlockFromNetwork", params: [message] };
         sendCommandToWorker(command, response);
     };
 
     const sendValidatorNonInclusionToWorker = (request, response) => {
         const { domain } = request.params;
         const message = request.body;
-        const command = { domain, type: "setValidatorNonInclusion", args: [message] };
+        const command = { domain, type: "setValidatorNonInclusion", params: [message] };
         sendCommandToWorker(command, response);
     };
 
