@@ -6,6 +6,10 @@ function Config(server) {
     function getDomainConfig(request, response) {
         const { domain } = request.params;
         const domainConfig = config.getDomainConfig(domain);
+
+        if (!domainConfig) {
+            return response.send(404, "Domain not found");
+        }
         response.send(200, domainConfig);
     }
 

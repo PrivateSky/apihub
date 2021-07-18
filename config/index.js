@@ -200,7 +200,7 @@ function getDomainConfig(domain, ...configKeys) {
     }
 
     const loadedDomainConfig = domainConfigs[domain];
-    if(loadedDomainConfig) {
+    if(typeof loadedDomainConfig !== 'undefined') {
         return getConfigResult(loadedDomainConfig);
     }
 
@@ -217,11 +217,11 @@ function getDomainConfig(domain, ...configKeys) {
         const domainConfigContent = require(fsName).readFileSync(domainConfigPath);
         const domainConfig = JSON.parse(domainConfigContent);
         domainConfigs[domain] = domainConfig;
-        return getConfigResult(domainConfig);        
+        return getConfigResult(domainConfig);
     } catch (error) {
-        console.log(`Config for domain '${domain}' cannot be loaded from location: ${domainConfigPath}. Using default configuration.`);
+        console.log(`Config for domain '${domain}' cannot be loaded from location: ${domainConfigPath}.`);
         domainConfigs[domain] = null;
-        return getConfigResult(domainConfigs[domain]);
+        return domainConfigs[domain];
     }
 }
 

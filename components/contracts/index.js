@@ -20,7 +20,12 @@ function Contract(server) {
             return callback(null, allDomainsWorkerPools[domain]);
         }
 
-        const domainConfig = { ...(config.getDomainConfig(domain) || {}) };
+        let domainConfig = config.getDomainConfig(domain);
+        if (!domainConfig) {
+            return callback(new Error('Domain is not configured'));
+        }
+
+        domainConfig = { ...domainConfig }
         ensureContractConstitutionIsPresent(domain, domainConfig);
 
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
