@@ -155,6 +155,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		let state;
 
 		try {
+			const path = require("path");
 			state = require(path.join(workingFolderPath, stateStorageFileName));
 		} catch (err) {
 			return callback(err);
@@ -270,7 +271,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 			for (let i = 0; i < state.queues.length; i++) {
 				let queueName = state.queues[i];
-				let queueStoragePath = path.join(storageFolderPath, queueName);
+				let queueStoragePath = getQueueStoragePath(queueName);
 				fs.readdir(queueStoragePath, (err, messages) => {
 					if (err) {
 						return callback(err);
@@ -287,6 +288,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 					}
 				});
 			}
+			callback();
 		});
 	}
 }
