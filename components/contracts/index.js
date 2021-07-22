@@ -22,6 +22,9 @@ function Contract(server) {
 
         const domainConfig = { ...(config.getDomainConfig(domain) || {}) };
         ensureContractConstitutionIsPresent(domain, domainConfig);
+        if (!domainConfig.contracts.constitution) {
+            return callback(`[Contracts] Cannot boot worker for domain '${domain}' due to missing constitution`);
+        }
 
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
@@ -44,7 +47,7 @@ function Contract(server) {
         callback(null, allDomainsWorkerPools[domain]);
     };
 
-    const sendCommandToWorker = (command, response) => {
+    const sendCommandToWorker = (command, response, mapSuccessResponse) => {
         getDomainWorkerPool(command.domain, (err, workerPool) => {
             if (err) {
                 return response.send(400, err);
@@ -63,14 +66,42 @@ function Contract(server) {
                     return response.send(500, error);
                 }
 
-                if (result && result.optimisticResult && result.optimisticResult instanceof Uint8Array) {
-                    // convert Buffers to String to that the result could be send correctly
-                    result.optimisticResult = Buffer.from(result.optimisticResult).toString("utf-8");
+                if (result && result.optimisticResult) {
+                    if (result.optimisticResult instanceof Uint8Array) {
+                        // convert Buffers to String to that the result could be send correctly
+                        result.optimisticResult = Buffer.from(result.optimisticResult).toString("utf-8");
+                    } else {
+                        try {
+                            result.optimisticResult = JSON.parse(result.optimisticResult);
+                        } catch (error) {
+                            // the response isn't a JSON so we keep it as it is
+                        }
+                    }
+                }
+
+                if (typeof mapSuccessResponse === "function") {
+                    result = mapSuccessResponse(result);
                 }
 
                 return response.send(200, result);
             });
         });
+    };
+
+    const sendGetBdnsEntryToWorker = (request, response) => {
+        const { domain, entry } = request.params;
+        if (!entry || typeof entry !== "string") {
+            return response.send(400, "Invalid entry specified");
+        }
+        const command = {
+            domain,
+            contractName: "bdns",
+            methodName: "getDomainEntry",
+            params: [entry],
+            type: "safe",
+        };
+        const mapSuccessResponse = (result) => (result ? result.optimisticResult : null);
+        sendCommandToWorker(command, response, mapSuccessResponse);
     };
 
     const sendLatestBlockInfoCommandToWorker = (request, response) => {
@@ -110,6 +141,7 @@ function Contract(server) {
     server.use(`/contracts/:domain/*`, validateCommandInput);
     server.post(`/contracts/:domain/*`, validatePostCommandInput);
 
+    server.get(`/contracts/:domain/bdns-entries/:entry`, sendGetBdnsEntryToWorker);
     server.get(`/contracts/:domain/latest-block-info`, sendLatestBlockInfoCommandToWorker);
     server.post(`/contracts/:domain/safe-command`, sendSafeCommandToWorker);
     server.post(`/contracts/:domain/nonced-command`, sendNoncedCommandToWorker);
