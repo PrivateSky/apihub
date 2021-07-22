@@ -84,9 +84,7 @@ function mqManager(server) {
 				}
 			}
 			if(!connectionActive){
-                console.log("Connection not active with this subscriber.");
-                res.end()
-                return;
+				throw new Error("Connection not active with this subscriber.");
 			}
 			res.write(message);
 			sendStatus(res, 200);
