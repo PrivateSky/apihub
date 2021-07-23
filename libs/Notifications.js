@@ -153,23 +153,32 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 	function loadState(callback) {
 		let state;
+		const fs = require("fs");
+		const path = require("path");
+		const fileLocation = path.join(workingFolderPath, stateStorageFileName);
 
-		try {
-			const path = require("path");
-			state = require(path.join(workingFolderPath, stateStorageFileName));
-		} catch (err) {
-			//if the storage file does not exist or invalid json file we will catch an error here
-			return callback();
-		}
-
-		if (typeof state !== 'undefined') {
-			for (let i = 0; i < state.queues.length; i++) {
-				let queueName = state.queues[i];
-				createQueue(queueName);
+		fs.access(fileLocation, fs.F_OK, (err) => {
+			if (err) {
+				//no previous state available
+				return callback();
 			}
-		}
 
-		callback(undefined, state);
+			try {
+				state = require(fileLocation);
+			} catch (err) {
+				//if the storage file does not exist or invalid json file we will catch an error here
+				return callback();
+			}
+
+			if (typeof state !== 'undefined') {
+				for (let i = 0; i < state.queues.length; i++) {
+					let queueName = state.queues[i];
+					createQueue(queueName);
+				}
+			}
+
+			callback(undefined, state);
+		});
 	}
 
 	function saveState(callback) {
