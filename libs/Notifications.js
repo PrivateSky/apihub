@@ -158,7 +158,8 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 			const path = require("path");
 			state = require(path.join(workingFolderPath, stateStorageFileName));
 		} catch (err) {
-			return callback(err);
+			//if the storage file does not exist or invalid json file we will catch an error here
+			return callback();
 		}
 
 		if (typeof state !== 'undefined') {
