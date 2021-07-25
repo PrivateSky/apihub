@@ -2,7 +2,12 @@ const { clone } = require("../../../utils");
 
 const getBricksFabricStrategy = () => {
     const config = require("../../../config");
-    let domainConfig = config.getDomainConfig("default", "bricksFabric");
+    const domainConfiguration = config.getDomainConfig("default");
+    if (!domainConfiguration) {
+        return;
+    }
+
+    let domainConfig = domainConfiguration.bricksFabric;
 
     if (!domainConfig) {
         // try to get the bricks strategy based on the bricksFabric component config
@@ -13,6 +18,8 @@ const getBricksFabricStrategy = () => {
                 name: bricksFabricStrategy,
                 option: bricksFabricStrategyOption,
             };
+        } else {
+            return;
         }
     }
     domainConfig = clone(domainConfig || {});

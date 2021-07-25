@@ -2,16 +2,25 @@ const { clone } = require("../../../utils");
 
 const getAnchoringDomainConfig = (domain) => {
     const config = require("../../../config");
-    let domainConfig = config.getDomainConfig(domain, "anchoring");
+    const domainConfiguration = config.getDomainConfig(domain);
+
+    if (!domainConfiguration) {
+        return;
+    }
+
+    let domainConfig = domainConfiguration.anchoring;
 
     if (!domainConfig) {
         // try to get the anchoring strategy based on the anchoring component config
         const anchoringConfig = config.getConfig("componentsConfig", "anchoring");
+
         if (anchoringConfig) {
             const { anchoringStrategy } = anchoringConfig;
             domainConfig = {
                 type: anchoringStrategy,
             };
+        } else {
+            return;
         }
     }
 

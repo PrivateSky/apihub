@@ -22,7 +22,7 @@ function requestStrategyMiddleware(request, response, next) {
     if (!domainConfig) {
         const error = `[Anchoring] Domain '${receivedDomain}' not found`;
         console.error(error);
-        return response.send(500, error);
+        return response.send(404, error);
     }
 
     const StrategyClass = anchoringStrategies[domainConfig.type];

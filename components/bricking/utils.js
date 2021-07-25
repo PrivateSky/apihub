@@ -12,7 +12,12 @@ function convertReadableStreamToBuffer(readStream, callback) {
 
 function getBricksDomainConfig(domain) {
     const config = require("../../config");
-    let domainConfig = config.getDomainConfig(domain, "bricking");
+    const domainConfiguration = config.getDomainConfig(domain);
+    if (!domainConfiguration) {
+        return;
+    }
+
+    let domainConfig = domainConfiguration.bricking;
 
     domainConfig = clone(domainConfig || {});
     domainConfig.path = require("path").join(config.getConfig("externalStorage"), `domains/${domain}/brick-storage`);
