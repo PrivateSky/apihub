@@ -95,6 +95,26 @@ function Server(sslOptions) {
         req.end();
     };
 
+    this.makeLocalRequestAsync = async function(method, path, body, headers) {
+        try {
+            const makeLocalRequest = $$.promisify(this.makeLocalRequest.bind(this));
+            let response = await makeLocalRequest(method, path, body, headers);
+    
+            if (response) {
+                try {
+                    response = JSON.parse(response);
+                } catch (error) {
+                    // the response isn't a JSON so we keep it as it is
+                }           
+            }
+    
+            return response;
+        } catch (error) {
+            // console.warn(`Failed to call ${method} on '${path}'`, error);
+            throw error;
+        }
+    }
+
     /* INTERNAL METHODS */
 
     function _initServer(sslConfig) {

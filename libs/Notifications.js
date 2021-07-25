@@ -155,9 +155,16 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 		let state;
 
 		try {
-			state = require(path.join(workingFolderPath, stateStorageFileName));
+			const path = require("path");
+			const fs = require("fs");
+			const fileLocation = path.join(workingFolderPath, stateStorageFileName);
+			if(!fs.existsSync(fileLocation)){
+				throw `${fileLocation} not found. No previous state available.`;
+			}
+			state = require(fileLocation);
 		} catch (err) {
-			return callback(err);
+			//if the storage file does not exist or invalid json file we will catch an error here
+			return callback();
 		}
 
 		if (typeof state !== 'undefined') {
@@ -270,7 +277,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 
 			for (let i = 0; i < state.queues.length; i++) {
 				let queueName = state.queues[i];
-				let queueStoragePath = path.join(storageFolderPath, queueName);
+				let queueStoragePath = getQueueStoragePath(queueName);
 				fs.readdir(queueStoragePath, (err, messages) => {
 					if (err) {
 						return callback(err);
@@ -287,6 +294,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 					}
 				});
 			}
+			callback();
 		});
 	}
 }

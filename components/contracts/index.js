@@ -27,13 +27,16 @@ function Contract(server) {
 
         domainConfig = { ...domainConfig }
         ensureContractConstitutionIsPresent(domain, domainConfig);
+        if (!domainConfig.contracts.constitution) {
+            return callback(`[Contracts] Cannot boot worker for domain '${domain}' due to missing constitution`);
+        }
 
         console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
-        // temporary create the validator here
-        // TODO: move the validator did inside a config
+        // temporary create the validator here in case the config doesn't have one specified
         const w3cDID = require("opendsu").loadApi("w3cdid");
-        const validatorDID = (await $$.promisify(w3cDID.createIdentity)("demo", "id")).getIdentifier();
+        const validatorDID =
+            config.getConfig("validatorDID") || (await $$.promisify(w3cDID.createIdentity)("demo", "id")).getIdentifier();
 
         const { rootFolder } = server;
         const externalStorageFolder = require("path").join(rootFolder, config.getConfig("externalStorage"));
@@ -49,13 +52,13 @@ function Contract(server) {
         callback(null, allDomainsWorkerPools[domain]);
     };
 
-    const sendCommandToWorker = (command, response) => {
+    const sendCommandToWorker = (command, response, mapSuccessResponse) => {
         getDomainWorkerPool(command.domain, (err, workerPool) => {
             if (err) {
                 return response.send(400, err);
             }
 
-            // console.log("[Contracts] Sending command to worker", command);
+            // console.log(`[${config.getConfig("validatorDID")}][Contracts] api worker sending`, command);
             workerPool.addTask(command, (err, message) => {
                 if (err) {
                     return response.send(500, err);
@@ -64,12 +67,46 @@ function Contract(server) {
                 let { error, result } = message;
 
                 if (error) {
+                    console.log("@ command error", error, command);
                     return response.send(500, error);
+                }
+
+                if (result && result.optimisticResult) {
+                    if (result.optimisticResult instanceof Uint8Array) {
+                        // convert Buffers to String to that the result could be send correctly
+                        result.optimisticResult = Buffer.from(result.optimisticResult).toString("utf-8");
+                    } else {
+                        try {
+                            result.optimisticResult = JSON.parse(result.optimisticResult);
+                        } catch (error) {
+                            // the response isn't a JSON so we keep it as it is
+                        }
+                    }
+                }
+
+                if (typeof mapSuccessResponse === "function") {
+                    result = mapSuccessResponse(result);
                 }
 
                 return response.send(200, result);
             });
         });
+    };
+
+    const sendGetBdnsEntryToWorker = (request, response) => {
+        const { domain, entry } = request.params;
+        if (!entry || typeof entry !== "string") {
+            return response.send(400, "Invalid entry specified");
+        }
+        const command = {
+            domain,
+            contractName: "bdns",
+            methodName: "getDomainEntry",
+            params: [entry],
+            type: "safe",
+        };
+        const mapSuccessResponse = (result) => (result ? result.optimisticResult : null);
+        sendCommandToWorker(command, response, mapSuccessResponse);
     };
 
     const sendLatestBlockInfoCommandToWorker = (request, response) => {
@@ -93,14 +130,14 @@ function Contract(server) {
     const sendPBlockToValidateToWorker = (request, response) => {
         const { domain } = request.params;
         const message = request.body;
-        const command = { domain, type: "validatePBlockFromNetwork", args: [message] };
+        const command = { domain, type: "validatePBlockFromNetwork", params: [message] };
         sendCommandToWorker(command, response);
     };
 
     const sendValidatorNonInclusionToWorker = (request, response) => {
         const { domain } = request.params;
         const message = request.body;
-        const command = { domain, type: "setValidatorNonInclusion", args: [message] };
+        const command = { domain, type: "setValidatorNonInclusion", params: [message] };
         sendCommandToWorker(command, response);
     };
 
@@ -109,6 +146,7 @@ function Contract(server) {
     server.use(`/contracts/:domain/*`, validateCommandInput);
     server.post(`/contracts/:domain/*`, validatePostCommandInput);
 
+    server.get(`/contracts/:domain/bdns-entries/:entry`, sendGetBdnsEntryToWorker);
     server.get(`/contracts/:domain/latest-block-info`, sendLatestBlockInfoCommandToWorker);
     server.post(`/contracts/:domain/safe-command`, sendSafeCommandToWorker);
     server.post(`/contracts/:domain/nonced-command`, sendNoncedCommandToWorker);

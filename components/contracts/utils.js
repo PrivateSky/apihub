@@ -33,7 +33,7 @@ function ensureContractConstitutionIsPresent(domain, domainConfig) {
                 const defaultDomainSeedData = fs.readFileSync(defaultDomainSeedPath);
                 contractsConfig.constitution = defaultDomainSeedData.toString();
             } catch (error) {
-                console.log(`Cannot access default domain-seed at: ${defaultDomainSeedPath}`, error);
+                console.log(`Cannot access default domain-seed at: ${defaultDomainSeedPath}`);
             }
         }
     }
