@@ -165,7 +165,8 @@ class FS {
         fs.readFile(filePath, (err, fileHashes) => {
             if (err) {
                 if (err.code === "ENOENT") {
-                    return callback(undefined, []);
+                    // by returning undefined we notify the calling function that the anchor doesn't exist
+                    return callback(undefined, undefined);
                 }
                 return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to read file <${filePath}>`, err));
             }
@@ -184,7 +185,7 @@ class FS {
                 );
             }
 
-            if (SSIs.length === 0) {
+            if (!SSIs || SSIs.length === 0) {
                 return callback(undefined, true);
             }
 

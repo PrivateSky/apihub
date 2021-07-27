@@ -84,7 +84,7 @@ class Contract {
 
             callback(null, response);
         } catch (err) {
-            console.error(`[Anchoring] Failed to call method '${method}' for contract 'anchoring' for domain '${domain}'`);
+            console.warn(`[Anchoring] Failed to call method '${method}' for contract 'anchoring' for domain '${domain}'`);
             callback(err);
         }
     }
