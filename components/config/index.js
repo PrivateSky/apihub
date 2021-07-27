@@ -9,6 +9,13 @@ function Config(server) {
         response.send(200, domainConfig);
     }
 
+    function getDomainKeySSI(request, response) {
+        const { domain } = request.params;
+        const domainConfig = config.getDomainConfig(domain);
+        const domainKeySSI = domainConfig && domainConfig.contracts ? domainConfig.contracts.constitution : null;
+        response.send(200, domainKeySSI);
+    }
+
     function validateDomainConfigInput(request, response, next) {
         if (!request.body || typeof request.body !== "object") {
             return response(400, "Invalid domain config specified");
@@ -30,6 +37,7 @@ function Config(server) {
     server.use(`/config/:domain/*`, responseModifierMiddleware);
 
     server.get(`/config/:domain`, getDomainConfig);
+    server.get(`/config/:domain/keyssi`, getDomainKeySSI);
 
     server.put(`/config/:domain`, requestBodyJSONMiddleware);
     server.put(`/config/:domain`, validateDomainConfigInput);

@@ -15,9 +15,11 @@ function Contract(server) {
 
     const allDomainsWorkerPools = {};
 
+    const isWorkerPoolRunningForDomain = (domain) => allDomainsWorkerPools[domain] && allDomainsWorkerPools[domain].isRunning;
+
     const getDomainWorkerPool = async (domain, callback) => {
         if (allDomainsWorkerPools[domain]) {
-            return callback(null, allDomainsWorkerPools[domain]);
+            return callback(null, allDomainsWorkerPools[domain].pool);
         }
 
         const domainConfig = { ...(config.getDomainConfig(domain) || {}) };
@@ -26,25 +28,29 @@ function Contract(server) {
             return callback(`[Contracts] Cannot boot worker for domain '${domain}' due to missing constitution`);
         }
 
-        console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
+        const validatorDID = config.getConfig("validatorDID");
+        if (!validatorDID) {
+            return callback(`[Contracts] Cannot boot worker for domain '${domain}' due to missing validatorDID`);
+        }
 
-        // temporary create the validator here in case the config doesn't have one specified
-        const w3cDID = require("opendsu").loadApi("w3cdid");
-        const validatorDID =
-            config.getConfig("validatorDID") || (await $$.promisify(w3cDID.createIdentity)("demo", "id")).getIdentifier();
+        console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
         const { rootFolder } = server;
         const externalStorageFolder = require("path").join(rootFolder, config.getConfig("externalStorage"));
         const script = getNodeWorkerBootScript(validatorDID, domain, domainConfig, rootFolder, externalStorageFolder, serverUrl);
-        allDomainsWorkerPools[domain] = syndicate.createWorkerPool({
+        const pool = syndicate.createWorkerPool({
             bootScript: script,
             maximumNumberOfWorkers: 1,
             workerOptions: {
                 eval: true,
             },
         });
+        allDomainsWorkerPools[domain] = {
+            pool,
+            isRunning: false,
+        };
 
-        callback(null, allDomainsWorkerPools[domain]);
+        callback(null, pool);
     };
 
     const sendCommandToWorker = (command, response, mapSuccessResponse) => {
@@ -53,8 +59,10 @@ function Contract(server) {
                 return response.send(400, err);
             }
 
-            // console.log(`[${config.getConfig("validatorDID")}][Contracts] api worker sending`, command);
+            console.log(`[${config.getConfig("validatorDID")}][Contracts] api worker sending`, command);
             workerPool.addTask(command, (err, message) => {
+                allDomainsWorkerPools[command.domain].isRunning = true;
+
                 if (err) {
                     return response.send(500, err);
                 }
@@ -93,6 +101,10 @@ function Contract(server) {
         if (!entry || typeof entry !== "string") {
             return response.send(400, "Invalid entry specified");
         }
+        if (!isWorkerPoolRunningForDomain(domain)) {
+            return response.send(500, "Contracts not booted");
+        }
+
         const command = {
             domain,
             contractName: "bdns",

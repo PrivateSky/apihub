@@ -1,10 +1,13 @@
 function Logger(server) {
-  console.log(`Registering Logger middleware`);
-
-  const getRequestDuration = (start) => {
-    const diff = process.hrtime(start);
-    return (diff[0] * 1e9 + diff[1]) / 1e6;
-  };
+    console.log(`Registering Logger middleware`);
+    
+    const getRequestDuration = (start) => {
+        const diff = process.hrtime(start);
+        return (diff[0] * 1e9 + diff[1]) / 1e6;
+    };
+    
+  const { getConfig } = require("../../config");
+  const port = getConfig('port');
 
   server.use(function (req, res, next) {
     const {
@@ -20,7 +23,7 @@ function Logger(server) {
     res.on('finish', () => {
       const { statusCode } = res;
       durationInMilliseconds = getRequestDuration(start);
-      let log = `${remoteAddress} - [${datetime}] ${method}:${url} ${statusCode} ${durationInMilliseconds.toLocaleString()}ms`;
+      let log = `${remoteAddress}:${port} - [${datetime}] ${method}:${url} ${statusCode} ${durationInMilliseconds.toLocaleString()}ms`;
       console.log(log);
     });
 
