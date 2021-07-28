@@ -147,7 +147,7 @@ function MQHub(server) {
 			let domain = confDomains[i];
 			let domainConfig = config.getDomainConfig(domain);
 
-			if (domainConfig.enable && domainConfig.enable.indexOf("mq") !== -1) {
+			if (domainConfig && domainConfig.enable && domainConfig.enable.indexOf("mq") !== -1) {
 				const adapterTypeName = domainConfig["mq_type"] || "local";
 				const adapter = adapterImpls[adapterTypeName];
 				if (!adapter) {

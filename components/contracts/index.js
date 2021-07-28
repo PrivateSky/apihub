@@ -22,7 +22,12 @@ function Contract(server) {
             return callback(null, allDomainsWorkerPools[domain].pool);
         }
 
-        const domainConfig = { ...(config.getDomainConfig(domain) || {}) };
+        let domainConfig = config.getDomainConfig(domain);
+        if (!domainConfig) {
+            return callback(new Error('Domain is not configured'));
+        }
+
+        domainConfig = { ...domainConfig }
         ensureContractConstitutionIsPresent(domain, domainConfig);
         if (!domainConfig.contracts.constitution) {
             return callback(`[Contracts] Cannot boot worker for domain '${domain}' due to missing constitution`);

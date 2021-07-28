@@ -14,6 +14,10 @@ function BricksFabric(server) {
     require('./strategies/BrickStorage.js');
 
     const bricksFabricStrategy = require('./utils').getBricksFabricStrategy();
+    if (!bricksFabricStrategy) {
+        console.log("Unable to initialized 'bricksFabrick' component. Strategy not found!");
+        return;
+    }
     const rootFolder = require('./utils').getRootFolder();
     //options
     const noOfTran = bricksFabricStrategy.option.transactionsPerBlock;
