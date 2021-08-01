@@ -64,7 +64,6 @@ function Contract(server) {
                 return response.send(400, err);
             }
 
-            console.log(`[${config.getConfig("validatorDID")}][Contracts] api worker sending`, command);
             workerPool.addTask(command, (err, message) => {
                 allDomainsWorkerPools[command.domain].isRunning = true;
 
@@ -75,7 +74,6 @@ function Contract(server) {
                 let { error, result } = message;
 
                 if (error) {
-                    console.log("@ command error", error, command);
                     return response.send(500, error);
                 }
 

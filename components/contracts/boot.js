@@ -74,7 +74,6 @@ async function boot(validatorDID, serverUrl, domain, domainConfig, rootFolder, s
 
             const command = bricksledger.createCommand(message);
             handleCommand(command, (error, result) => {
-                console.log(`${logPrefix} Finished work ${message}`, error, result);
                 parentPort.postMessage({ error, result });
             });
         });
