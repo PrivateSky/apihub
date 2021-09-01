@@ -139,7 +139,13 @@ class FS {
                 return;
             }
 
-            if (createWithoutVersion) {
+            let anchorKeySSI;
+            try {
+                anchorKeySSI = parse(anchorId);
+            } catch (e) {
+                return callback({ error: e, code: 500 });
+            }
+            if (createWithoutVersion || anchorKeySSI.getTypeName() === openDSU.constants.KEY_SSIS.CONSTANT_ZERO_ACCESS_SSI) {
                 // the anchor file already exists, so we cannot create another file for the same anchor
                 return callback({
                     code: ANCHOR_ALREADY_EXISTS_ERR_CODE,
