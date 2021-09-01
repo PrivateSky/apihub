@@ -1,9 +1,9 @@
 require("../../../../psknode/bundles/testsRuntime");
 const testIntegration = require("../../../../psknode/tests/util/tir");
 const dc = require("double-check");
-const { assert } = dc;
+const {assert} = dc;
 
-const { launchApiHubTestNodeWithDefaultContractAsync, getAnchorVersions, getBrick } = require("../contract-utils");
+const {launchApiHubTestNodeWithDefaultContractAsync, getAnchorVersions, getBrick} = require("../contract-utils");
 
 const openDSU = require("opendsu");
 const keySSIApi = openDSU.loadApi("keyssi");
@@ -41,7 +41,15 @@ assert.callback(
                     brickStorages: [mainNodeUrl, secondNodeUrl],
                     anchoringServices: [mainNodeUrl, secondNodeUrl],
                     contractServices: [mainNodeUrl],
-                    validators: [{ DID: "did:demo:id-0", URL: mainNodeUrl }],
+                    validators: [{DID: "did:demo:id-0", URL: mainNodeUrl}],
+                },
+                vault: {
+                    replicas: [],
+                    notifications: [mainNodeUrl],
+                    brickStorages: [mainNodeUrl, secondNodeUrl],
+                    anchoringServices: [mainNodeUrl, secondNodeUrl],
+                    contractServices: [mainNodeUrl],
+                    validators: [{DID: "did:demo:id-0", URL: mainNodeUrl}],
                 },
             },
         });
@@ -51,7 +59,14 @@ assert.callback(
             useWorker: true,
             generateValidatorDID: true,
             port: secondNodePort,
-            domains: [{ name: domain, config: { contracts: { constitution: contractConstitution } } }],
+            domains: [{name: domain, config: {contracts: {constitution: contractConstitution}}}, {
+                name: "vault", config: {
+                    "anchoring": {
+                        "type": "FS",
+                        "option": {}
+                    }
+                }
+            }],
             bdns: {
                 default: {
                     replicas: [],
@@ -59,7 +74,15 @@ assert.callback(
                     brickStorages: [secondNodeUrl, mainNodeUrl],
                     anchoringServices: [secondNodeUrl, mainNodeUrl],
                     contractServices: [secondNodeUrl],
-                    validators: [{ DID: "did:demo:id-1", URL: secondNodeUrl }],
+                    validators: [{DID: "did:demo:id-1", URL: secondNodeUrl}],
+                },
+                vault: {
+                    replicas: [],
+                    notifications: [secondNodeUrl],
+                    brickStorages: [secondNodeUrl, mainNodeUrl],
+                    anchoringServices: [secondNodeUrl, mainNodeUrl],
+                    contractServices: [secondNodeUrl],
+                    validators: [{DID: "did:demo:id-1", URL: secondNodeUrl}],
                 },
             },
         });
@@ -90,5 +113,5 @@ assert.callback(
 
         testFinished();
     },
-    300000
+    50000
 );

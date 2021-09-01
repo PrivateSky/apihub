@@ -46,6 +46,14 @@ assert.callback(
                     contractServices: [mainNodeUrl],
                     validators: [{ DID: "did:demo:id-0", URL: mainNodeUrl }],
                 },
+                vault: {
+                    replicas: [],
+                    notifications: [mainNodeUrl],
+                    brickStorages: [mainNodeUrl, secondNodeUrl],
+                    anchoringServices: [mainNodeUrl, secondNodeUrl],
+                    contractServices: [mainNodeUrl],
+                    validators: [{ DID: "did:demo:id-0", URL: mainNodeUrl }],
+                }
             },
         });
         const contractConstitution = mainNode.contractConstitution;
@@ -54,7 +62,14 @@ assert.callback(
             useWorker: true,
             generateValidatorDID: true,
             port: secondNodePort,
-            domains: [{ name: domain, config: { contracts: { constitution: contractConstitution } } }],
+            domains: [{ name: domain, config: { contracts: { constitution: contractConstitution } } }, {
+                name: "vault", config: {
+                    "anchoring": {
+                        "type": "FS",
+                        "option": {}
+                    }
+                }
+            }],
             bdns: {
                 default: {
                     replicas: [],
@@ -64,6 +79,14 @@ assert.callback(
                     contractServices: [secondNodeUrl],
                     validators: [{ DID: "did:demo:id-1", URL: secondNodeUrl }],
                 },
+                vault: {
+                    replicas: [],
+                    notifications: [secondNodeUrl],
+                    brickStorages: [secondNodeUrl, thirdNodeUrl],
+                    anchoringServices: [secondNodeUrl, thirdNodeUrl],
+                    contractServices: [secondNodeUrl],
+                    validators: [{ DID: "did:demo:id-1", URL: secondNodeUrl }],
+                }
             },
         });
 
@@ -74,6 +97,14 @@ assert.callback(
             domains: [{ name: domain, config: { contracts: { constitution: contractConstitution } } }],
             bdns: {
                 default: {
+                    replicas: [],
+                    notifications: [thirdNodeUrl],
+                    brickStorages: [thirdNodeUrl, mainNodeUrl],
+                    anchoringServices: [thirdNodeUrl, mainNodeUrl],
+                    contractServices: [thirdNodeUrl],
+                    validators: [{ DID: "did:demo:id-2", URL: thirdNodeUrl }],
+                },
+                vault: {
                     replicas: [],
                     notifications: [thirdNodeUrl],
                     brickStorages: [thirdNodeUrl, mainNodeUrl],
@@ -116,5 +147,5 @@ assert.callback(
 
         testFinished();
     },
-    300000
+    50000
 );
