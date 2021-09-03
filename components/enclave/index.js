@@ -1,83 +1,67 @@
 const config = require("../../config");
-
-
-function getApiHubEnclave(server) {
-
-  async function executeRequest(request, response, encrypted) {
-    const {domain, enclaveDID} = request.params;
-    const domainConfig = config.getDomainConfig(domain);
-
-    if (!domainConfig) {
-      response.statusCode = 403;
-      response.end(err.message);
-      return;
+function DefaultEnclave(server) {
+    const { headersMiddleware, responseModifierMiddleware, requestBodyJSONMiddleware } = require('../../utils/middlewares');
+    const domains = [];
+    const path = require("path");
+    const fs = require("fs");
+    const storageFolder = path.join(server.rootFolder, "enclave");
+    try {
+        fs.mkdirSync(storageFolder, {recursive: true})
+    }catch (e) {
+        console.log(`Failed to create folder ${storageFolder}`, e);
     }
 
-    // TO DO get config data
-
-    let requestObj = await getRequestData(request);
-
-    if (encrypted) {
-      requestObj = decryptRequest(requestObj, enclaveDID)
+    function requestServerMiddleware(request, response, next) {
+        request.server = server;
+        next();
     }
-    let Enclave = require("default-enclave");
-    let enclave = new Enclave(config.getDomainConfig(domain).enclaveDBName)
 
-    enclave[requestObj.command].call(undefined, requestObj.args, (err, data) => {
-      if (err) {
-        response.statusCode = 405;
-        response.end(JSON.stringify(err));
-        return;
-      }
-      response.statusCode = 200;
-      response.end(JSON.stringify(data))
-    });
-  }
-
-  function decryptRequest(encriptedObj, key) {
-    let crypto = require("opendsu").loadApi("crypto");
-    const encryptionKey = crypto.deriveEncryptionKey(key);
-    const decryptData = crypto.decrypt($$.Buffer.from(JSON.parse(encriptedObj)), encryptionKey);
-    return JSON.parse(decryptData.toString());
-  }
-
-  async function getRequestData(request) {
-    return new Promise((resolve, reject) => {
-      let data = [];
-      request.on('data', (chunk) => {
-        data.push(chunk);
-      });
-      request.on('end', async () => {
-        try {
-          let body = Buffer.concat(data).toString();
-          let requestObj = JSON.parse(body);
-          resolve(requestObj)
-        } catch (err) {
-          reject(err);
+    function runEnclaveCommand(request, response) {
+        const domainName = request.params.domain;
+        if (domains.indexOf(domainName) === -1) {
+            console.log(`Caught an request to the enclave for domain ${domainName}. Looks like the domain doesn't have enclave component enabled.`);
+            response.statusCode = 405;
+            response.end();
+            return;
         }
-      })
-    })
-  }
 
-  server.put("/runEnclaveCommand/:domain/:enclaveDID", async (request, response) => {
-    try {
-      await executeRequest(request, response, false)
-    } catch (err) {
-      response.statusCode = 500;
-      response.end(err.message);
+        response.setHeader("Content-Type", "application/json");
+
+        const CommandFactory = require("./commands/CommandsFactory")
+        request.body.params.storageFolder = storageFolder;
+        const command = CommandFactory.createCommand(request.body.commandName, request.body.params);
+        command.execute((err, data)=>{
+            if (err) {
+                console.log(err);
+                return response.send(500, `Failed to execute command ${request.body.commandName}`);
+            }
+
+            return response.send(200, data);
+        })
     }
 
-  });
+    function getConfiguredDomains() {
+        let confDomains = typeof config.getConfiguredDomains !== "undefined" ? config.getConfiguredDomains() : ["default"];
 
-  server.put("/runEnclaveEncryptedCommand/:domain/:enclaveDID", async (request, response) => {
-    try {
-      await executeRequest(request, response, true)
-    } catch (err) {
-      response.statusCode = 500;
-      response.end(err.message);
+        for (let i = 0; i < confDomains.length; i++) {
+            let domain = confDomains[i];
+            let domainConfig = config.getDomainConfig(domain);
+
+            if (domainConfig && domainConfig.enable && domainConfig.enable.indexOf("enclave") !== -1) {
+                console.log(`Successfully register enclave endpoints for domain < ${domain} >.`);
+                domains.push(domain);
+            }
+        }
     }
-  });
 
+    getConfiguredDomains();
+    server.use(`/runEnclaveCommand/:domain/*`, headersMiddleware);
+    server.use(`/runEnclaveCommand/:domain/*`, responseModifierMiddleware);
+    server.use(`/runEnclaveCommand/:domain/*`, requestBodyJSONMiddleware);
+    server.use(`/runEnclaveCommand/:domain/*`, requestServerMiddleware);
+    server.put("/runEnclaveCommand/:domain/:enclaveDID", runEnclaveCommand);
 }
 
-module.exports.getApiHubEnclave = getApiHubEnclave;
+module.exports = {
+    DefaultEnclave
+};

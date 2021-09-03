@@ -28,6 +28,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	require('./components/keySsiNotifications');
 	require('./components/debugLogger');
 	require('./components/mqHub');
+	require('./components/enclave');
 	//end
 
 	const port = listeningPort || 8080;

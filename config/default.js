@@ -8,11 +8,15 @@ const defaultConfig = {
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeComponents": ["config", "mq", "virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricking", "anchoring", "bricksFabric", "contracts", "dsu-wizard", 'debugLogger', "staticServer"],
+    "activeComponents": ["config", "mq", "enclave", "virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricking", "anchoring", "bricksFabric", "contracts", "dsu-wizard", 'debugLogger', "staticServer"],
     "componentsConfig": {
         "mq":{
             "module": "./components/mqHub",
             "function": "MQHub",
+        },
+        "enclave":{
+            "module": "./components/enclave",
+            "function": "DefaultEnclave",
         },
         "messaging": {
             "module": "./components/mqManager",
@@ -105,6 +109,7 @@ const defaultConfig = {
         "/files",
         "/notifications",
         "/mq",
+        "/enclave",
         "/logs"
     ],
     "iframeHandlerDsuBootPath": "./psknode/bundles/nodeBoot.js"
