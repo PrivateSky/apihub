@@ -38,6 +38,12 @@ async function getAllVersionsFromExternalProviders(request) {
     const maxSamplingAnchoringEntries =
         getDomainConfig(domain, "anchoring", "maxSamplingAnchoringEntries") || DEFAULT_MAX_SAMPLING_ANCHORING_ENTRIES;
     shuffle(anchoringProviders);
+
+    //filter out $ORIGIN type providers (placeholders).
+    anchoringProviders = anchoringProviders.filter( provider =>{
+        return provider !== "$ORIGIN";
+    });
+
     anchoringProviders = anchoringProviders.slice(0, maxSamplingAnchoringEntries);
 
     // we need to get the versions from all the external providers and compute the common versions as the end result
