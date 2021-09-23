@@ -57,24 +57,48 @@ function Contract(server) {
 
         callback(null, pool);
     };
+    
+    const responseError = (err) => {
+        let responseError = err;
+        if (err instanceof Error) {
+            responseError = {
+                message: err.message,
+            };
+            
+            if (err.debug_message) {
+                responseError.debugMessage = err.debug_message;
+            }
+            
+            if (err.stack) {
+                responseError.stack = err.stack;
+            }
+            
+            if (err.previousError) {
+                responseError.previousError = responseError(err.previousError);
+            }
+        };
+        
+        responseError = JSON.stringify(responseError);
+        return responseError;
+    }
 
     const sendCommandToWorker = (command, response, mapSuccessResponse) => {
         getDomainWorkerPool(command.domain, (err, workerPool) => {
             if (err) {
-                return response.send(400, err);
+                return response.send(400, responseError(err));
             }
 
             workerPool.addTask(command, (err, message) => {
                 allDomainsWorkerPools[command.domain].isRunning = true;
 
                 if (err) {
-                    return response.send(500, err);
+                    return response.send(500, responseError(err));
                 }
 
                 let { error, result } = message;
 
                 if (error) {
-                    return response.send(500, error);
+                    return response.send(500, responseError(error));
                 }
 
                 if (result && result.optimisticResult) {
