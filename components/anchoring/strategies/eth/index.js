@@ -6,10 +6,7 @@ class ETH {
         this.commandData.anchorId = anchorId;
         this.commandData.jsonData = jsonData;
         this.commandData.option = domainConfig.option;
-        const endpointURL = new URL(domainConfig.option.endpoint);
-        this.commandData.apiEndpoint = endpointURL.hostname;
-        this.commandData.apiPort = endpointURL.port;
-        this.commandData.protocol = endpointURL.protocol.replace(":", "");
+        this.commandData.domainConfig = domainConfig;
     }
 
     createAnchor(callback) {
@@ -25,7 +22,7 @@ class ETH {
     }
 
     getAllVersions(callback) {
-        readFromBlockChain(this.commandData, this.commandData.anchorId, callback);
+        readFromBlockChain(this.commandData, callback);
     }
 
     getLatestVersion(callback) {

@@ -1,69 +1,33 @@
 const { ALIAS_SYNC_ERR_CODE } = require("../../utils");
 
-function makeRequest(protocol, hostname, port, method, path, body, headers, callback) {
-    const http = require("http");
-    const https = require("https");
+function executeRequest(method, url, data, options, callback){
+    const http = require("opendsu").loadApi("http");
 
-    if (typeof headers === "function") {
-        callback = headers;
-        headers = undefined;
+    let methodName = `do${method}`;
+    let args = [];
+
+    if(options && options.proxy){
+        methodName += "WithProxy";
+        args.push(options.proxy);
     }
 
-    if (typeof body === "function") {
-        callback = body;
-        headers = undefined;
-        body = undefined;
+    args.push(url);
+    if(data){
+        args.push(data);
     }
 
-    protocol = require(protocol);
-    const options = {
-        hostname: hostname,
-        port: port,
-        path,
-        method,
-        headers,
-    };
-    const req = protocol.request(options, (response) => {
-        if (response.statusCode < 200 || response.statusCode >= 300) {
-            return callback(
-                {
-                    statusCode: response.statusCode,
-                    err: new Error("Failed to execute command. StatusCode " + response.statusCode),
-                },
-                null
-            );
+    args.push(options);
+
+    args.push(function(err, response, headers){
+        if(err){
+            return callback(err);
         }
-        let data = [];
-        response.on("data", (chunk) => {
-            data.push(chunk);
-        });
 
-        response.on("end", () => {
-            try {
-                const bodyContent = $$.Buffer.concat(data).toString();
-                return callback(undefined, bodyContent);
-            } catch (error) {
-                return callback(
-                    {
-                        statusCode: 500,
-                        err: error,
-                    },
-                    null
-                );
-            }
-        });
+        //TODO: at some point in time I think that we need to check the headers for info before executing the callback
+        callback(undefined, response);
     });
 
-    req.on("error", (err) => {
-        console.log(err);
-        return callback({
-            statusCode: 500,
-            err: err,
-        });
-    });
-
-    req.write(body);
-    req.end();
+    http[methodName].apply(this, args);
 }
 
 function sendToBlockChain(commandData, callback) {
@@ -78,69 +42,66 @@ function sendToBlockChain(commandData, callback) {
         },
         zkp: commandData.jsonData.zkp,
     };
-    const bodyData = JSON.stringify(body);
-    //build path
-    const apiPath = "/addAnchor/" + commandData.anchorId;
-    //run Command method
-    const apiMethod = "PUT";
-    // run Command headers
-    const apiHeaders = {
-        "Content-Type": "application/json",
-        "Content-Length": bodyData.length,
+
+   const bodyData = JSON.stringify(body);
+   const options = {
+        headers:  {
+            "Content-Type": "application/json",
+            "Content-Length": bodyData.length
+        }
     };
-    const apiEndpoint = commandData.apiEndpoint;
-    const apiPort = commandData.apiPort;
-    const protocol = commandData.protocol;
-    try {
-        makeRequest(protocol, apiEndpoint, apiPort, apiMethod, apiPath, bodyData, apiHeaders, (err, result) => {
-            if (err) {
-                if (err.statusCode === 428) {
-                    return callback({
-                        code: ALIAS_SYNC_ERR_CODE,
-                        message: "Unable to add alias: versions out of sync",
-                    });
-                }
-                console.log(err);
-                callback(err, null);
-                return;
-            }
-            callback(null, result);
-        });
-    } catch (err) {
-        console.log("anchoring smart contract Error: ", err);
-        callback(err, null);
+
+    if(commandData.domainConfig && commandData.domainConfig.useProxy){
+        options.proxy = commandData.domainConfig.useProxy;
     }
+
+    let endpoint = commandData.option.endpoint;
+
+    if(endpoint[endpoint.length-1]==="/"){
+        endpoint = endpoint.slice(0, endpoint.length-1);
+    }
+
+    endpoint = `${endpoint}/addAnchor/${commandData.anchorId}`;
+
+    executeRequest("Put", endpoint, bodyData, options, (err, result)=>{
+        if (err) {
+            if (err.statusCode === 428) {
+                return callback({
+                    code: ALIAS_SYNC_ERR_CODE,
+                    message: "Unable to add alias: versions out of sync",
+                });
+            }
+            console.log(err);
+            callback(err, null);
+            return;
+        }
+        callback(null, result);
+    });
 }
 
-function readFromBlockChain(commandData, anchorID, callback) {
-    const body = {};
-    const bodyData = JSON.stringify(body);
-    //build path
-    const apiPath = "/getAnchorVersions/" + anchorID;
-    //run Command method
-    const apiMethod = "GET";
-    // run Command headers
-    const apiHeaders = {
-        "Content-Type": "application/json",
-        "Content-Length": bodyData.length,
-    };
-    const apiEndpoint = commandData.apiEndpoint;
-    const apiPort = commandData.apiPort;
-    const protocol = commandData.protocol;
-    try {
-        makeRequest(protocol, apiEndpoint, apiPort, apiMethod, apiPath, bodyData, apiHeaders, (err, result) => {
-            if (err) {
-                console.log(err);
-                callback(err, null);
-                return;
-            }
+function readFromBlockChain(commandData, callback) {
+    const options = {};
 
-            callback(null, JSON.parse(result));
-        });
-    } catch (err) {
-        console.log("anchoring smart contract Error: ", err);
-        callback(err, null);
+    if(commandData.domainConfig && commandData.domainConfig.useProxy){
+        options.proxy = commandData.domainConfig.useProxy;
     }
+
+    let endpoint = commandData.option.endpoint;
+
+    if(endpoint[endpoint.length-1]==="/"){
+        endpoint = endpoint.slice(0, endpoint.length-1);
+    }
+
+    endpoint = `${endpoint}/getAnchorVersions/${commandData.anchorId}`;
+    executeRequest("Get", endpoint, undefined, options, (err, result)=>{
+        if (err) {
+            console.log(err);
+            callback(err, null);
+            return;
+        }
+
+        callback(null, JSON.parse(result));
+    });
 }
 
 module.exports = {
