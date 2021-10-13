@@ -1,6 +1,10 @@
 const getDefaultEnclave = (storageFolder) => {
-    const DefaultEnclave = require("default-enclave");
-    return new DefaultEnclave(storageFolder)
+    if (!$$.defaultEnclave) {
+        const DefaultEnclave = require("default-enclave");
+        $$.defaultEnclave = new DefaultEnclave(storageFolder)
+    }
+
+    return $$.defaultEnclave;
 }
 
 module.exports = {

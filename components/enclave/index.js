@@ -1,5 +1,6 @@
 const config = require("../../config");
 const {headersMiddleware, responseModifierMiddleware, requestBodyJSONMiddleware} = require("../../utils/middlewares");
+const path = require("path");
 
 function DefaultEnclave(server) {
     const {
@@ -82,9 +83,8 @@ function DefaultEnclave(server) {
         }
         response.setHeader("Content-Type", "application/json");
 
-        const CommandFactory = require("./commands/CommandsFactory")
-        request.body.params.storageFolder = path.join(storageFolder, crypto.encodeBase58(Buffer.from(request.params.enclaveDID)));
-        const command = CommandFactory.createCommand(request.body.commandName, request.body.params);
+        request.body.params.push(path.join(storageFolder, crypto.encodeBase58(Buffer.from(request.params.enclaveDID))));
+        const command = require("./commands").createCommand(request.body.commandName, ...request.body.params);
         command.execute((err, data) => {
             if (err) {
                 console.log(err);
