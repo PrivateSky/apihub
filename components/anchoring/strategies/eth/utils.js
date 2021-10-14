@@ -12,9 +12,8 @@ function executeRequest(method, url, data, options, callback){
     }
 
     args.push(url);
-    if(data){
-        args.push(data);
-    }
+
+    args.push(data);
 
     args.push(options);
 
