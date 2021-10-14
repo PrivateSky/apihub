@@ -76,23 +76,15 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	server.on('error', bindErrorHandler);
 
 	function checkPortInUse(port, sslConfig, callback) {
-		let commType = 'http';
-		if (typeof sslConfig !== 'undefined') {
-			commType += 's';
-		}
-
 		console.log(`Checking if port ${port} is available. Please wait...`);
-
-		const req = require(commType).request({ port }, (res) => {
-			res.on('data', (_) => {});
-			res.on('end', () => {
-				callback(undefined, true);
-			})
+		const net = require('net');
+		const client = net.createConnection({ port }, () =>{
+			callback(undefined, true)
+			client.end();
 		});
-		req.on('error', (err) => {
-			callback(undefined, false);
-		});
-		req.end();
+		client.on("error", (err)=>{
+            callback(undefined, false);
+		})
 	}
 
 	function bindErrorHandler(error) {
@@ -170,7 +162,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 			res.writeHead(200, headers);
 			res.end();
         });
-    
+
         function addRootMiddlewares() {
             if(conf.enableRequestLogger) {
                 new LoggerMiddleware(server);
@@ -189,7 +181,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
         function addComponent(componentName, componentConfig) {
             const path = require("swarmutils").path;
-            
+
             let componentPath = componentConfig.module;
             if (componentPath.startsWith('.') && conf.defaultComponents.indexOf(componentName) === -1) {
                 componentPath = path.resolve(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, componentPath));
