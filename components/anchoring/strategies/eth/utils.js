@@ -13,7 +13,9 @@ function executeRequest(method, url, data, options, callback){
 
     args.push(url);
 
-    args.push(data);
+    if(data && method !== "Get"){
+        args.push(data);
+    }
 
     args.push(options);
 
