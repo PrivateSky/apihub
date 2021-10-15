@@ -79,8 +79,8 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 		console.log(`Checking if port ${port} is available. Please wait...`);
 		const net = require('net');
 		const client = net.createConnection({ port }, () =>{
-			callback(undefined, true)
 			client.end();
+			callback(undefined, true)
 		});
 		client.on("error", (err)=>{
             callback(undefined, false);
