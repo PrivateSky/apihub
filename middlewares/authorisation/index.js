@@ -1,11 +1,7 @@
 const openDSU = require("opendsu");
 const crypto = openDSU.loadApi("crypto");
 
-function sendUnauthorizedResponse(req, res, reason, error) {
-  console.error(`[Auth] [${req.method}] ${req.url} blocked: ${reason}`, error);
-  res.statusCode = 403;
-  res.end();
-}
+const {sendUnauthorizedResponse} = require("../../utils/middlewares");
 
 function Authorisation(server) {
   console.log(`Registering Authorisation middleware`);

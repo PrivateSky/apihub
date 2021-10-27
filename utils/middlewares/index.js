@@ -70,4 +70,11 @@ function bodyReaderMiddleware(req, res, next) {
         next();
     });
 }
-module.exports = { requestBodyJSONMiddleware, responseModifierMiddleware, headersMiddleware , bodyReaderMiddleware};
+
+function sendUnauthorizedResponse(req, res, reason, error) {
+    console.error(`[Auth] [${req.method}] ${req.url} blocked: ${reason}`, error);
+    res.statusCode = 403;
+    res.end();
+}
+
+module.exports = { requestBodyJSONMiddleware, responseModifierMiddleware, headersMiddleware , bodyReaderMiddleware, sendUnauthorizedResponse};

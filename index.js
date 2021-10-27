@@ -7,6 +7,7 @@ const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
 
 const LoggerMiddleware = require('./middlewares/logger');
 const AuthorisationMiddleware = require('./middlewares/authorisation');
+const OAuth = require('./middlewares/oauth');
 const IframeHandlerMiddleware = require('./middlewares/iframeHandler');
 
 function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
@@ -169,6 +170,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
             }
             if(conf.enableJWTAuthorisation) {
                 new AuthorisationMiddleware(server);
+            }
+			if(conf.enableOAuth) {
+                new OAuth(server);
             }
             if(conf.iframeHandlerDsuBootPath) {
                 new IframeHandlerMiddleware(server);
