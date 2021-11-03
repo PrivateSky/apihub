@@ -65,7 +65,7 @@ function OAuth(server) {
                 console.log(rawData);
                 try {
                     const parsedData = JSON.parse(rawData);
-                    publicKey =parsedData.keys.find(key => key.use === "sig");
+                    publicKey = parsedData.keys.find(key => key.use === "sig");
                     callback(undefined, publicKey);
                 } catch (e) {
                     console.error(e.message);
@@ -90,7 +90,9 @@ function OAuth(server) {
         }
 
         if (!rawAccessToken) {
-            return sendUnauthorizedResponse(req, res, "Missing required Authorization header");
+            res.writeHead(301, {Location: "/"});
+            res.end();
+            return;
         }
 
         getPublicKey((err, publicKey) => {
