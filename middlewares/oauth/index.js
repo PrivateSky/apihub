@@ -38,7 +38,7 @@ function OAuth(server) {
         }
     }
 
-    function getPublicKey(callback) {
+    function getPublicKey(rawAccessToken, callback) {
         if (publicKey) {
             return callback(undefined, publicKey);
         }
@@ -65,7 +65,8 @@ function OAuth(server) {
                 console.log(rawData);
                 try {
                     const parsedData = JSON.parse(rawData);
-                    publicKey = parsedData.keys.find(key => key.use === "sig");
+                    const accessToken = parseAccessToken(rawAccessToken);
+                    publicKey = parsedData.keys.find(key => key.use === "sig" && key.kid === accessToken.header.kid);
                     callback(undefined, publicKey);
                 } catch (e) {
                     console.error(e.message);
@@ -95,7 +96,7 @@ function OAuth(server) {
             return;
         }
 
-        getPublicKey((err, publicKey) => {
+        getPublicKey(rawAccessToken, (err, publicKey) => {
             if (err) {
                 return sendUnauthorizedResponse(req, res, "Unable to get JWKS");
             }
