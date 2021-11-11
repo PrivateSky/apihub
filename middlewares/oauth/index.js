@@ -62,7 +62,6 @@ function OAuth(server) {
                 rawData += chunk;
             });
             res.on('end', () => {
-                console.log(rawData);
                 try {
                     const parsedData = JSON.parse(rawData);
                     const accessToken = parseAccessToken(rawAccessToken);
