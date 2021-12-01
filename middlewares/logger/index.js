@@ -25,6 +25,22 @@ function Logger(server) {
       durationInMilliseconds = getRequestDuration(start);
       let log = `${remoteAddress}:${port} - [${datetime}] ${method}:${url} ${statusCode} ${durationInMilliseconds.toLocaleString()}ms`;
       console.log(log);
+      if(req.getLogs){
+          const visualIndex = "\t";
+          const requestLogs = req.getLogs();
+          if(requestLogs.length > 0){
+              console.log("Request logs:");
+              for(let i=0; i<requestLogs.length; i++){
+                  if(Array.isArray(requestLogs)){
+                      console.log(visualIndex, ...requestLogs[i]);
+                  }else{
+                      console.log(visualIndex, requestLogs[i]);
+                  }
+
+              }
+          }
+      }
+      console.log("\n");
     });
 
     next();

@@ -8,7 +8,7 @@ function setupGenericErrorMiddleware(server) {
         const originalResEnd = res.end;
 
         res.write = function(chunk, encoding, callback){
-            if(typeof callback === "function"){
+            if(typeof callback === "function" || typeof encoding === "function"){
                 console.log(`${constants.LOG_IDENTIFIER}`,
                     "Generic Error Middleware is running and has detected that a callback was used for response.write method call.",
                     "Be aware that this middleware can generate undesired behaviour in this case.", new Error());
@@ -18,13 +18,19 @@ function setupGenericErrorMiddleware(server) {
 
         res.end = function(data, encoding, callback){
             if(res.statusCode < 400){
-                //console.log("Generic Middleware", res.statusCode, "allowing the writes to happen");
                 for(let i=0; i<capturedWrites.length; i++){
                     originalResWrite.call(res, ...capturedWrites[i]);
                 }
                 originalResEnd.call(res, data, encoding, callback);
             }else{
-                //console.log("Generic Middleware", res.statusCode, "sending Error");
+                if(req.log){
+                    for(let i=0; i<capturedWrites.length; i++){
+                        req.log("Generic Error Middleware prevented message to be sent on response.write", ...capturedWrites[i]);
+                    }
+                    if(data){
+                        req.log("Generic Error Middleware prevented message to be sent on response.end", data);
+                    }
+                }
                 originalResWrite.call(res, "Error");
                 originalResEnd.call(res, undefined, encoding, callback);
             }
