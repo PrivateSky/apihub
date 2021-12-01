@@ -36,11 +36,10 @@ function Logger(server) {
                   }else{
                       console.log(visualIndex, requestLogs[i]);
                   }
-
               }
+              console.log("\n");
           }
       }
-      console.log("\n");
     });
 
     next();
