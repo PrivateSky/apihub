@@ -59,27 +59,27 @@ function Contract(server) {
     };
     
     const responseError = (err) => {
-        let responseError = err;
+        let resError = err;
         if (err instanceof Error) {
-            responseError = {
+            resError = {
                 message: err.message,
             };
             
             if (err.debug_message) {
-                responseError.debugMessage = err.debug_message;
+                resError.debugMessage = err.debug_message;
             }
             
             if (err.stack) {
-                responseError.stack = err.stack;
+                resError.stack = err.stack;
             }
             
             if (err.previousError) {
-                responseError.previousError = responseError(err.previousError);
+                resError.previousError = responseError(err.previousError);
             }
-        };
+        }
         
-        responseError = JSON.stringify(responseError);
-        return responseError;
+        resError = JSON.stringify(resError);
+        return resError;
     }
 
     const sendCommandToWorker = (command, response, mapSuccessResponse) => {
