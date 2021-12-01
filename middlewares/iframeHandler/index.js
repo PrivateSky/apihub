@@ -104,14 +104,12 @@ function IframeHandler(server) {
     //if a listening event is fired from this point on...
     //it means that a restart was triggered
     server.on("listening", ()=>{
-        if(typeof dsuWorkers !== "undefined"){
-            console.log(`Restarting process in progress...`);
-            console.log(`Stopping a number of ${Object.keys(dsuWorkers).length} thread workers`);
-            for(let seed in dsuWorkers){
-                let worker = dsuWorkers[seed];
-                if(worker && worker.terminate){
-                    worker.terminate();
-                }
+        console.log(`Restarting process in progress...`);
+        console.log(`Stopping a number of ${Object.keys(dsuWorkers).length} thread workers`);
+        for(let seed in dsuWorkers){
+            let worker = dsuWorkers[seed];
+            if(worker && worker.terminate){
+                worker.terminate();
             }
         }
     });
@@ -145,9 +143,7 @@ function IframeHandler(server) {
             dsuWorker = addDsuWorker(keySSI);
         }
 
-        const requestStartTime = process.hrtime();
-
-        const forwarRequestToWorker = () => {
+        const forwardRequestToWorker = () => {
             const options = {
                 hostname: "localhost",
                 port: dsuWorker.port,
@@ -155,7 +151,7 @@ function IframeHandler(server) {
                 method,
                 headers: {
                     authorization: dsuWorker.authorizationKey,
-                },
+                }
             };
 
             if (req.headers["content-type"]) {
@@ -218,7 +214,7 @@ function IframeHandler(server) {
             workerRequest.end();
         };
 
-        dsuWorker.resolver.then(forwarRequestToWorker).catch((error) => {
+        dsuWorker.resolver.then(forwardforwar).catch((error) => {
             console.log("worker resolver error", error);
             res.setHeader("Content-Type", "text/html");
             res.statusCode = 400;
