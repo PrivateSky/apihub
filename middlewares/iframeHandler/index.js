@@ -162,15 +162,6 @@ function IframeHandler(server) {
                 options.headers["content-type"] = req.headers["content-type"];
             }
 
-            const logRequestInfo = (statusCode) => {
-                return;
-                //this log information is not relevant because is a duplicate from the main apihub process
-
-                const duration = getElapsedTime(requestStartTime);
-                const message = `[STATUS ${statusCode}][${duration}][${method}] ${requestedPath}`;
-                console.log(message);
-            };
-
             const workerRequest = http.request(options, (response) => {
                 const { statusCode, headers } = response;
                 res.statusCode = statusCode;
@@ -178,7 +169,6 @@ function IframeHandler(server) {
                 res.setHeader("Content-Type", contentType || "text/html");
 
                 if (statusCode < 200 || statusCode >= 300) {
-                    logRequestInfo(statusCode);
                     return res.end();
                 }
 
@@ -190,11 +180,9 @@ function IframeHandler(server) {
                 response.on("end", () => {
                     try {
                         const bodyContent = $$.Buffer.concat(data);
-                        logRequestInfo(statusCode);
                         res.statusCode = statusCode;
                         res.end(bodyContent);
                     } catch (err) {
-                        logRequestInfo(500);
                         console.log("worker response error", err);
                         res.statusCode = 500;
                         res.end();
@@ -202,7 +190,6 @@ function IframeHandler(server) {
                 });
             });
             workerRequest.on("error", (err) => {
-                logRequestInfo(500);
                 console.log("worker request error", err);
                 res.statusCode = 500;
                 res.end();
@@ -221,7 +208,6 @@ function IframeHandler(server) {
                         workerRequest.write(bodyContent);
                         workerRequest.end();
                     } catch (err) {
-                        logRequestInfo(500);
                         console.log("worker response error", err);
                         res.statusCode = 500;
                         res.end();
