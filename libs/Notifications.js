@@ -203,7 +203,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 			let i = startIndex;
 			let max = i + subBatchSize;
 			for (i; i < max; i++) {
-				key = keys[i];
+				let key = keys[i];
 				if (!key) {
 					break;
 				}

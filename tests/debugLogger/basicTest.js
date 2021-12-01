@@ -29,7 +29,6 @@ assert.callback(
             host: 'localhost',
             port,
             path: `/log/add/${anchorID}/info`,
-            port,
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -56,7 +55,6 @@ assert.callback(
                 host: 'localhost',
                 port,
                 path: `/log/get/${anchorID}`,
-                port,
                 method: 'GET',
               };
 

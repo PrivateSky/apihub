@@ -31,7 +31,7 @@ const flow = $$.flow.describe('RemoteSwarmingFlowTest', {
 		});
 	},
 	startSwarm: function (callback) {
-		const swarmBuffer = $$.Buffer.from(JSON.stringify(swarmDefinition, 'utf8'));
+		const swarmBuffer = $$.Buffer.from(JSON.stringify(swarmDefinition));
 		this.remoteSwarmingFlow.startSwarm(CHANNEL_ID, bufferToStream(swarmBuffer), (err, result) => {
 			assert.false(err, 'Starting swarm has failed ');
 			callback();

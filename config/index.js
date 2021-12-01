@@ -82,7 +82,7 @@ function ensureConfigsAreLoaded() {
 function getConfig(...keys) {
     ensureConfigsAreLoaded();
 
-    if (!Array.isArray(keys) || !keys) {
+    if (keys.length === 0) {
         return apihubConfig;
     }
 

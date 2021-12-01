@@ -46,7 +46,7 @@ function MQHub(server) {
 	function allowUnregisteredDID(domainName){
 		const domainConfig = config.getDomainConfig(domainName);
 		let allowUnregisteredDID = defaultSettings.mq_allow_unregistered_did;
-		if(domainConfig && typeof domainConfig.mq_allow_unregistered_did !== undefined){
+		if(domainConfig && typeof domainConfig.mq_allow_unregistered_did !== "undefined"){
 			allowUnregisteredDID = !!domainConfig.mq_allow_unregistered_did;
 		}
 		return allowUnregisteredDID;

@@ -29,7 +29,7 @@ function createSubscriber(channelName){
        waitingToConnect[channelName] = undefined;
        delete waitingToConnect[channelName];
 
-       if(Object.keys(waitingToConnect)==0){
+       if(Object.keys(waitingToConnect).length === 0){
            startSending();
        }
     });

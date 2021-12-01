@@ -163,6 +163,9 @@ function IframeHandler(server) {
             }
 
             const logRequestInfo = (statusCode) => {
+                return;
+                //this log information is not relevant because is a duplicate from the main apihub process
+
                 const duration = getElapsedTime(requestStartTime);
                 const message = `[STATUS ${statusCode}][${duration}][${method}] ${requestedPath}`;
                 console.log(message);

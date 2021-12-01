@@ -26,7 +26,6 @@ assert.callback(
             host: 'localhost',
             port,
             path: `/log/get/${anchorID}`,
-            port,
             method: 'GET',
           };
 

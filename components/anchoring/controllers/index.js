@@ -29,10 +29,10 @@ async function getAllVersionsFromExternalProviders(request) {
     const { domain, anchorId } = request.params;
     console.log("[Anchoring] Getting external providers...");
     let anchoringProviders = await getLocalBdnsEntryListExcludingSelfAsync(request, domain, "anchoringServices");
-    console.log(`[Anchoring] Found ${anchoringProviders.length} external provider(s)`);
     if (!anchoringProviders || !anchoringProviders.length) {
         throw new Error(`[Anchoring] Found no fallback anchoring providers!`);
     }
+    console.log(`[Anchoring] Found ${anchoringProviders.length} external provider(s)`);
 
     // shuffle the providers and take maxSamplingAnchoringEntries of them
     const maxSamplingAnchoringEntries =

@@ -49,7 +49,7 @@ $$.flow.describe('CSBVersioningTest', {
     __verify: function () {
         this.CSBManager.getVersionsForFile(fileName, (err, files) => {
             assert.equal(files.length, numberOfFileVersions, 'Missing file versions');
-            for (let i = 0; i < files; ++i) {
+            for (let i = 0; i < files.length; ++i) {
                 assert.equal(parseInt(files[i].version), i + 1, 'File versions are not sequential');
             }
             fileStateManager.restoreState();
