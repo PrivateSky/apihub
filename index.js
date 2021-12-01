@@ -1,3 +1,5 @@
+const {LOG_IDENTIFIER} = require("./moduleConstants");
+
 const httpWrapper = require('./libs/http-wrapper');
 const Server = httpWrapper.Server;
 const TokenBucket = require('./libs/TokenBucket');
@@ -10,6 +12,7 @@ const AuthorisationMiddleware = require('./middlewares/authorisation');
 const OAuth = require('./middlewares/oauth');
 const IframeHandlerMiddleware = require('./middlewares/iframeHandler');
 const ResponseHeaderMiddleware = require('./middlewares/responseHeader');
+const genericErrorMiddleware = require('./middlewares/genericErrorMiddleware');
 
 function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	if (typeof $$.flows === "undefined") {
@@ -38,6 +41,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 
 	const conf =  require('./config').getConfig();
 	const server = new Server(sslConfig);
+	server.config = conf;
 	server.rootFolder = rootFolder;
 
 	checkPortInUse(port, sslConfig, (err, status) => {
@@ -48,7 +52,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
         server.setTimeout(10 * 60 * 1000);
 		server.listen(port, conf.host, (err) => {
 			if (err) {
-				console.log(err);
+				console.log(LOG_IDENTIFIER, err);
 				if (callback) {
 					return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to listen on port <${port}>`, err));
 				}
@@ -62,12 +66,12 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 		const fs = require(fsname);
 		fs.readFile(restartServerFile, function(error, content) {
 			if (!error && content.toString() !== "") {
-				console.log(`### Preparing to restart because of the request done by file: <${restartServerFile}> File content: ${content}`);
+				console.log(`${LOG_IDENTIFIER} ### Preparing to restart because of the request done by file: <${restartServerFile}> File content: ${content}`);
 				server.close();
 				server.listen(port, conf.host, () => {
 					fs.writeFile(restartServerFile, "", function(){
 						//we don't care about this file.. we just clear it's content the prevent recursive restarts
-						console.log("### Restart operation finished.");
+						console.log(`${LOG_IDENTIFIER} ### Restart operation finished.`);
 					});
 				});
 			}
@@ -78,7 +82,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	server.on('error', bindErrorHandler);
 
 	function checkPortInUse(port, sslConfig, callback) {
-		console.log(`Checking if port ${port} is available. Please wait...`);
+		console.log(`${LOG_IDENTIFIER} Checking if port ${port} is available. Please wait...`);
 		const net = require('net');
 		const client = net.createConnection({ port }, () =>{
 			client.end();
@@ -149,7 +153,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 				});
 			});
 		} else {
-			console.log('Rate limit mechanism disabled!');
+			console.log(`${LOG_IDENTIFIER} Rate limit mechanism disabled!`);
 		}
 
 		server.options('/*', function (req, res) {
@@ -166,6 +170,8 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
         });
 
         function addRootMiddlewares() {
+			genericErrorMiddleware(server);
+
             if(conf.enableRequestLogger) {
                 new LoggerMiddleware(server);
             }
@@ -185,6 +191,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
                 const enableInstallationDetails = require("./components/installation-details");
                 enableInstallationDetails(server);
             }
+
         }
 
         function addComponent(componentName, componentConfig) {
@@ -194,7 +201,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
             if (componentPath.startsWith('.') && conf.defaultComponents.indexOf(componentName) === -1) {
                 componentPath = path.resolve(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, componentPath));
             }
-            console.log(`Preparing to register middleware from path ${componentPath}`);
+            console.log(`${LOG_IDENTIFIER} Preparing to register middleware from path ${componentPath}`);
 
             let middlewareImplementation;
             try{
@@ -219,7 +226,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
                 .filter(activeComponentName => {
                 	let include = conf.componentsConfig[activeComponentName];
                 	if(!include){
-                		console.log(`[API-HUB] Not able to find config for component called < ${activeComponentName} >. Excluding it from the active components list!`);
+                		console.log(`${LOG_IDENTIFIER} Not able to find config for component called < ${activeComponentName} >. Excluding it from the active components list!`);
 					}
                 	return include;
 				})
@@ -267,6 +274,7 @@ module.exports.getHttpWrapper = function () {
 };
 
 module.exports.getServerConfig = function () {
+	console.log(`${LOG_IDENTIFIER} apihub.getServerConfig() method is deprecated, please use server.config to retrieve necessary info.`);
 	const config = require('./config');
 	return config.getConfig();
 };
