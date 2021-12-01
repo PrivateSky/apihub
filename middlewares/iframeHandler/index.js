@@ -214,7 +214,7 @@ function IframeHandler(server) {
             workerRequest.end();
         };
 
-        dsuWorker.resolver.then(forwardforwar).catch((error) => {
+        dsuWorker.resolver.then(forwardRequestToWorker).catch((error) => {
             console.log("worker resolver error", error);
             res.setHeader("Content-Type", "text/html");
             res.statusCode = 400;
