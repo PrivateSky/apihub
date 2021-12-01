@@ -13,6 +13,7 @@ const OAuth = require('./middlewares/oauth');
 const IframeHandlerMiddleware = require('./middlewares/iframeHandler');
 const ResponseHeaderMiddleware = require('./middlewares/responseHeader');
 const genericErrorMiddleware = require('./middlewares/genericErrorMiddleware');
+const requestEnhancements = require('./middlewares/requestEnhancements');
 
 function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	if (typeof $$.flows === "undefined") {
@@ -170,11 +171,13 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
         });
 
         function addRootMiddlewares() {
-			genericErrorMiddleware(server);
+			if(conf.enableRequestLogger) {
+				new LoggerMiddleware(server);
+			}
 
-            if(conf.enableRequestLogger) {
-                new LoggerMiddleware(server);
-            }
+			genericErrorMiddleware(server);
+			requestEnhancements(server);
+
             if(conf.enableJWTAuthorisation) {
                 new AuthorisationMiddleware(server);
             }
