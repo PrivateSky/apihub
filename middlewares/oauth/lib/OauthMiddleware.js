@@ -1,8 +1,8 @@
 const openDSU = require("opendsu");
 const crypto = openDSU.loadAPI("crypto");
 const http = openDSU.loadAPI("http");
-const {sendUnauthorizedResponse} = require("../../utils/middlewares");
-const config = require("../../config");
+const {sendUnauthorizedResponse} = require("../../../utils/middlewares");
+const config = require("../../../config");
 const url = require("url");
 const util = require("./util");
 const urlModule = require("url");
@@ -12,7 +12,7 @@ function OAuthMiddleware(server) {
 
     const path = require("path");
     const CURRENT_PRIVATE_KEY_PATH = path.join(server.rootFolder, "currentPrivateKey");
-    const config = require("../../config");
+    const config = require("../../../config");
     const skipOAuth = config.getConfig("skipOAuth");
     const urlsToSkip = skipOAuth && Array.isArray(skipOAuth) ? skipOAuth : [];
     const oauthConfig = config.getConfig("oauthConfig");
