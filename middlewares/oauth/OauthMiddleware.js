@@ -5,6 +5,7 @@ const {sendUnauthorizedResponse} = require("../../utils/middlewares");
 const config = require("../../config");
 const url = require("url");
 const util = require("./util");
+const urlModule = require("url");
 
 function OAuthMiddleware(server) {
     console.log(`Registering OAuth middleware`);
@@ -71,12 +72,17 @@ function OAuthMiddleware(server) {
 
     server.use(function (req, res, next) {
         let {url} = req;
-        const urlModule = require("url");
-        const redirectUrlObj = new urlModule.URL(oauthConfig.client.redirectPath);
-        const redirectPath = oauthConfig.client.redirectPath.slice(redirectUrlObj.origin.length);
 
         function isCallbackPhaseActive() {
+            const redirectUrlObj = new urlModule.URL(oauthConfig.client.redirectPath);
+            const redirectPath = oauthConfig.client.redirectPath.slice(redirectUrlObj.origin.length);
             return !!url.includes(redirectPath) || !!url.includes("code=");
+        }
+
+        function isLogoutPhaseActive() {
+            const postLogoutRedirectUrlObj = new urlModule.URL(oauthConfig.client.postLogoutRedirectUrl);
+            const postLogoutRedirectPath = oauthConfig.client.postLogoutRedirectUrl.slice(postLogoutRedirectUrlObj.origin.length);
+            return !!url.includes(postLogoutRedirectPath);
         }
 
         const canSkipOAuth = urlsToSkip.some((urlToSkip) => url.indexOf(urlToSkip) === 0);
@@ -90,10 +96,14 @@ function OAuthMiddleware(server) {
             return;
         }
 
+        if (isLogoutPhaseActive()) {
+            return startAuthFlow(req, res, next);
+        }
 
         if (isCallbackPhaseActive()) {
             return loginCallbackRoute(req, res, next);
         }
+
         let {accessTokenCookie, refreshTokenCookie} = util.parseCookies(req.headers.cookie);
 
         if (!accessTokenCookie) {
@@ -104,7 +114,16 @@ function OAuthMiddleware(server) {
         util.validateEncryptedAccessToken(CURRENT_PRIVATE_KEY_PATH, jwksEndpoint, accessTokenCookie, oauthConfig.sessionTimeout, (err) => {
             if (err) {
                 if (err.message === errorMessages.ACCESS_TOKEN_DECRYPTION_FAILED || err.message === errorMessages.SESSION_EXPIRED) {
-                    return startAuthFlow(req, res, next);
+                    const urlModule = require("url");
+                    const logoutUrl = urlModule.parse(oauthConfig.client.logoutUrl);
+                    logoutUrl.query = {
+                        post_logout_redirect_uri: oauthConfig.client.postLogoutRedirectUrl,
+                        client_id: oauthConfig.client.clientId,
+                    };
+                    res.writeHead(301, {Location: urlModule.format(logoutUrl)});
+                    res.end();
+                    return
+
                 }
 
                 return webClient.refreshToken(CURRENT_PRIVATE_KEY_PATH, refreshTokenCookie, (err, tokenSet)=>{
@@ -120,61 +139,6 @@ function OAuthMiddleware(server) {
 
             next();
         })
-
-        //     try {
-        //
-        //         verifyAccessToken(accessToken);
-        //     } catch (e) {
-        //         try {
-        //             refreshToken(refreshTokenCookie);
-        //         } catch (e) {
-        //             startAuthFlow = true;
-        //         }
-        //     }
-        // })
-        // try {
-        //
-        //     accessToken, sessionExpDate = decryptAccessToken(accessTokenCookie);
-        // } catch (e) {
-        //     return startAuthFlow(req, res, next);
-        // }
-        //
-        // if (Date.now() - sessionExpDate > 30 * 1000 * 1000) {
-        //     return startAuthFlow(req, res, next);
-        // }
-        //
-        // try {
-        //
-        //     verifyAccessToken(accessToken);
-        // } catch (e) {
-        //     try {
-        //         refreshToken(refreshTokenCookie);
-        //     } catch (e) {
-        //         startAuthFlow = true;
-        //     }
-        // }
-
-
-        // if (!rawAccessToken) {
-        //     res.writeHead(301, {Location: "/"});
-        //     res.end();
-        //     return;
-        // }
-        //
-
-        // getPublicKey(rawAccessToken, (err, publicKey) => {
-        //     if (err) {
-        //         return sendUnauthorizedResponse(req, res, "Unable to get JWKS");
-        //     }
-        //
-        //     crypto.joseAPI.verify(rawAccessToken, publicKey, (err) => {
-        //         if (err) {
-        //             return sendUnauthorizedResponse(req, res, "Failed to validate token");
-        //         }
-        //
-        //         next();
-        //     });
-        // })
     });
 }
 

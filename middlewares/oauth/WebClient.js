@@ -94,8 +94,6 @@ function WebClient(oauthConfig) {
             });
         });
     }
-
-
 }
 
 
