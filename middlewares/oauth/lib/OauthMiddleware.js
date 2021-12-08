@@ -15,7 +15,7 @@ function OAuthMiddleware(server) {
     const webClient = new WebClient(oauthConfig);
     const errorMessages = require("./errorMessages");
 
-    function startAuthFlow(req, res, next) {
+    function startAuthFlow(req, res) {
         const loginContext = webClient.getLoginInfo(oauthConfig);
         util.encryptLoginInfo(CURRENT_PRIVATE_KEY_PATH, loginContext, (err, encryptedContext)=>{
             if (err) {
@@ -30,7 +30,7 @@ function OAuthMiddleware(server) {
         })
     }
 
-    function loginCallbackRoute(req, res, next) {
+    function loginCallbackRoute(req, res) {
         let cbUrl = req.url;
         let query = url.parse(cbUrl, true).query;
         const {loginContextCookie} = util.parseCookies(req.headers.cookie);
@@ -92,17 +92,17 @@ function OAuthMiddleware(server) {
         }
 
         if (isLogoutPhaseActive()) {
-            return startAuthFlow(req, res, next);
+            return startAuthFlow(req, res);
         }
 
         if (isCallbackPhaseActive()) {
-            return loginCallbackRoute(req, res, next);
+            return loginCallbackRoute(req, res);
         }
 
         let {accessTokenCookie, refreshTokenCookie} = util.parseCookies(req.headers.cookie);
 
         if (!accessTokenCookie) {
-            return startAuthFlow(req, res, next);
+            return startAuthFlow(req, res);
         }
 
         const jwksEndpoint = config.getConfig("oauthJWKSEndpoint");

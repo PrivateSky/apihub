@@ -102,7 +102,7 @@ function encryptTokenSet(encryptionKeyPath, tokenSet, callback) {
         try {
             let encryptedAccessToken = crypto.encrypt(JSON.stringify(accessTokenPayload), encryptionKey);
             let encryptedRefreshToken = crypto.encrypt(tokenSet.refresh_token, encryptionKey);
-            const encryptedTokenSet = {
+            encryptedTokenSet = {
                 encryptedAccessToken: encodeCookie(encryptedAccessToken),
                 encryptedRefreshToken: encodeCookie(encryptedRefreshToken)
             }
