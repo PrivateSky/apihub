@@ -2,8 +2,6 @@ const openDSU = require("opendsu");
 const crypto = openDSU.loadAPI("crypto");
 const http = openDSU.loadAPI("http");
 const fs = require("fs");
-const {sendUnauthorizedResponse} = require("../../../utils/middlewares");
-const config = require("../../../config");
 const errorMessages = require("./errorMessages");
 let encryptionKey;
 let publicKey;
