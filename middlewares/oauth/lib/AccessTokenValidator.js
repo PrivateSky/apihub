@@ -8,27 +8,10 @@ function AccessTokenValidator(server) {
     const skipOAuth = config.getConfig("skipOAuth");
     const urlsToSkip = skipOAuth && Array.isArray(skipOAuth) ? skipOAuth : [];
 
-    function parseCookies(cookies) {
-        if (!cookies) {
-            return undefined;
-        }
-        const splitCookies = cookies.split(";");
-        const authCookie = splitCookies.find(cookie => cookie.split("=")[0] === "authorization");
-        if (!authCookie) {
-            return undefined;
-        }
-        let token = authCookie.split("=")[1];
-        if (token === "null") {
-            return undefined;
-        }
-
-        return token;
-    }
-
     server.use(function (req, res, next) {
         let {url} = req;
-        let {rawAccessToken: authorisation} = parseCookies(req.headers.cookie);
-
+        let cookies = util.parseCookies(req.headers.cookie);
+        const authorisation = cookies.authorization;
         const canSkipOAuth = urlsToSkip.some((urlToSkip) => url.indexOf(urlToSkip) === 0);
         if (url === "/" || canSkipOAuth) {
             next();

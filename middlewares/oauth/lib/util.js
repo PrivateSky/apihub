@@ -52,7 +52,10 @@ function parseCookies(cookies) {
     splitCookies.forEach(cookie => {
         const cookieComponents = cookie.split("=");
         const cookieName = cookieComponents[0].trim();
-        const cookieValue = cookieComponents[1].trim();
+        let cookieValue = cookieComponents[1].trim();
+        if (cookieValue === "null") {
+            cookieValue = undefined;
+        }
         parsedCookies[cookieName] = cookieValue;
     })
 
