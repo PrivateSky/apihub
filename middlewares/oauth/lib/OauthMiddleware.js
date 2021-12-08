@@ -32,7 +32,7 @@ function OAuthMiddleware(server) {
 
     function loginCallbackRoute(req, res) {
         let cbUrl = req.url;
-        let query = url.parse(cbUrl, true).query;
+        let query = urlModule.parse(cbUrl, true).query;
         const {loginContextCookie} = util.parseCookies(req.headers.cookie);
         util.decryptLoginInfo(CURRENT_PRIVATE_KEY_PATH, loginContextCookie, (err, loginContext) => {
             if (err) {
@@ -63,6 +63,17 @@ function OAuthMiddleware(server) {
                 })
             });
         })
+    }
+
+    function logout(res) {
+        const urlModule = require("url");
+        const logoutUrl = urlModule.parse(oauthConfig.client.logoutUrl);
+        logoutUrl.query = {
+            post_logout_redirect_uri: oauthConfig.client.postLogoutRedirectUrl,
+            client_id: oauthConfig.client.clientId,
+        };
+        res.writeHead(301, {Location: urlModule.format(logoutUrl)});
+        res.end();
     }
 
     server.use(function (req, res, next) {
@@ -109,16 +120,7 @@ function OAuthMiddleware(server) {
         util.validateEncryptedAccessToken(CURRENT_PRIVATE_KEY_PATH, jwksEndpoint, accessTokenCookie, oauthConfig.sessionTimeout, (err) => {
             if (err) {
                 if (err.message === errorMessages.ACCESS_TOKEN_DECRYPTION_FAILED || err.message === errorMessages.SESSION_EXPIRED) {
-                    const urlModule = require("url");
-                    const logoutUrl = urlModule.parse(oauthConfig.client.logoutUrl);
-                    logoutUrl.query = {
-                        post_logout_redirect_uri: oauthConfig.client.postLogoutRedirectUrl,
-                        client_id: oauthConfig.client.clientId,
-                    };
-                    res.writeHead(301, {Location: urlModule.format(logoutUrl)});
-                    res.end();
-                    return
-
+                    return logout(res);
                 }
 
                 return webClient.refreshToken(CURRENT_PRIVATE_KEY_PATH, refreshTokenCookie, (err, tokenSet)=>{
