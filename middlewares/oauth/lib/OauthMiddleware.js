@@ -8,7 +8,7 @@ function OAuthMiddleware(server) {
     const path = require("path");
     const CURRENT_PRIVATE_KEY_PATH = path.join(server.rootFolder, "currentPrivateKey");
     const urlsToSkip = util.getUrlsToSkip();
-
+    const config = require("../../../config");
     const oauthConfig = config.getConfig("oauthConfig");
     const WebClient = require("./WebClient");
     const webClient = new WebClient(oauthConfig);
