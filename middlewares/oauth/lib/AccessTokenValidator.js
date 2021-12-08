@@ -1,12 +1,10 @@
 const {sendUnauthorizedResponse} = require("../../../utils/middlewares");
 const util = require("./util");
+const config = require("../../../config");
 
 function AccessTokenValidator(server) {
     console.log(`Registering AccessTokenValidator middleware`);
-
-    const config = require("../../../config");
-    const skipOAuth = config.getConfig("skipOAuth");
-    const urlsToSkip = skipOAuth && Array.isArray(skipOAuth) ? skipOAuth : [];
+    const urlsToSkip = util.getUrlsToSkip();
 
     server.use(function (req, res, next) {
         let {url} = req;

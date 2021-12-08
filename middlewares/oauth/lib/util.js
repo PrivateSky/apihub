@@ -3,6 +3,7 @@ const crypto = openDSU.loadAPI("crypto");
 const http = openDSU.loadAPI("http");
 const fs = require("fs");
 const errorMessages = require("./errorMessages");
+const config = require("../../../config");
 let encryptionKey;
 let publicKey;
 
@@ -253,6 +254,21 @@ function decryptLoginInfo(encryptionKeyPath, encryptedLoginInfo, callback) {
     });
 }
 
+function getUrlsToSkip() {
+    const config = require("../../../config");
+    const skipOAuth = config.getConfig("skipOAuth");
+    let urlsToSkip = skipOAuth && Array.isArray(skipOAuth) ? skipOAuth : [];
+    const configuredDomains = config.getConfiguredDomains();
+    configuredDomains.forEach(domain => {
+        const domainConfig = config.getDomainConfig(domain);
+        if (domainConfig.skipOAuth) {
+            urlsToSkip = urlsToSkip.concat(domainConfig.skipOAuth);
+        }
+    })
+
+    return urlsToSkip;
+}
+
 module.exports = {
     pkce,
     pkceChallenge,
@@ -270,5 +286,6 @@ module.exports = {
     decryptRefreshTokenCookie,
     getPublicKey,
     validateAccessToken,
-    validateEncryptedAccessToken
+    validateEncryptedAccessToken,
+    getUrlsToSkip
 }

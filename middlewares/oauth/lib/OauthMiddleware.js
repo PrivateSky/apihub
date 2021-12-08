@@ -3,13 +3,12 @@ const util = require("./util");
 const urlModule = require("url");
 
 function OAuthMiddleware(server) {
-    console.log(`Registering OAuth middleware`);
+    console.log(`Registering OAuthMiddleware`);
 
     const path = require("path");
     const CURRENT_PRIVATE_KEY_PATH = path.join(server.rootFolder, "currentPrivateKey");
-    const config = require("../../../config");
-    const skipOAuth = config.getConfig("skipOAuth");
-    const urlsToSkip = skipOAuth && Array.isArray(skipOAuth) ? skipOAuth : [];
+    const urlsToSkip = util.getUrlsToSkip();
+
     const oauthConfig = config.getConfig("oauthConfig");
     const WebClient = require("./WebClient");
     const webClient = new WebClient(oauthConfig);
@@ -17,7 +16,7 @@ function OAuthMiddleware(server) {
 
     function startAuthFlow(req, res) {
         const loginContext = webClient.getLoginInfo(oauthConfig);
-        util.encryptLoginInfo(CURRENT_PRIVATE_KEY_PATH, loginContext, (err, encryptedContext)=>{
+        util.encryptLoginInfo(CURRENT_PRIVATE_KEY_PATH, loginContext, (err, encryptedContext) => {
             if (err) {
                 return sendUnauthorizedResponse(req, res, "Unable to encrypt login info");
             }
@@ -123,7 +122,7 @@ function OAuthMiddleware(server) {
                     return logout(res);
                 }
 
-                return webClient.refreshToken(CURRENT_PRIVATE_KEY_PATH, refreshTokenCookie, (err, tokenSet)=>{
+                return webClient.refreshToken(CURRENT_PRIVATE_KEY_PATH, refreshTokenCookie, (err, tokenSet) => {
                     if (err) {
                         return sendUnauthorizedResponse(req, res, "Unable to refresh token");
                     }
