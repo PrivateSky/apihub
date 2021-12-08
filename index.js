@@ -2,27 +2,16 @@ const {LOG_IDENTIFIER} = require("./moduleConstants");
 
 const httpWrapper = require('./libs/http-wrapper');
 const Server = httpWrapper.Server;
+
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
-
 const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
 
-const LoggerMiddleware = require('./middlewares/logger');
-const AuthorisationMiddleware = require('./middlewares/authorisation');
-const OAuth = require('./middlewares/oauth');
-const IframeHandlerMiddleware = require('./middlewares/iframeHandler');
-const ResponseHeaderMiddleware = require('./middlewares/responseHeader');
-const genericErrorMiddleware = require('./middlewares/genericErrorMiddleware');
-const requestEnhancements = require('./middlewares/requestEnhancements');
-
-function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
-	if (typeof $$.flows === "undefined") {
-		require('callflow').initialise();
-	}
+(function loadDefaultComponents(){
 	//next require lines are only for browserify build purpose
 	// Remove mock
-    require('./components/config');
-    require('./components/contracts');
+	require('./components/config');
+	require('./components/contracts');
 	require('./components/bricking');
 	require('./components/anchoring');
 	require('./components/channelManager');
@@ -36,8 +25,18 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	require('./components/mqHub');
 	require('./components/enclave');
 	//end
+})();
 
-	const port = listeningPort || 8080;
+function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restartIntervalCheck, retryTimeout }, callback) {
+	if (typeof $$.flows === "undefined") {
+		require('callflow').initialise();
+	}
+
+	if(typeof restartIntervalCheck === "undefined"){
+		restartIntervalCheck = CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL;
+	}
+
+	let port = listeningPort || 8080;
 	const tokenBucket = new TokenBucket(START_TOKENS, 1, 10);
 
 	const conf =  require('./config').getConfig();
@@ -45,64 +44,58 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 	server.config = conf;
 	server.rootFolder = rootFolder;
 
-	checkPortInUse(port, sslConfig, (err, status) => {
-		if (status === true) {
-			throw Error(`Port ${port} is used by another server.`);
-		}
-
-        server.setTimeout(10 * 60 * 1000);
-		server.listen(port, conf.host, (err) => {
-			if (err) {
-				console.log(LOG_IDENTIFIER, err);
-				if (callback) {
-					return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to listen on port <${port}>`, err));
+	let listenCallback = (err) => {
+		if (err) {
+			console.log(LOG_IDENTIFIER, err);
+			if (!dynamicPort && callback) {
+				return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to listen on port <${port}>`, err));
+			}
+			if(dynamicPort && error.code === 'EADDRINUSE'){
+				function getRandomPort() {
+					const min = 9000;
+					const max = 65535;
+					return Math.floor(Math.random() * (max - min) + min);
 				}
+				port = getRandomPort();
+				if(Number.isInteger(dynamicPort)){
+					dynamicPort -= 1;
+				}
+				let timeValue = retryTimeout || CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL;
+				console.log(LOG_IDENTIFIER, `setting a timeout value of before retrying ${timeValue}`);
+				setTimeout(bootup, );
 			}
-		});
-	});
+		}
+	};
 
-	setInterval(function(){
-		let restartServerFile = server.rootFolder + '/needServerRestart';
-		const fsname = "fs";
-		const fs = require(fsname);
-		fs.readFile(restartServerFile, function(error, content) {
-			if (!error && content.toString() !== "") {
-				console.log(`${LOG_IDENTIFIER} ### Preparing to restart because of the request done by file: <${restartServerFile}> File content: ${content}`);
-				server.close();
-				server.listen(port, conf.host, () => {
-					fs.writeFile(restartServerFile, "", function(){
-						//we don't care about this file.. we just clear it's content the prevent recursive restarts
-						console.log(`${LOG_IDENTIFIER} ### Restart operation finished.`);
+	function bootup(){
+		console.log(LOG_IDENTIFIER, `Trying to listen on port ${port}`);
+		server.listen(port, conf.host, listenCallback);
+	};
+
+	bootup();
+
+	if(restartIntervalCheck){
+		setInterval(function(){
+			let restartServerFile = server.rootFolder + '/needServerRestart';
+			const fsname = "fs";
+			const fs = require(fsname);
+			fs.readFile(restartServerFile, function(error, content) {
+				if (!error && content.toString() !== "") {
+					console.log(`${LOG_IDENTIFIER} ### Preparing to restart because of the request done by file: <${restartServerFile}> File content: ${content}`);
+					server.close();
+					server.listen(port, conf.host, () => {
+						fs.writeFile(restartServerFile, "", function(){
+							//we don't care about this file.. we just clear it's content the prevent recursive restarts
+							console.log(`${LOG_IDENTIFIER} ### Restart operation finished.`);
+						});
 					});
-				});
-			}
-		});
-	}, CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL);
+				}
+			});
+		}, restartIntervalCheck);
+	}
 
 	server.on('listening', bindFinished);
-	server.on('error', bindErrorHandler);
-
-	function checkPortInUse(port, sslConfig, callback) {
-		console.log(`${LOG_IDENTIFIER} Checking if port ${port} is available. Please wait...`);
-		const net = require('net');
-		const client = net.createConnection({ port }, () =>{
-			client.end();
-			callback(undefined, true)
-		});
-		client.on("error", (err)=>{
-            callback(undefined, false);
-		})
-	}
-
-	function bindErrorHandler(error) {
-		if (error.code === 'EADDRINUSE') {
-			server.close();
-			if (callback) {
-				return callback(error);
-			}
-			throw error;
-		}
-	}
+	server.on('error', listenCallback);
 
 	function bindFinished(err) {
 		if (err) {
@@ -171,6 +164,14 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
         });
 
         function addRootMiddlewares() {
+			const LoggerMiddleware = require('./middlewares/logger');
+			const AuthorisationMiddleware = require('./middlewares/authorisation');
+			const OAuth = require('./middlewares/oauth');
+			const IframeHandlerMiddleware = require('./middlewares/iframeHandler');
+			const ResponseHeaderMiddleware = require('./middlewares/responseHeader');
+			const genericErrorMiddleware = require('./middlewares/genericErrorMiddleware');
+			const requestEnhancements = require('./middlewares/requestEnhancements');
+
 			if(conf.enableRequestLogger) {
 				new LoggerMiddleware(server);
 			}
@@ -254,6 +255,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig }, callback) {
 			}
 		}, 100);
 	}
+
 	return server;
 }
 
@@ -265,6 +267,10 @@ module.exports.createInstance = function (port, folder, sslConfig, callback) {
 
 	return new HttpServer({ listeningPort: port, rootFolder: folder, sslConfig }, callback);
 };
+
+module.exports.start = function(options, callback){
+	return new HttpServer(options, callback);
+}
 
 module.exports.getVMQRequestFactory = function (virtualMQAddress, zeroMQAddress) {
 	const VMQRequestFactory = require('./components/vmq/requestFactory');
@@ -283,6 +289,7 @@ module.exports.getServerConfig = function () {
 };
 
 module.exports.getDomainConfig = function (domain, ...configKeys) {
+	console.log(`${LOG_IDENTIFIER} apihub.getServerConfig() method is deprecated, please use server.config.getDomainConfig(...) to retrieve necessary info.`);
 	const config = require('./config');
 	return config.getDomainConfig(domain, ...configKeys);
 };
