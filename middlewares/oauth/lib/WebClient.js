@@ -36,6 +36,7 @@ function WebClient(oauthConfig) {
         let body = {
             'grant_type': 'authorization_code',
             'client_id': oauthConfig.client.clientId,
+            'client_secret': oauthConfig.client.clientSecret,
             'redirect_uri': oauthConfig.client.redirectPath,
             'code': context.queryCode,
             'code_verifier': context.clientCode
@@ -47,8 +48,7 @@ function WebClient(oauthConfig) {
             method: "POST",
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': postData.length,
-                'Origin': 'http://localhost'
+                'Content-Length': postData.length
             }
         };
 

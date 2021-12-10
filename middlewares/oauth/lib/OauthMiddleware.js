@@ -23,7 +23,7 @@ function OAuthMiddleware(server) {
 
             res.writeHead(301, {
                 Location: loginContext.redirect,
-                "Set-Cookie": `loginContextCookie=${encryptedContext}`
+                "Set-Cookie": `loginContextCookie=${encryptedContext}; Max-Age=${oauthConfig.sessionTimeout / 1000}`
             });
             res.end();
         })
@@ -46,7 +46,8 @@ function OAuthMiddleware(server) {
                 clientFingerprint: loginContext.fingerprint,
                 clientCode: loginContext.codeVerifier,
                 queryCode,
-                queryState
+                queryState,
+                origin: req.headers.host,
             }, (err, tokenSet) => {
                 if (err) {
                     return sendUnauthorizedResponse(req, res, "Unable to get token set");
@@ -57,7 +58,10 @@ function OAuthMiddleware(server) {
                         return sendUnauthorizedResponse(req, res, "Unable to encrypt access token");
                     }
 
-                    res.writeHead(301, {Location: "/", "Set-Cookie": `accessTokenCookie=${encryptedAccessToken}`});
+                    res.writeHead(301, {
+                        Location: "/",
+                        "Set-Cookie": [`accessTokenCookie=${encryptedAccessToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`, "isActiveSession=true"]
+                    });
                     res.end();
                 })
             });
@@ -84,10 +88,14 @@ function OAuthMiddleware(server) {
             return !!url.includes(redirectPath) || !!url.includes("code=");
         }
 
-        function isLogoutPhaseActive() {
+        function isPostLogoutPhaseActive() {
             const postLogoutRedirectUrlObj = new urlModule.URL(oauthConfig.client.postLogoutRedirectUrl);
             const postLogoutRedirectPath = oauthConfig.client.postLogoutRedirectUrl.slice(postLogoutRedirectUrlObj.origin.length);
             return !!url.includes(postLogoutRedirectPath);
+        }
+
+        function isLogoutPhaseActive() {
+            return url === "/logout";
         }
 
         const canSkipOAuth = urlsToSkip.some((urlToSkip) => url.indexOf(urlToSkip) === 0);
@@ -101,18 +109,26 @@ function OAuthMiddleware(server) {
             return;
         }
 
-        if (isLogoutPhaseActive()) {
-            return startAuthFlow(req, res);
-        }
-
         if (isCallbackPhaseActive()) {
             return loginCallbackRoute(req, res);
         }
 
-        let {accessTokenCookie, refreshTokenCookie} = util.parseCookies(req.headers.cookie);
+        if (isLogoutPhaseActive()) {
+            return logout(res);
+        }
+
+        if (isPostLogoutPhaseActive()) {
+            return startAuthFlow(req, res);
+        }
+
+        let {accessTokenCookie, refreshTokenCookie, isActiveSession} = util.parseCookies(req.headers.cookie);
 
         if (!accessTokenCookie) {
-            return startAuthFlow(req, res);
+            if (!isActiveSession) {
+                return startAuthFlow(req, res);
+            } else {
+                return logout(res);
+            }
         }
 
         const jwksEndpoint = config.getConfig("oauthJWKSEndpoint");
@@ -127,8 +143,8 @@ function OAuthMiddleware(server) {
                         return sendUnauthorizedResponse(req, res, "Unable to refresh token");
                     }
 
-                    const cookie = `accessTokenCookie=${tokenSet.encryptedAccessToken}; refreshTokenCookie=${tokenSet.encryptedRefreshToken}`;
-                    res.writeHead(301, {Location: "/", "Set-Cookie": cookie});
+                    const cookies = [`accessTokenCookie=${tokenSet.encryptedAccessToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`, `refreshTokenCookie=${tokenSet.encryptedRefreshToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`];
+                    res.writeHead(301, {Location: "/", "Set-Cookie": cookies});
                     res.end();
                 })
             }
