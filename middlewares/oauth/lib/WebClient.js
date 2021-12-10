@@ -48,7 +48,8 @@ function WebClient(oauthConfig) {
             method: "POST",
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': postData.length
+                'Content-Length': postData.length,
+                'Origin': context.origin
             }
         };
 
