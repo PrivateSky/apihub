@@ -53,14 +53,14 @@ function OAuthMiddleware(server) {
                     return sendUnauthorizedResponse(req, res, "Unable to get token set");
                 }
 
-                util.encryptAccessToken(CURRENT_PRIVATE_KEY_PATH, tokenSet.access_token, (err, encryptedAccessToken) => {
+                util.encryptTokenSet(CURRENT_PRIVATE_KEY_PATH, tokenSet, (err, encryptedTokenSet) => {
                     if (err) {
                         return sendUnauthorizedResponse(req, res, "Unable to encrypt access token");
                     }
 
                     res.writeHead(301, {
                         Location: "/",
-                        "Set-Cookie": [`accessTokenCookie=${encryptedAccessToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`, "isActiveSession=true"]
+                        "Set-Cookie": [`accessTokenCookie=${encryptedTokenSet.encryptedAccessToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`, "isActiveSession=true", `refreshTokenCookie=${encryptedTokenSet.encryptedRefreshToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`, `loginContextCookie=; Max-Age=0`]
                     });
                     res.end();
                 })
@@ -68,9 +68,10 @@ function OAuthMiddleware(server) {
         })
     }
 
-    function logout(res) {
+    function logout(req, res) {
         const urlModule = require("url");
         const logoutUrl = urlModule.parse(oauthConfig.client.logoutUrl);
+
         logoutUrl.query = {
             post_logout_redirect_uri: oauthConfig.client.postLogoutRedirectUrl,
             client_id: oauthConfig.client.clientId,
@@ -114,7 +115,7 @@ function OAuthMiddleware(server) {
         }
 
         if (isLogoutPhaseActive()) {
-            return logout(res);
+            return logout(req, res);
         }
 
         if (isPostLogoutPhaseActive()) {

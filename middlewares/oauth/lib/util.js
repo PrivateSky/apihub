@@ -186,6 +186,7 @@ function decryptRefreshTokenCookie(encryptionKeyPath, encryptedRefreshToken, cal
         let refreshToken;
         try {
             refreshToken = crypto.decrypt(encryptedRefreshToken, currentEncryptionKey);
+            refreshToken = refreshToken.toString();
         } catch (e) {
             return callback(e);
         }

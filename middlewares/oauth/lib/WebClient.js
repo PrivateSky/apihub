@@ -6,7 +6,7 @@ const crypto = openDSU.loadAPI("crypto");
 
 function WebClient(oauthConfig) {
     this.getLoginInfo = () => {
-        const fingerprint = crypto.generateRandom(32).toString('hex');
+        const fingerprint = crypto.generateRandom(32).toString('hex');//User-agent IP
         const state = crypto.generateRandom(32).toString('hex');
         const pkce = util.pkce();
         const authorizeUrl = url.parse(oauthConfig.issuer.authorizationEndpoint);
@@ -29,6 +29,7 @@ function WebClient(oauthConfig) {
 
 
     this.loginCallback = (context, callback) => {
+        //fingerprint virification
         if (context.clientState !== context.queryState) {
             return callback(new Error('Invalid state'));
         }
@@ -48,8 +49,7 @@ function WebClient(oauthConfig) {
             method: "POST",
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': postData.length,
-                'Origin': context.origin
+                'Content-Length': postData.length
             }
         };
 
@@ -81,16 +81,25 @@ function WebClient(oauthConfig) {
                 'refresh_token': refreshToken,
                 'client_secret': oauthConfig.client.clientSecret
             }
+            const postData = util.urlEncodeForm(body);
             const options = {
                 method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Length': Buffer.byteLength(postData)
+                }
             }
 
-            http.doPost(oauthConfig.issuer.tokenEndpoint, util.urlEncodeForm(body), options, (err, tokenSet) => {
+            http.doPost(oauthConfig.issuer.tokenEndpoint, postData, options, (err, tokenSet) => {
                 if (err) {
                     return callback(err);
                 }
 
+                try {
+                    tokenSet = JSON.parse(tokenSet);
+                } catch (e) {
+                    return callback(e);
+                }
                 util.encryptTokenSet(encryptionKeyPath, tokenSet, callback);
             });
         });
