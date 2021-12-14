@@ -68,7 +68,7 @@ function OAuthMiddleware(server) {
         })
     }
 
-    function logout(req, res) {
+    function logout(res) {
         const urlModule = require("url");
         const logoutUrl = urlModule.parse(oauthConfig.client.logoutUrl);
 
@@ -115,7 +115,7 @@ function OAuthMiddleware(server) {
         }
 
         if (isLogoutPhaseActive()) {
-            return logout(req, res);
+            return logout(res);
         }
 
         if (isPostLogoutPhaseActive()) {
