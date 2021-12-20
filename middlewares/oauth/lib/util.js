@@ -76,7 +76,7 @@ function getEncryptionKey(encryptionKeyPath, callback) {
     }
     fs.readFile(encryptionKeyPath, (err, _encKey) => {
         if (err) {
-            _encKey = crypto.generateRandom(32);
+            _encKey = require("crypto").randomBytes(32);
             encryptionKey = _encKey;
             fs.writeFile(encryptionKeyPath, _encKey, (err) => callback(undefined, _encKey));
             return
