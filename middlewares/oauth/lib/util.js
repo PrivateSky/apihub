@@ -13,9 +13,10 @@ function pkce() {
     return {codeVerifier, codeChallenge};
 }
 
-
 function pkceChallenge(codeVerifier) {
-    return crypto.sha256JOSE(codeVerifier, 'base64url');
+    return crypto.sha256JOSE(codeVerifier).toString("base64").replace(/=/g, "")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_");
 }
 
 function urlEncodeForm(obj) {
