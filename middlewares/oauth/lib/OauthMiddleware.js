@@ -23,7 +23,8 @@ function OAuthMiddleware(server) {
 
             res.writeHead(301, {
                 Location: loginContext.redirect,
-                "Set-Cookie": `loginContextCookie=${encryptedContext}; Max-Age=${oauthConfig.sessionTimeout / 1000}`
+                "Set-Cookie": `loginContextCookie=${encryptedContext}; Max-Age=${oauthConfig.sessionTimeout / 1000} `,
+                "Cache-Control": "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
             });
             res.end();
         })
@@ -60,7 +61,8 @@ function OAuthMiddleware(server) {
 
                     res.writeHead(301, {
                         Location: "/",
-                        "Set-Cookie": [`accessTokenCookie=${encryptedTokenSet.encryptedAccessToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`, "isActiveSession=true", `refreshTokenCookie=${encryptedTokenSet.encryptedRefreshToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`, `loginContextCookie=; Max-Age=0`]
+                        "Set-Cookie": [`accessTokenCookie=${encryptedTokenSet.encryptedAccessToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`, "isActiveSession=true", `refreshTokenCookie=${encryptedTokenSet.encryptedRefreshToken}; Max-Age=${oauthConfig.sessionTimeout / 1000}`, `loginContextCookie=; Max-Age=0`],
+                        "Cache-Control": "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
                     });
                     res.end();
                 })
