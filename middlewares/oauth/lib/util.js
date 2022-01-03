@@ -3,8 +3,8 @@ const crypto = openDSU.loadAPI("crypto");
 const http = openDSU.loadAPI("http");
 const fs = require("fs");
 const errorMessages = require("./errorMessages");
-const config = require("../../../config");
-let encryptionKey;
+let currentEncryptionKey;
+let previousEncryptionKey;
 let publicKey;
 
 function pkce() {
@@ -72,30 +72,74 @@ function parseAccessToken(rawAccessToken) {
 }
 
 function getEncryptionKey(encryptionKeyPath, callback) {
-    if (encryptionKey) {
-        return callback(undefined, encryptionKey);
-    }
     fs.readFile(encryptionKeyPath, (err, _encKey) => {
         if (err) {
-            _encKey = require("crypto").randomBytes(32);
-            encryptionKey = _encKey;
+            _encKey = crypto.generateRandom(32);
             fs.writeFile(encryptionKeyPath, _encKey, (err) => callback(undefined, _encKey));
             return
         }
 
-        encryptionKey = _encKey;
-        callback(undefined, encryptionKey);
+        callback(undefined, _encKey);
     });
 }
 
-function encryptTokenSet(encryptionKeyPath, tokenSet, callback) {
+function getCurrentEncryptionKey(currentEncryptionKeyPath, callback) {
+    if (currentEncryptionKey) {
+        return callback(undefined, currentEncryptionKey);
+    }
+
+    getEncryptionKey(currentEncryptionKeyPath, (err, _currentEncryptionKey)=>{
+        if (err) {
+            return callback(err);
+        }
+
+        currentEncryptionKey = _currentEncryptionKey;
+        callback(undefined, currentEncryptionKey);
+    });
+}
+
+function getPreviousEncryptionKey(previousEncryptionKeyPath, callback) {
+    if (previousEncryptionKey) {
+        return callback(undefined, previousEncryptionKey);
+    }
+
+    getEncryptionKey(previousEncryptionKeyPath, (err, _previousEncryptionKey)=>{
+        if (err) {
+            return callback(err);
+        }
+
+        previousEncryptionKey = _previousEncryptionKey;
+        callback(undefined, previousEncryptionKey);
+    });
+}
+
+function rotateKey(currentEncryptionKeyPath, previousEncryptionKeyPath, callback) {
+    // fs.copyFile(currentEncryptionKeyPath, previousEncryptionKeyPath, (err) => {
+    fs.readFile(currentEncryptionKeyPath, (err, currentEncryptionKey) => {
+        let newEncryptionKey = crypto.generateRandom(32);
+        currentEncryptionKey = newEncryptionKey;
+        if (err) {
+            return fs.writeFile(currentEncryptionKeyPath, newEncryptionKey, callback);
+        }
+
+        fs.writeFile(previousEncryptionKeyPath, currentEncryptionKey, (err)=>{
+            if (err) {
+                return callback(err);
+            }
+
+            fs.writeFile(currentEncryptionKeyPath, newEncryptionKey, callback);
+        });
+    })
+}
+
+function encryptTokenSet(currentEncryptionKeyPath, tokenSet, callback) {
     const accessTokenTimestamp = Date.now();
     const accessTokenPayload = {
         date: accessTokenTimestamp,
         token: tokenSet.access_token
     }
 
-    getEncryptionKey(encryptionKeyPath, (err, encryptionKey) => {
+    getCurrentEncryptionKey(currentEncryptionKeyPath, (err, encryptionKey) => {
         if (err) {
             return callback(err);
         }
@@ -115,8 +159,8 @@ function encryptTokenSet(encryptionKeyPath, tokenSet, callback) {
     })
 }
 
-function encryptLoginInfo(encryptionKeyPath, loginInfo, callback) {
-    getEncryptionKey(encryptionKeyPath, (err, encryptionKey) => {
+function encryptLoginInfo(currentEncryptionKeyPath, loginInfo, callback) {
+    getCurrentEncryptionKey(currentEncryptionKeyPath, (err, encryptionKey) => {
         if (err) {
             return callback(err);
         }
@@ -132,14 +176,14 @@ function encryptLoginInfo(encryptionKeyPath, loginInfo, callback) {
     })
 }
 
-function encryptAccessToken(encryptionKeyPath, accessToken, callback) {
+function encryptAccessToken(currentEncryptionKeyPath, accessToken, callback) {
     const accessTokenTimestamp = Date.now();
     const accessTokenPayload = {
         date: accessTokenTimestamp,
         token: accessToken
     }
 
-    getEncryptionKey(encryptionKeyPath, (err, currentEncryptionKey) => {
+    getCurrentEncryptionKey(currentEncryptionKeyPath, (err, currentEncryptionKey) => {
         if (err) {
             return callback(err);
         }
@@ -155,44 +199,82 @@ function encryptAccessToken(encryptionKeyPath, accessToken, callback) {
     });
 }
 
-function decryptAccessTokenCookie(encryptionKeyPath, accessTokenCookie, callback) {
-    getEncryptionKey(encryptionKeyPath, (err, currentEncryptionKey) => {
+function decryptData(encryptedData, encryptionKey, callback) {
+     let plainData;
+        try {
+            plainData = crypto.decrypt(encryptedData, currentEncryptionKey);
+        } catch (e) {
+            return callback(e);
+        }
+
+        callback(undefined, plainData);
+}
+
+function decryptDataWithCurrentKey(encryptionKeyPath, encryptedData, callback) {
+    getCurrentEncryptionKey(encryptionKeyPath, (err, currentEncryptionKey) => {
         if (err) {
             return callback(err);
         }
 
-        let plainAccessTokenCookie;
-        try {
-            plainAccessTokenCookie = crypto.decrypt(decodeCookie(accessTokenCookie), currentEncryptionKey);
-        } catch (e) {
-            return callback(e);
-        }
-
-        try {
-            plainAccessTokenCookie = JSON.parse(plainAccessTokenCookie.toString());
-        } catch (e) {
-            return callback(e);
-        }
-
-        callback(undefined, plainAccessTokenCookie);
+        decryptData(encryptedData, currentEncryptionKey, callback);
     })
 }
 
-function decryptRefreshTokenCookie(encryptionKeyPath, encryptedRefreshToken, callback) {
-    getEncryptionKey(encryptionKeyPath, (err, currentEncryptionKey) => {
+function decryptDataWithPreviousKey(encryptionKeyPath, encryptedData, callback) {
+    getPreviousEncryptionKey(encryptionKeyPath, (err, previousEncryptionKey) => {
         if (err) {
             return callback(err);
         }
 
-        let refreshToken;
+        decryptData(encryptedData, previousEncryptionKey, callback);
+    })
+}
+
+function decryptAccessTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, callback) {
+    function parseAccessTokenCookie(accessTokenCookie, callback) {
+        let parsedAccessTokenCookie;
         try {
-            refreshToken = crypto.decrypt(encryptedRefreshToken, currentEncryptionKey);
-            refreshToken = refreshToken.toString();
+            parsedAccessTokenCookie = JSON.parse(accessTokenCookie.toString());
         } catch (e) {
             return callback(e);
         }
-        callback(undefined, refreshToken);
-    });
+
+        callback(undefined, parsedAccessTokenCookie);
+    }
+
+    decryptDataWithCurrentKey(currentEncryptionKeyPath, decodeCookie(accessTokenCookie), (err, plainAccessTokenCookie) => {
+        if (err) {
+            decryptDataWithPreviousKey(previousEncryptionKeyPath, decodeCookie(accessTokenCookie), (err, plainAccessTokenCookie) => {
+                if (err) {
+                    return callback(err);
+                }
+
+                parseAccessTokenCookie(plainAccessTokenCookie, callback);
+            })
+
+            return;
+        }
+
+
+        parseAccessTokenCookie(plainAccessTokenCookie, callback);
+    })
+}
+
+function decryptRefreshTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, encryptedRefreshToken, callback) {
+    decryptDataWithCurrentKey(currentEncryptionKeyPath, encryptedRefreshToken, (err, refreshToken) => {
+        if (err) {
+            decryptDataWithPreviousKey(previousEncryptionKeyPath, encryptedRefreshToken, (err, refreshToken) => {
+                if (err) {
+                    return callback(err);
+                }
+
+                callback(undefined, refreshToken.toString());
+            });
+            return
+        }
+
+        callback(undefined, refreshToken.toString());
+    })
 }
 
 function getPublicKey(jwksEndpoint, rawAccessToken, callback) {
@@ -226,8 +308,8 @@ function validateAccessToken(jwksEndpoint, accessToken, callback) {
     })
 }
 
-function validateEncryptedAccessToken(encryptionKeyPath, jwksEndpoint, accessTokenCookie, sessionTimeout, callback) {
-    decryptAccessTokenCookie(encryptionKeyPath, accessTokenCookie, (err, decryptedAccessTokenCookie) => {
+function validateEncryptedAccessToken(currentEncryptionKeyPath, previousEncryptionKeyPath, jwksEndpoint, accessTokenCookie, sessionTimeout, callback) {
+    decryptAccessTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, (err, decryptedAccessTokenCookie) => {
         if (err) {
             return callback(Error(errorMessages.ACCESS_TOKEN_DECRYPTION_FAILED));
         }
@@ -239,21 +321,33 @@ function validateEncryptedAccessToken(encryptionKeyPath, jwksEndpoint, accessTok
     })
 }
 
-function decryptLoginInfo(encryptionKeyPath, encryptedLoginInfo, callback) {
-    getEncryptionKey(encryptionKeyPath,(err, currentEncryptionKey) => {
-        if (err) {
-            return callback(err);
+function decryptLoginInfo(currentEncryptionKeyPath, previousEncryptionKeyPath,  encryptedLoginInfo, callback) {
+    decryptDataWithCurrentKey(currentEncryptionKeyPath, decodeCookie(encryptedLoginInfo), (err, loginContext)=>{
+        function parseLoginContext(loginContext, callback) {
+            let parsedLoginContext;
+            try {
+                parsedLoginContext = JSON.parse(loginContext.toString());
+            } catch (e) {
+                return callback(e);
+            }
+
+            callback(undefined, parsedLoginContext);
         }
 
-        let loginContext;
-        try {
-            loginContext = crypto.decrypt(decodeCookie(encryptedLoginInfo), currentEncryptionKey);
-            loginContext = JSON.parse(loginContext.toString());
-        } catch (e) {
-            return callback(e);
+        if (err) {
+            decryptDataWithPreviousKey(previousEncryptionKeyPath, decodeCookie(encryptedLoginInfo), (err, loginContext)=>{
+                if (err) {
+                    return callback(err);
+                }
+
+                parseLoginContext(loginContext, callback);
+            })
+
+            return;
         }
-        callback(undefined, loginContext);
-    });
+
+        parseLoginContext(loginContext, callback);
+    })
 }
 
 function getUrlsToSkip() {
@@ -289,5 +383,6 @@ module.exports = {
     getPublicKey,
     validateAccessToken,
     validateEncryptedAccessToken,
-    getUrlsToSkip
+    getUrlsToSkip,
+    rotateKey
 }

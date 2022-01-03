@@ -6,7 +6,8 @@ function OAuthMiddleware(server) {
     console.log(`Registering OAuthMiddleware`);
 
     const path = require("path");
-    const CURRENT_PRIVATE_KEY_PATH = path.join(server.rootFolder, "currentPrivateKey");
+    const PREVIOUS_ENCRYPTION_KEY_PATH = path.join(server.rootFolder, "previousEncryptionKey");
+    const CURRENT_ENCRYPTION_KEY_PATH = path.join(server.rootFolder, "currentEncryptionKey");
     const urlsToSkip = util.getUrlsToSkip();
     const config = require("../../../config");
     const oauthConfig = config.getConfig("oauthConfig");
@@ -14,9 +15,13 @@ function OAuthMiddleware(server) {
     const webClient = new WebClient(oauthConfig);
     const errorMessages = require("./errorMessages");
 
+    setInterval(() => {
+        util.rotateKey(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, () => {})
+    }, oauthConfig.keyTTL);
+
     function startAuthFlow(req, res) {
         const loginContext = webClient.getLoginInfo(oauthConfig);
-        util.encryptLoginInfo(CURRENT_PRIVATE_KEY_PATH, loginContext, (err, encryptedContext) => {
+        util.encryptLoginInfo(CURRENT_ENCRYPTION_KEY_PATH, loginContext, (err, encryptedContext) => {
             if (err) {
                 return sendUnauthorizedResponse(req, res, "Unable to encrypt login info");
             }
@@ -34,7 +39,7 @@ function OAuthMiddleware(server) {
         let cbUrl = req.url;
         let query = urlModule.parse(cbUrl, true).query;
         const {loginContextCookie} = util.parseCookies(req.headers.cookie);
-        util.decryptLoginInfo(CURRENT_PRIVATE_KEY_PATH, loginContextCookie, (err, loginContext) => {
+        util.decryptLoginInfo(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, loginContextCookie, (err, loginContext) => {
             if (err) {
                 return sendUnauthorizedResponse(req, res, "Unable to decrypt login info");
             }
@@ -54,7 +59,7 @@ function OAuthMiddleware(server) {
                     return sendUnauthorizedResponse(req, res, "Unable to get token set");
                 }
 
-                util.encryptTokenSet(CURRENT_PRIVATE_KEY_PATH, tokenSet, (err, encryptedTokenSet) => {
+                util.encryptTokenSet(CURRENT_ENCRYPTION_KEY_PATH, tokenSet, (err, encryptedTokenSet) => {
                     if (err) {
                         return sendUnauthorizedResponse(req, res, "Unable to encrypt access token");
                     }
@@ -135,13 +140,13 @@ function OAuthMiddleware(server) {
         }
 
         const jwksEndpoint = config.getConfig("oauthJWKSEndpoint");
-        util.validateEncryptedAccessToken(CURRENT_PRIVATE_KEY_PATH, jwksEndpoint, accessTokenCookie, oauthConfig.sessionTimeout, (err) => {
+        util.validateEncryptedAccessToken(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, jwksEndpoint, accessTokenCookie, oauthConfig.sessionTimeout, (err) => {
             if (err) {
                 if (err.message === errorMessages.ACCESS_TOKEN_DECRYPTION_FAILED || err.message === errorMessages.SESSION_EXPIRED) {
                     return logout(res);
                 }
 
-                return webClient.refreshToken(CURRENT_PRIVATE_KEY_PATH, refreshTokenCookie, (err, tokenSet) => {
+                return webClient.refreshToken(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, refreshTokenCookie, (err, tokenSet) => {
                     if (err) {
                         return sendUnauthorizedResponse(req, res, "Unable to refresh token");
                     }
