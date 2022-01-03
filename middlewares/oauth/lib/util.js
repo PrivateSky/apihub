@@ -88,7 +88,7 @@ function getCurrentEncryptionKey(currentEncryptionKeyPath, callback) {
         return callback(undefined, currentEncryptionKey);
     }
 
-    getEncryptionKey(currentEncryptionKeyPath, (err, _currentEncryptionKey)=>{
+    getEncryptionKey(currentEncryptionKeyPath, (err, _currentEncryptionKey) => {
         if (err) {
             return callback(err);
         }
@@ -103,7 +103,7 @@ function getPreviousEncryptionKey(previousEncryptionKeyPath, callback) {
         return callback(undefined, previousEncryptionKey);
     }
 
-    getEncryptionKey(previousEncryptionKeyPath, (err, _previousEncryptionKey)=>{
+    getEncryptionKey(previousEncryptionKeyPath, (err, _previousEncryptionKey) => {
         if (err) {
             return callback(err);
         }
@@ -122,7 +122,7 @@ function rotateKey(currentEncryptionKeyPath, previousEncryptionKeyPath, callback
             return fs.writeFile(currentEncryptionKeyPath, newEncryptionKey, callback);
         }
 
-        fs.writeFile(previousEncryptionKeyPath, currentEncryptionKey, (err)=>{
+        fs.writeFile(previousEncryptionKeyPath, currentEncryptionKey, (err) => {
             if (err) {
                 return callback(err);
             }
@@ -135,8 +135,7 @@ function rotateKey(currentEncryptionKeyPath, previousEncryptionKeyPath, callback
 function encryptTokenSet(currentEncryptionKeyPath, tokenSet, callback) {
     const accessTokenTimestamp = Date.now();
     const accessTokenPayload = {
-        date: accessTokenTimestamp,
-        token: tokenSet.access_token
+        date: accessTokenTimestamp, token: tokenSet.access_token
     }
 
     getCurrentEncryptionKey(currentEncryptionKeyPath, (err, encryptionKey) => {
@@ -179,8 +178,7 @@ function encryptLoginInfo(currentEncryptionKeyPath, loginInfo, callback) {
 function encryptAccessToken(currentEncryptionKeyPath, accessToken, callback) {
     const accessTokenTimestamp = Date.now();
     const accessTokenPayload = {
-        date: accessTokenTimestamp,
-        token: accessToken
+        date: accessTokenTimestamp, token: accessToken
     }
 
     getCurrentEncryptionKey(currentEncryptionKeyPath, (err, currentEncryptionKey) => {
@@ -200,14 +198,14 @@ function encryptAccessToken(currentEncryptionKeyPath, accessToken, callback) {
 }
 
 function decryptData(encryptedData, encryptionKey, callback) {
-     let plainData;
-        try {
-            plainData = crypto.decrypt(encryptedData, currentEncryptionKey);
-        } catch (e) {
-            return callback(e);
-        }
+    let plainData;
+    try {
+        plainData = crypto.decrypt(encryptedData, encryptionKey);
+    } catch (e) {
+        return callback(e);
+    }
 
-        callback(undefined, plainData);
+    callback(undefined, plainData);
 }
 
 function decryptDataWithCurrentKey(encryptionKeyPath, encryptedData, callback) {
@@ -321,8 +319,8 @@ function validateEncryptedAccessToken(currentEncryptionKeyPath, previousEncrypti
     })
 }
 
-function decryptLoginInfo(currentEncryptionKeyPath, previousEncryptionKeyPath,  encryptedLoginInfo, callback) {
-    decryptDataWithCurrentKey(currentEncryptionKeyPath, decodeCookie(encryptedLoginInfo), (err, loginContext)=>{
+function decryptLoginInfo(currentEncryptionKeyPath, previousEncryptionKeyPath, encryptedLoginInfo, callback) {
+    decryptDataWithCurrentKey(currentEncryptionKeyPath, decodeCookie(encryptedLoginInfo), (err, loginContext) => {
         function parseLoginContext(loginContext, callback) {
             let parsedLoginContext;
             try {
@@ -335,7 +333,7 @@ function decryptLoginInfo(currentEncryptionKeyPath, previousEncryptionKeyPath,  
         }
 
         if (err) {
-            decryptDataWithPreviousKey(previousEncryptionKeyPath, decodeCookie(encryptedLoginInfo), (err, loginContext)=>{
+            decryptDataWithPreviousKey(previousEncryptionKeyPath, decodeCookie(encryptedLoginInfo), (err, loginContext) => {
                 if (err) {
                     return callback(err);
                 }
