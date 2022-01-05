@@ -1,8 +1,16 @@
+const config = require("../../config");
+
 function StaticServer(server) {
     const fs = require("fs");
     const path = require('swarmutils').path;
     const utils = require("../../utils");
     const config = require("../../config");
+    let componentsConfig = config.getConfig("componentsConfig");
+
+    let excludedFilesRegex;
+    if (componentsConfig && componentsConfig.staticServer && componentsConfig.staticServer.excludedFiles) {
+        excludedFilesRegex = componentsConfig.staticServer.excludedFiles.map(str => new RegExp(str));
+    }
     function sendFiles(req, res, next) {
         const prefix = "/directory-summary/";
         requestValidation(req, "GET", prefix, function (notOurResponsibility, targetPath) {
@@ -105,10 +113,9 @@ function StaticServer(server) {
     }
 
     function sendFile(res, file) {
-        let componentsConfig = config.getConfig("componentsConfig");
-        if (componentsConfig && componentsConfig.staticServer && componentsConfig.staticServer.excludedFiles) {
-            const fileIndex = componentsConfig.staticServer.excludedFiles.findIndex(excludedFile => file.endsWith(excludedFile));
-            if (fileIndex >= 0) {
+        if (excludedFilesRegex) {
+            let index = excludedFilesRegex.findIndex(regExp => file.match(regExp) !== null);
+            if (index >= 0) {
                 res.statusCode = 403;
                 res.end();
                 return;
