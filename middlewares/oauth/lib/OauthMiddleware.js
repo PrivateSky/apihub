@@ -6,8 +6,8 @@ function OAuthMiddleware(server) {
     console.log(`Registering OAuthMiddleware`);
 
     const path = require("path");
-    const PREVIOUS_ENCRYPTION_KEY_PATH = path.join(server.rootFolder, "previousEncryptionKey");
-    const CURRENT_ENCRYPTION_KEY_PATH = path.join(server.rootFolder, "currentEncryptionKey");
+    const PREVIOUS_ENCRYPTION_KEY_PATH = path.join(server.rootFolder, "previousEncryptionKey.secret");
+    const CURRENT_ENCRYPTION_KEY_PATH = path.join(server.rootFolder, "currentEncryptionKey.secret");
     const urlsToSkip = util.getUrlsToSkip();
     const config = require("../../../config");
     const oauthConfig = config.getConfig("oauthConfig");
