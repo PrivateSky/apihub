@@ -1,6 +1,7 @@
 const {sendUnauthorizedResponse} = require("../../../utils/middlewares");
 const util = require("./util");
 const urlModule = require("url");
+const errorMessages = require("./errorMessages");
 
 function OAuthMiddleware(server) {
     console.log(`Registering OAuthMiddleware`);
@@ -87,6 +88,12 @@ function OAuthMiddleware(server) {
         res.end();
     }
 
+    function debugMessage(...args) {
+        if (oauthConfig.debugLogEnabled) {
+            console.log(...args);
+        }
+    }
+
     server.use(function (req, res, next) {
         let {url} = req;
 
@@ -133,8 +140,10 @@ function OAuthMiddleware(server) {
 
         if (!accessTokenCookie) {
             if (!isActiveSession) {
+                debugMessage("Redirect to start authentication flow because accessTokenCookie and isActiveSession are missing.")
                 return startAuthFlow(req, res);
             } else {
+                debugMessage("Logout because accessTokenCookie is missing and isActiveSession is present.")
                 return logout(res);
             }
         }
@@ -143,11 +152,16 @@ function OAuthMiddleware(server) {
         util.validateEncryptedAccessToken(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, jwksEndpoint, accessTokenCookie, oauthConfig.sessionTimeout, (err) => {
             if (err) {
                 if (err.message === errorMessages.ACCESS_TOKEN_DECRYPTION_FAILED || err.message === errorMessages.SESSION_EXPIRED) {
+                    debugMessage("Logout because accessTokenCookie decryption failed or session expired.")
                     return logout(res);
                 }
 
                 return webClient.refreshToken(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, refreshTokenCookie, (err, tokenSet) => {
                     if (err) {
+                        if (err.message === errorMessages.REFRESH_TOKEN_DECRYPTION_FAILED) {
+                            debugMessage("Logout because refreshTokenCookie decryption failed.")
+                            return logout(res);
+                        }
                         return sendUnauthorizedResponse(req, res, "Unable to refresh token");
                     }
 

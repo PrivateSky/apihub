@@ -68,8 +68,8 @@ function WebClient(oauthConfig) {
         });
     }
 
-    this.refreshToken = function refreshToken(encryptionKeyPath, refreshTokenCookie, callback) {
-        util.decryptRefreshTokenCookie(encryptionKeyPath, refreshTokenCookie, (err, refreshToken) => {
+    this.refreshToken = function refreshToken(currentEncryptionKeyPath, previousEncryptionKeyPath, refreshTokenCookie, callback) {
+        util.decryptRefreshTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, refreshTokenCookie, (err, refreshToken) => {
             if (err) {
                 return callback(err);
             }
@@ -100,7 +100,7 @@ function WebClient(oauthConfig) {
                 } catch (e) {
                     return callback(e);
                 }
-                util.encryptTokenSet(encryptionKeyPath, tokenSet, callback);
+                util.encryptTokenSet(currentEncryptionKeyPath, tokenSet, callback);
             });
         });
     }

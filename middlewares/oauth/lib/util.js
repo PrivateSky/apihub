@@ -259,10 +259,15 @@ function decryptAccessTokenCookie(currentEncryptionKeyPath, previousEncryptionKe
 }
 
 function decryptRefreshTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, encryptedRefreshToken, callback) {
+    if (!encryptedRefreshToken) {
+        return callback(Error(errorMessages.REFRESH_TOKEN_UNDEFINED));
+    }
+
     decryptDataWithCurrentKey(currentEncryptionKeyPath, encryptedRefreshToken, (err, refreshToken) => {
         if (err) {
             decryptDataWithPreviousKey(previousEncryptionKeyPath, encryptedRefreshToken, (err, refreshToken) => {
                 if (err) {
+                    err.message = errorMessages.REFRESH_TOKEN_DECRYPTION_FAILED;
                     return callback(err);
                 }
 
@@ -272,7 +277,7 @@ function decryptRefreshTokenCookie(currentEncryptionKeyPath, previousEncryptionK
         }
 
         callback(undefined, refreshToken.toString());
-    })
+    });
 }
 
 function getPublicKey(jwksEndpoint, rawAccessToken, callback) {
