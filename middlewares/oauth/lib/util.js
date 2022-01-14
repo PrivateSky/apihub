@@ -133,10 +133,16 @@ function rotateKey(currentEncryptionKeyPath, previousEncryptionKeyPath, callback
 }
 
 function encryptTokenSet(currentEncryptionKeyPath, tokenSet, callback) {
-    const accessTokenTimestamp = Date.now();
     const accessTokenPayload = {
-        date: accessTokenTimestamp, token: tokenSet.access_token
+        date: Date.now(),
+        token: tokenSet.access_token
     }
+
+    const refreshTokenPayload = {
+        date: Date.now(),
+        token: tokenSet.refresh_token
+    }
+
 
     getCurrentEncryptionKey(currentEncryptionKeyPath, (err, encryptionKey) => {
         if (err) {
@@ -146,7 +152,7 @@ function encryptTokenSet(currentEncryptionKeyPath, tokenSet, callback) {
         let encryptedTokenSet;
         try {
             let encryptedAccessToken = crypto.encrypt(JSON.stringify(accessTokenPayload), encryptionKey);
-            let encryptedRefreshToken = crypto.encrypt(tokenSet.refresh_token, encryptionKey);
+            let encryptedRefreshToken = crypto.encrypt(JSON.stringify(refreshTokenPayload), encryptionKey);
             encryptedTokenSet = {
                 encryptedAccessToken: encodeCookie(encryptedAccessToken),
                 encryptedRefreshToken: encodeCookie(encryptedRefreshToken)

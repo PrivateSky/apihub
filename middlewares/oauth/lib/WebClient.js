@@ -3,6 +3,7 @@ const util = require("./util");
 const openDSU = require("opendsu");
 const http = openDSU.loadAPI("http");
 const crypto = openDSU.loadAPI("crypto");
+const errorMessages = require("./errorMessages");
 
 function WebClient(oauthConfig) {
     this.getLoginInfo = () => {
@@ -23,7 +24,8 @@ function WebClient(oauthConfig) {
             state,
             fingerprint,
             codeVerifier: pkce.codeVerifier,
-            redirect: url.format(authorizeUrl)
+            redirect: url.format(authorizeUrl),
+            date: Date.now()
         }
     }
 
@@ -74,13 +76,17 @@ function WebClient(oauthConfig) {
                 return callback(err);
             }
 
+            if ( Date.now() - refreshToken.date > oauthConfig.sessionTimeout) {
+                return callback(Error(errorMessages.SESSION_EXPIRED))
+            }
+
             const body = {
                 'grant_type': 'refresh_token',
                 'client_id': oauthConfig.client.clientId,
                 'redirect_uri': oauthConfig.client.redirectPath,
                 'refresh_token': refreshToken,
                 'client_secret': oauthConfig.client.clientSecret
-            }
+            };
             const postData = util.urlEncodeForm(body);
             const options = {
                 method: 'POST',
