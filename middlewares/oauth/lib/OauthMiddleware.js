@@ -118,6 +118,15 @@ function OAuthMiddleware(server) {
             return !!url.includes(postLogoutRedirectPath);
         }
 
+        function startLogoutPhase(res) {
+            res.writeHead(301, {
+                Location: "/logout",
+                "Set-Cookie": ["accessTokenCookie=; Max-Age=0", "isActiveSession=; Max-Age=0", "refreshTokenCookie=; Max-Age=0", "loginContextCookie=; Max-Age=0"],
+                "Cache-Control": "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
+            });
+            res.end();
+        }
+
         function isLogoutPhaseActive() {
             return url === "/logout";
         }
@@ -153,7 +162,7 @@ function OAuthMiddleware(server) {
                 return startAuthFlow(req, res);
             } else {
                 debugMessage("Logout because accessTokenCookie is missing and isActiveSession is present.")
-                return logout(res);
+                return startLogoutPhase(res);
             }
         }
 
@@ -162,14 +171,14 @@ function OAuthMiddleware(server) {
             if (err) {
                 if (err.message === errorMessages.ACCESS_TOKEN_DECRYPTION_FAILED || err.message === errorMessages.SESSION_EXPIRED) {
                     debugMessage("Logout because accessTokenCookie decryption failed or session has expired.")
-                    return logout(res);
+                    return startLogoutPhase(res);
                 }
 
                 return webClient.refreshToken(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, refreshTokenCookie, (err, tokenSet) => {
                     if (err) {
                         if (err.message === errorMessages.REFRESH_TOKEN_DECRYPTION_FAILED || err.message === errorMessages.SESSION_EXPIRED) {
                             debugMessage("Logout because refreshTokenCookie decryption failed or session has expired.")
-                            return logout(res);
+                            return startLogoutPhase(res);
                         }
                         return sendUnauthorizedResponse(req, res, "Unable to refresh token");
                     }
