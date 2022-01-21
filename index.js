@@ -24,6 +24,7 @@ const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
 	require('./components/debugLogger');
 	require('./components/mqHub');
 	require('./components/enclave');
+	require('./components/secrets');
 	//end
 })();
 
