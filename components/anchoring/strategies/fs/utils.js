@@ -8,13 +8,14 @@ function verifySignature(anchorKeySSI, newSSIIdentifier, lastSSIIdentifier) {
     const newSSI = openDSU.loadAPI("keyssi").parse(newSSIIdentifier);
     const timestamp = newSSI.getTimestamp();
     const signature = newSSI.getSignature();
-    let dataToVerify = timestamp;
+    let lastEntryInAnchor = '';
     if (lastSSIIdentifier) {
-        dataToVerify = lastSSIIdentifier + dataToVerify;
+        lastEntryInAnchor = lastSSIIdentifier;
     }
 
+    let dataToVerify;
     if (newSSI.getTypeName() === openDSU.constants.KEY_SSIS.SIGNED_HASH_LINK_SSI) {
-        dataToVerify += anchorKeySSI.getIdentifier();
+        dataToVerify = anchorKeySSI.hash(anchorKeySSI.getIdentifier() + newSSI.getHash() + lastEntryInAnchor + timestamp);
         return anchorKeySSI.verify(dataToVerify, signature);
     }
     if (newSSI.getTypeName() === openDSU.constants.KEY_SSIS.TRANSFER_SSI) {
