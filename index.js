@@ -62,7 +62,13 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 					dynamicPort -= 1;
 				}
 				let timeValue = retryTimeout || CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL;
-				console.log(LOG_IDENTIFIER, `setting a timeout value of before retrying ${timeValue}`);
+				console.log(LOG_IDENTIF					if(conf.CORS){
+						console.log("Applying custom CORS headers");
+						for(let prop in conf.CORS){
+							headers[prop] = conf.CORS[prop];
+						}
+					}
+				R, `setting a timeout value of before retrying ${timeValue}`);
 				setTimeout(bootup, );
 			}
 		}
@@ -160,6 +166,14 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 			headers['Access-Control-Allow-Credentials'] = true;
 			headers['Access-Control-Max-Age'] = '3600'; //one hour
 			headers['Access-Control-Allow-Headers'] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, Authorization, ${conf.componentsConfig.virtualMQ.signatureHeaderName}`;
+			
+			if(conf.CORS){
+				console.log("Applying custom CORS headers");
+				for(let prop in conf.CORS){
+					headers[prop] = conf.CORS[prop];
+				}
+			}
+			
 			res.writeHead(200, headers);
 			res.end();
         });
