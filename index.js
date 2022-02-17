@@ -62,13 +62,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 					dynamicPort -= 1;
 				}
 				let timeValue = retryTimeout || CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL;
-				console.log(LOG_IDENTIF					if(conf.CORS){
-						console.log("Applying custom CORS headers");
-						for(let prop in conf.CORS){
-							headers[prop] = conf.CORS[prop];
-						}
-					}
-				R, `setting a timeout value of before retrying ${timeValue}`);
+				console.log(LOG_IDENTIFIER, `setting a timeout value of before retrying ${timeValue}`);
 				setTimeout(bootup, );
 			}
 		}
