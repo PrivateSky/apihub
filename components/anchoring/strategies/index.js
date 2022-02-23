@@ -1,5 +1,5 @@
 module.exports = {
     FS: require("./fs"),
-    ETH: require("./eth"),
+    ETH: require("./ethx"),
     Contract: require("./contract"),
 };

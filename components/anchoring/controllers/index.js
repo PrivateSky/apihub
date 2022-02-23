@@ -1,12 +1,44 @@
-const { ALIAS_SYNC_ERR_CODE } = require("../utils");
-const { getDomainConfig } = require("../../../config");
-const { getLocalBdnsEntryListExcludingSelfAsync, getHeadersWithExcludedProvidersIncludingSelf } = require("../../../utils/request-utils");
-const { shuffle } = require("../../../utils/array");
+const {ALIAS_SYNC_ERR_CODE} = require("../utils");
+const utils = require("../utils");
+const anchoringStrategies = require("../strategies");
 
-const DEFAULT_MAX_SAMPLING_ANCHORING_ENTRIES = 10;
+const getStrategy = (request) => {
+    let receivedDomain;
+    let domainConfig;
+    if (request.params.anchorId && request.params.domain) {
+        try {
+            receivedDomain = utils.getDomainFromKeySSI(request.params.anchorId);
+        } catch (e) {
+            throw Error(`[Anchoring] Unable to parse anchor id`);
+        }
 
-function getHandlerForAnchorCreateOrAppend(response) {
-    return (err, _) => {
+        if (receivedDomain !== request.params.domain) {
+            throw Error(`[Anchoring] Domain mismatch: '${receivedDomain}' != '${request.params.domain}'`);
+        }
+
+        domainConfig = utils.getAnchoringDomainConfig(receivedDomain);
+        if (!domainConfig) {
+            throw Error(`[Anchoring] Domain '${receivedDomain}' not found`);
+        }
+    }
+
+    const StrategyClass = anchoringStrategies[domainConfig.type];
+    if (!StrategyClass) {
+        throw Error(`[Anchoring] Strategy for anchoring domain '${domainConfig.type}' not found`);
+    }
+
+    let strategy;
+    try {
+        strategy = new StrategyClass(request.server, domainConfig, request.params.anchorId, request.params.anchorValue, request.body);
+    } catch (e) {
+        throw Error(`[Anchoring] Unable to initialize anchoring strategy`);
+    }
+
+    return strategy;
+}
+
+function getWritingHandler(response) {
+    return (err) => {
         if (err) {
             const errorMessage = typeof err === "string" ? err : err.message;
             if (err.code === "EACCES") {
@@ -25,110 +57,81 @@ function getHandlerForAnchorCreateOrAppend(response) {
     };
 }
 
-async function getAllVersionsFromExternalProviders(request) {
-    const { domain, anchorId } = request.params;
-    console.log("[Anchoring] Getting external providers...");
-    let anchoringProviders = await getLocalBdnsEntryListExcludingSelfAsync(request, domain, "anchoringServices");
-    if (!anchoringProviders || !anchoringProviders.length) {
-        throw new Error(`[Anchoring] Found no fallback anchoring providers!`);
+function updateAnchor(action, request, response) {
+    let strategy;
+    try {
+        strategy = getStrategy(request);
+    } catch (e) {
+        return response.send(500, e);
     }
-    console.log(`[Anchoring] Found ${anchoringProviders.length} external provider(s)`);
-
-    // shuffle the providers and take maxSamplingAnchoringEntries of them
-    const maxSamplingAnchoringEntries =
-        getDomainConfig(domain, "anchoring", "maxSamplingAnchoringEntries") || DEFAULT_MAX_SAMPLING_ANCHORING_ENTRIES;
-    shuffle(anchoringProviders);
-
-    //filter out $ORIGIN type providers (placeholders).
-    anchoringProviders = anchoringProviders.filter( provider =>{
-        return provider !== "$ORIGIN";
-    });
-
-    anchoringProviders = anchoringProviders.slice(0, maxSamplingAnchoringEntries);
-
-    // we need to get the versions from all the external providers and compute the common versions as the end result
-    const allExternalVersions = [];
-
-    const http = require("opendsu").loadApi("http");
-    for (let i = 0; i < anchoringProviders.length; i++) {
-        const providerUrl = anchoringProviders[i];
-        try {
-            const anchorUrl = `${providerUrl}/anchor/${domain}/get-all-versions/${anchorId}`;
-            let providerResponse = await http.fetch(anchorUrl, {
-                headers: getHeadersWithExcludedProvidersIncludingSelf(request),
-            });
-            let providerVersions = await providerResponse.json();
-
-            providerVersions = providerVersions || []; // consider we have no version when the anchor is not created
-            allExternalVersions.push(providerVersions);
-        } catch (error) {
-            console.warn(`[Anchoring] Failed to get anchor ${anchorId} from ${providerUrl}!`, error);
-        }
-    }
-
-    const existingExternalVersions = allExternalVersions.filter((versions) => versions && versions.length);
-    const existingVersionsCount = existingExternalVersions.length;
-
-    console.log(
-        `[Anchoring] Queried ${anchoringProviders.length} provider(s), out of which ${existingVersionsCount} have versions`
-    );
-
-    if (!existingVersionsCount) {
-        // none of the queried providers have the anchor
-        return [];
-    }
-
-    const minVersionsLength = Math.min(...existingExternalVersions.map((versions) => versions.length));
-    const firstProviderVersions = existingExternalVersions[0];
-    const commonVersions = [];
-    for (let i = 0; i < minVersionsLength; i++) {
-        const version = firstProviderVersions[i];
-        const isVersionPresentInAllProviders = existingExternalVersions.every((versions) => versions.includes(version));
-        if (isVersionPresentInAllProviders) {
-            commonVersions.push(version);
-        } else {
-            break;
-        }
-    }
-
-    console.log(`[Anchoring] Anchor ${anchorId} has ${commonVersions.length} version(s) based on computation`);
-    return commonVersions;
+    strategy[action](getWritingHandler(response));
 }
 
-function createAnchor(request, response) {
-    request.strategy.createAnchor(getHandlerForAnchorCreateOrAppend(response));
-}
 
-function appendToAnchor(request, response) {
-    request.strategy.appendToAnchor(getHandlerForAnchorCreateOrAppend(response));
-}
-
-function getAllVersions(request, response) {
-    request.strategy.getAllVersions(async (err, fileHashes) => {
-        response.setHeader("Content-Type", "application/json");
-
+function getReadingHandler(response) {
+    return (err, result) => {
         if (err) {
             return response.send(404, "Anchor not found");
         }
 
-        if (fileHashes) {
-            return response.send(200, fileHashes);
+        if (!result) {
+            return response.send(200, null);
         }
 
-        try {
-            const allVersions = await getAllVersionsFromExternalProviders(request);
-            return response.send(200, allVersions);
-        } catch (error) {
-            console.warn(`[Anchoring] Error while trying to get missing anchor from fallback providers!`, error);
+        if (typeof result === "object") {
+            response.setHeader("Content-Type", "application/json");
         }
 
-        // signal that the anchor doesn't exist
-        response.send(200, null);
-    });
+        response.send(200, result);
+    }
 }
+
+function readDataForAnchor(action, request, response) {
+    let strategy;
+    try {
+        strategy = getStrategy(request);
+    } catch (e) {
+        return response.send(500, e);
+    }
+    strategy[action](getReadingHandler(response));
+}
+
+
+function createAnchor(request, response) {
+    updateAnchor("createAnchor", request, response);
+}
+
+function appendToAnchor(request, response) {
+    updateAnchor("appendAnchor", request, response);
+}
+
+function createOrUpdateMultipleAnchors(request, response) {
+    updateAnchor("createOrUpdateMultipleAnchors", request, response);
+}
+
+function getAllVersions(request, response) {
+    readDataForAnchor("getAllVersions", request, response);
+}
+
+function getLastVersion(request, response) {
+    readDataForAnchor("getLastVersion", request, response);
+}
+
+function totalNumberOfAnchors(request, response) {
+    readDataForAnchor("totalNumberOfAnchors", request, response);
+}
+
+function dumpAnchors(request, response) {
+    readDataForAnchor("dumpAnchors", request, response);
+}
+
 
 module.exports = {
     createAnchor,
     appendToAnchor,
+    createOrUpdateMultipleAnchors,
     getAllVersions,
+    getLastVersion,
+    totalNumberOfAnchors,
+    dumpAnchors
 };
