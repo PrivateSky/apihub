@@ -50,7 +50,7 @@ function Anchoring(server) {
         next();
     }
 
-    const { createAnchor, appendToAnchor, getAllVersions } = require("./controllers");
+    const { createAnchor, appendToAnchor, getAllVersions, getLastVersion } = require("./controllers");
 
     const { responseModifierMiddleware, requestBodyJSONMiddleware } = require("../../utils/middlewares");
 
@@ -67,6 +67,10 @@ function Anchoring(server) {
 
     server.get(`/anchor/:domain/get-all-versions/:anchorId`, requestStrategyMiddleware);
     server.get(`/anchor/:domain/get-all-versions/:anchorId`, getAllVersions);
+
+    server.get(`/anchor/:domain/get-last-version/:anchorId`, requestStrategyMiddleware);
+    server.get(`/anchor/:domain/get-last-version/:anchorId`, getLastVersion);
+
 }
 
 module.exports = Anchoring;

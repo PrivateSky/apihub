@@ -25,6 +25,20 @@ function getHandlerForAnchorCreateOrAppend(response) {
     };
 }
 
+function getLastVersion(request, response){
+    request.strategy.getLastVersion(async (err, fileHash) =>{
+        response.setHeader("Content-Type", "application/json");
+
+        if (err) {
+            return response.send(404, "Anchor not found");
+        }
+
+        if (fileHash) {
+            return response.send(200, fileHash);
+        }
+    })
+}
+
 async function getAllVersionsFromExternalProviders(request) {
     const { domain, anchorId } = request.params;
     console.log("[Anchoring] Getting external providers...");
@@ -131,4 +145,5 @@ module.exports = {
     createAnchor,
     appendToAnchor,
     getAllVersions,
+    getLastVersion
 };
