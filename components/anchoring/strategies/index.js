@@ -1,6 +1,5 @@
 module.exports = {
-    FS: require("./fs"),
+    FS: require("./fsx"),
     ETH: require("./ethx"),
     Contract: require("./contract"),
-    FSX: require("./fsx")
 };

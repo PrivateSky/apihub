@@ -1,4 +1,3 @@
-const utils = require('./utils');
 function Anchoring(server) {
     function requestServerMiddleware(request, response, next) {
         request.server = server;
@@ -32,10 +31,6 @@ function Anchoring(server) {
     server.get(`/anchor/:domain/get-all-versions/:anchorId`, getAllVersions);
 
     server.get(`/anchor/:domain/get-last-version/:anchorId`, getLastVersion);
-
-    server.get(`/anchor/:domain/total-number-of-anchors`, totalNumberOfAnchors);
-
-    server.get(`/anchor/:domain/dump-anchors`, dumpAnchors);
 }
 
 module.exports = Anchoring;
