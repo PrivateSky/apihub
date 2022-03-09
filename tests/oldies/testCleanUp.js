@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('swarmutils').path;
+const removeDirSync = require("swarmutils").removeDirSync;
 
 function cleanUp(filePath) {
     if (fs.existsSync(filePath)) {
@@ -11,7 +12,7 @@ function cleanUp(filePath) {
                 const innerFilePath = path.join(filePath, files[index]);
                 cleanUp(innerFilePath);
             }
-            fs.rmdirSync(filePath);
+            removeDirSync(filePath);
         }
     }
 }

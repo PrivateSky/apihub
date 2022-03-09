@@ -12,6 +12,7 @@ let serverURL = `http://localhost:${port}/${CHANNEL_NAME}`;
 
 
 deleteFolder = function (folder) {
+    const removeDirSync = require("swarmutils").removeDirSync;
     if (fs.existsSync(folder)) {
         fs.readdirSync(folder).forEach(function (file, index) {
             var curPath = path.join(folder, file);
@@ -21,7 +22,7 @@ deleteFolder = function (folder) {
                 fs.unlinkSync(curPath);
             }
         });
-        fs.rmdirSync(folder);
+        removeDirSync(folder);
     }
 };
 module.exports.serverUrl = serverURL;
