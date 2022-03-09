@@ -14,17 +14,14 @@ class FSX{
     }
 
     createAnchor(callback){
-        console.log('FSX create anchor');
         this.anchoringBehaviour.createAnchor(this.commandData.anchorId, this.commandData.anchorValue, callback);
     }
 
     appendAnchor(callback){
-        console.log('FSX append anchor');
         this.anchoringBehaviour.appendAnchor(this.commandData.anchorId, this.commandData.anchorValue, callback);
     }
 
     getAllVersions(callback){
-        console.log('FSX get all versions');
         this.anchoringBehaviour.getAllVersions(this.commandData.anchorId, (err, anchorValues)=>{
             if (err) {
                 return callback(err);
@@ -38,7 +35,6 @@ class FSX{
     }
 
     getLastVersion(callback){
-        console.log('FSX get last version');
         this.anchoringBehaviour.getLastVersion(this.commandData.anchorId, (err, anchorValue)=>{
             if (err) {
                 return callback(err);
