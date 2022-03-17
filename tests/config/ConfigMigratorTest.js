@@ -31,7 +31,7 @@ const initialConfig = {
     ],
     endpointsConfig: {
         "epi-mapping-engine": {
-            module: "./../../epi-utils",
+            module: "./../../gtin-resolver",
             function: "getEPIMappingEngineForAPIHUB",
             options: {
                 walletSSI: "#validWalletSSIHere",
@@ -190,7 +190,7 @@ const expectedConfig = {
     ],
     componentsConfig: {
         "epi-mapping-engine": {
-            module: "./../../epi-utils",
+            module: "./../../gtin-resolver",
             function: "getEPIMappingEngineForAPIHUB",
             options: {
                 walletSSI: "#validWalletSSIHere",
