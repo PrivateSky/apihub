@@ -6,9 +6,9 @@ function secrets(server) {
     let userId = request.params.userId;
     let appName = request.params.appName;
     let result;
-    const fileDir = `${server.rootFolder}/secrets/${appName}`
+    const fileDir = `${server.rootFolder}/external-volume/secrets/${appName}`
     try {
-      if (fs.existsSync(`${server.rootFolder}/secrets/${appName}/${userId}.json`)) {
+      if (fs.existsSync(`${server.rootFolder}/external-volume/secrets/${appName}/${userId}.json`)) {
         result = fs.readFileSync(`${fileDir}/${userId}.json`);
         if (result) {
           response.statusCode = 200;
@@ -40,7 +40,7 @@ function secrets(server) {
       try {
         let body = Buffer.concat(data).toString();
         let msgToPersist = JSON.parse(body).secret;
-        const fileDir = `${server.rootFolder}/secrets/${appName}`
+        const fileDir = `${server.rootFolder}/external-volume/secrets/${appName}`
         if (!fs.existsSync(fileDir)) {
           fs.mkdirSync(fileDir, {recursive: true});
         }
