@@ -1,64 +1,110 @@
 const fs = require("fs");
+const path = require("path");
 
 function secrets(server) {
-  const fs = require('fs');
-  server.get("/getSecret/:appName/:userId", function (request, response) {
-    let userId = request.params.userId;
-    let appName = request.params.appName;
-    let result;
-    const fileDir = `${server.rootFolder}/external-volume/secrets/${appName}`
-    try {
-      if (fs.existsSync(`${server.rootFolder}/external-volume/secrets/${appName}/${userId}.json`)) {
-        result = fs.readFileSync(`${fileDir}/${userId}.json`);
-        if (result) {
-          response.statusCode = 200;
-          response.end(JSON.stringify({secret: result.toString()}));
-        } else {
-          response.statusCode = 404;
-          response.end(JSON.stringify({error: `Couldn't find a secret for ${userId}`}));
-        }
-      } else {
-        response.statusCode = 204;
-        response.end(JSON.stringify({error: `${userId} not found`}));
-      }
+    const fs = require("fs");
+    const path = require("path");
+    const secretsFolderPath = path.join(server.rootFolder, "external-volume", "secrets");
+    server.get("/getSecret/:appName/:userId", function (request, response) {
+        let userId = request.params.userId;
+        let appName = request.params.appName;
+        const fileDir = path.join(secretsFolderPath, appName);
+        const filePath = path.join(fileDir, `${userId}.json`);
+        fs.access(filePath, (err) => {
+            if (err) {
+                response.statusCode = 204;
+                response.end(JSON.stringify({error: `${userId} not found`}));
+                return;
+            }
 
-    } catch (e) {
-      response.statusCode = 405;
-      response.end(JSON.stringify(e));
-    }
-  });
+            fs.readFile(filePath, (err, fileData) => {
+                if (err) {
+                    response.statusCode = 404;
+                    response.end(JSON.stringify({error: `Couldn't find a secret for ${userId}`}));
+                    return
+                }
 
-  server.put('/putSecret/:appName/:userId', function (request, response) {
-    let userId = request.params.userId;
-    let appName = request.params.appName;
-    let data = []
-    request.on('data', (chunk) => {
-      data.push(chunk);
+                response.statusCode = 200;
+                response.end(JSON.stringify({secret: fileData.toString()}));
+            })
+        })
     });
 
-    request.on('end', async () => {
-      try {
-        let body = Buffer.concat(data).toString();
-        let msgToPersist = JSON.parse(body).secret;
-        const fileDir = `${server.rootFolder}/external-volume/secrets/${appName}`
-        if (!fs.existsSync(fileDir)) {
-          fs.mkdirSync(fileDir, {recursive: true});
-        }
-        if (fs.existsSync(`${fileDir}/${userId}.json`)) {
-          response.statusCode = 403;
-          response.end(err);
-        } else {
-          fs.writeFileSync(`${fileDir}/${userId}.json`, msgToPersist);
-          response.statusCode = 200;
-          response.end();
-        }
+    function ensureFolderExists(folderPath, callback) {
+        fs.access(folderPath, (err)=>{
+            if (err) {
+                fs.mkdir(folderPath, {recursive: true}, callback);
+                return;
+            }
 
-      } catch (e) {
-        response.statusCode = 500;
-        response.end(e);
-      }
-    })
-  });
+            callback();
+        })
+    }
+
+    function writeSecret(filePath, secret, request, response) {
+        fs.access(filePath, (err)=>{
+            if (!err) {
+                console.log("File Already exists");
+                response.statusCode = 403;
+                response.end(Error(`File ${filePath} already exists`));
+                return;
+            }
+
+            console.log("Writing file to ", filePath);
+            fs.writeFile(filePath, secret, (err)=>{
+                if (err) {
+                    console.log("Error at writing file", err);
+                    response.statusCode = 500;
+                    response.end(err);
+                    return;
+                }
+
+                console.log("file written success")
+                response.statusCode = 200;
+                response.end();
+            });
+        })
+    }
+
+    server.put('/putSecret/:appName/:userId', function (request, response) {
+        let userId = request.params.userId;
+        let appName = request.params.appName;
+        let data = []
+
+        request.on('error', (err) => {
+            response.statusCode = 500;
+            response.end(err);
+        });
+
+        request.on('data', (chunk) => {
+            data.push(chunk);
+        });
+
+        request.on('end', async () => {
+            const fileDir = path.join(secretsFolderPath, appName);
+            const filePath = path.join(fileDir, `${userId}.json`);
+            let body;
+            let msgToPersist;
+            try {
+                body = Buffer.concat(data).toString();
+                msgToPersist = JSON.parse(body).secret;
+            } catch (e) {
+                console.log("Failed to parse body", data);
+                response.statusCode = 500;
+                response.end(e);
+            }
+
+            ensureFolderExists(fileDir, (err)=>{
+                if (err) {
+                    response.statusCode = 500;
+                    response.end(err);
+                    return;
+                }
+
+                writeSecret(filePath, msgToPersist, request, response);
+            })
+        })
+    });
 }
 
 module.exports = secrets;
