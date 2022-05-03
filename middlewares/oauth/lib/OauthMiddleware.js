@@ -75,9 +75,14 @@ function OAuthMiddleware(server) {
             return sendUnauthorizedResponse(req, res, "Unable to encrypt access token");
           }
           const {payload} = util.parseAccessToken(tokenSet.access_token);
+          const SSOUserEmail = payload.email || payload.preferred_username || payload.upn;
+          if (!SSOUserEmail) {
+            res.writeHead(400, {'Content-Type': 'text/plain'});
+            res.end(`Error: User email is not configured. Please check account configurations and set a valid email.`);
+          }
           res.writeHead(301, {
             Location: "/",
-            "Set-Cookie": [`accessTokenCookie=${encryptedTokenSet.encryptedAccessToken}`, "isActiveSession=true", `refreshTokenCookie=${encryptedTokenSet.encryptedRefreshToken}`, `SSOUserId = ${payload.sub}`, `SSOUserEmail = ${payload.email}`, `loginContextCookie=; Max-Age=0`],
+            "Set-Cookie": [`accessTokenCookie=${encryptedTokenSet.encryptedAccessToken}`, "isActiveSession=true", `refreshTokenCookie=${encryptedTokenSet.encryptedRefreshToken}`, `SSOUserId = ${payload.sub}`, `SSOUserEmail = ${SSOUserEmail}`, `loginContextCookie=; Max-Age=0`],
             "Cache-Control": "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
           });
           res.end();
