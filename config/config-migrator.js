@@ -158,7 +158,8 @@ function migrate(oldConfig, configFolderPath) {
         const serverJsonConfigPath = path.join(configFolderPath, "server.json");
         fs.unlinkSync(serverJsonConfigPath);
     } catch (error) {
-        console.log("Could not delete old server.json file", error);
+        //We ignore this error because is not relevant.
+        //Until now most of the implementations for sure switched from server.json to apihub.json
     }
 }
 
