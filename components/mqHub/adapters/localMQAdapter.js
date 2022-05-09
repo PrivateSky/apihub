@@ -5,10 +5,9 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 	const swarmUtils = require('swarmutils');
 	let path = swarmUtils.path;
 	const readBody = utils.streams.readStringFromStream;
-	const serverConfig = require("./../../../config");
 
 	const settings = {
-		mq_fsStrategyStorageFolder: path.join(path.resolve(serverConfig.getConfig("storage")), "mqs", domain),
+		mq_fsStrategyStorageFolder: path.join(server.rootFolder, "external-volume", "mqs", domain),
 		mq_fsMessageMaxSize: 10 * 1024,
 		mq_fsQueueLength: 100
 	}
