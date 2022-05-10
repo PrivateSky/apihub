@@ -4,17 +4,23 @@ const urlModule = require("url");
 
 function OAuthMiddleware(server) {
   console.log(`Registering OAuthMiddleware`);
-
-  const path = require("path");
-  const PREVIOUS_ENCRYPTION_KEY_PATH = path.join(server.rootFolder, "previousEncryptionKey.secret");
-  const CURRENT_ENCRYPTION_KEY_PATH = path.join(server.rootFolder, "currentEncryptionKey.secret");
-  const urlsToSkip = util.getUrlsToSkip();
+  const fs = require("fs");
   const config = require("../../../config");
   const oauthConfig = config.getConfig("oauthConfig");
+  const path = require("path");
+  const ENCRYPTION_KEYS_LOCATION = oauthConfig.encryptionKeysLocation || path.join(server.rootFolder, "external-volume", "encryption-keys");
+  const PREVIOUS_ENCRYPTION_KEY_PATH = path.join(ENCRYPTION_KEYS_LOCATION, "previousEncryptionKey.secret");
+  const CURRENT_ENCRYPTION_KEY_PATH = path.join(ENCRYPTION_KEYS_LOCATION, "currentEncryptionKey.secret");
+  const urlsToSkip = util.getUrlsToSkip();
+
   const WebClient = require("./WebClient");
   const webClient = new WebClient(oauthConfig);
   const errorMessages = require("./errorMessages");
-
+  try {
+    fs.accessSync(ENCRYPTION_KEYS_LOCATION);
+  } catch (e) {
+    fs.mkdirSync(ENCRYPTION_KEYS_LOCATION, {recursive: true});
+  }
   setInterval(() => {
     util.rotateKey(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, () => {
     })
