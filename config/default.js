@@ -23,16 +23,16 @@ const defaultConfig = {
         },
         "messaging": {
             "module": "./components/mqManager",
-            "workingDirPath": "./messaging",
-            "storageDirPath": "./messaging/storage"
+            "workingDirPath": "./external-volume/messaging",
+            "storageDirPath": "./external-volume/messaging/storage"
         },
         "notifications": {
             "module": "./components/keySsiNotifications",
-            "workingDirPath": "./notifications"
+            "workingDirPath": "./external-volume/notifications"
         },
         "virtualMQ": {
             "module": "./components/channelManager",
-            "channelsFolderName": "channels",
+            "channelsFolderName": "external-volume/channels",
             "maxSize": 100,
             "tokenSize": 48,
             "tokenHeaderName": "x-tokenHeader",
