@@ -116,7 +116,8 @@ const defaultConfig = {
         "/secrets",
         "/logs"
     ],
-    "iframeHandlerDsuBootPath": "./psknode/bundles/nodeBoot.js"
+    "iframeHandlerDsuBootPath": "./psknode/bundles/nodeBoot.js",
+    "enableStreamHandler": true
 };
 
 module.exports = Object.freeze(defaultConfig);

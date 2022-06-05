@@ -180,6 +180,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 			const ResponseHeaderMiddleware = require('./middlewares/responseHeader');
 			const genericErrorMiddleware = require('./middlewares/genericErrorMiddleware');
 			const requestEnhancements = require('./middlewares/requestEnhancements');
+			const StreamHandlerMiddleware = require('./middlewares/streamHandler');
 
 			if(conf.enableRequestLogger) {
 				new LoggerMiddleware(server);
@@ -203,6 +204,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
             if(conf.enableInstallationDetails) {
                 const enableInstallationDetails = require("./components/installation-details");
                 enableInstallationDetails(server);
+            }
+            if(conf.enableStreamHandler) {
+                new StreamHandlerMiddleware(server);
             }
 
         }
