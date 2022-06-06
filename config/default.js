@@ -8,7 +8,7 @@ const defaultConfig = {
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeComponents": ["config", "mq", "enclave","secrets", "virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricking", "anchoring", "bricksFabric", "contracts", "dsu-wizard", 'debugLogger', "staticServer"],
+    "activeComponents": ["config", "mq", "enclave","secrets", "virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricking", "anchoring", "bricksFabric", "contracts", "dsu-wizard", 'debugLogger', "iframe", "stream", "staticServer"],
     "componentsConfig": {
         "mq":{
             "module": "./components/mqHub",
@@ -79,6 +79,13 @@ const defaultConfig = {
         "contracts": {
             "module": "./components/contracts",
             "domainsPath": "/external-volume/domains"
+        },
+        "iframe": {
+            "module": "./components/iframe",
+            "dsuBootPath": "./psknode/bundles/nodeBoot.js"
+        },
+        "stream": {
+            "module": "./components/stream"
         }
     },
     "tokenBucket": {
@@ -115,9 +122,7 @@ const defaultConfig = {
         "/enclave",
         "/secrets",
         "/logs"
-    ],
-    "iframeHandlerDsuBootPath": "./psknode/bundles/nodeBoot.js",
-    "enableStreamHandler": true
+    ]
 };
 
 module.exports = Object.freeze(defaultConfig);
