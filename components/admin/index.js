@@ -191,10 +191,17 @@ function AdminService(exposeAllApis) {
         enclave.getAllRecords(DID_replacement, DOMAINS_TABLE, callback);
     }
 
+    this.getDomainInfo = function (domainName, callback){
+        enclave.getRecord(DID_replacement, DOMAINS_TABLE, domainName, (err, domainInfo)=>{
+            //cleanup domain obj before returning it
+            return callback(err, domainInfo);
+        });
+    }
+
     this.getMainDomain = getMainDomain;
 
     this.checkForTemplate = function (path, callback) {
-        const filter = "pk == ${path}";
+        const filter = `pk == ${path}`;
         enclave.filter(DID_replacement, TEMPLATES_TABLE, filter, (err, template)=>{
             //cleanup template obj before returning it
             return callback(err, template);
