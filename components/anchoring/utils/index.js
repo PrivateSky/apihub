@@ -1,8 +1,24 @@
 const { clone } = require("../../../utils");
+const config = require("../../../config");
 
-const getAnchoringDomainConfig = (domain) => {
+const getAnchoringDomainConfig = async (domain) => {
     const config = require("../../../config");
-    const domainConfiguration = config.getDomainConfig(domain);
+    let domainConfiguration = config.getDomainConfig(domain);
+
+    if(!domainConfiguration){
+        //if you don't have config we try to use admin service info to create one at runtime
+        try{
+            let adminService = require("./../admin").getAdminService();
+            const getDomainInfo = $$.promisify(adminService.getDomainInfo);
+            let domainInfo = await getDomainInfo(domain);
+            if(domainInfo && domainInfo.cloneFromDomain){
+                const clonedDomainConfiguration = config.getDomainConfig(domainInfo.cloneFromDomain);
+                domainConfiguration = clonedDomainConfiguration;
+            }
+        }catch(err){
+            //we ignore any errors in this try-catch block because admin component may be disabled
+        }
+    }
 
     if (!domainConfiguration) {
         return;

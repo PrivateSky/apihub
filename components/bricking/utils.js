@@ -27,7 +27,7 @@ async function getBricksDomainConfig(domain) {
                 domainConfiguration = clonedDomainConfiguration;
             }
         }catch(err){
-            //we ignore any errors in this try-catch block becase admin can be disabled
+            //we ignore any errors in this try-catch block because admin component may be disabled
         }
     }
 
