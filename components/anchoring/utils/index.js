@@ -14,6 +14,7 @@ const getAnchoringDomainConfig = async (domain) => {
             if(domainInfo && domainInfo.cloneFromDomain){
                 const clonedDomainConfiguration = config.getDomainConfig(domainInfo.cloneFromDomain);
                 domainConfiguration = clonedDomainConfiguration;
+                console.log(`Config for domain '${domain}' was loaded from admin service.`);
             }
         }catch(err){
             //we ignore any errors in this try-catch block because admin component may be disabled
