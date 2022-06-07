@@ -85,10 +85,15 @@ function AdminComponentHandler(server) {
     }
 
     async function addDomain(req, res) {
-        let {domainName, timestamp, signature} = req.body;
+        let {domainName, timestamp, signature, cloneFromDomain} = req.body;
+
+        if(!cloneFromDomain){
+            res.statusCode = 403;
+            res.end();
+        }
 
         try {
-            await adminService.addDomainAsync(domainName, timestamp, signature);
+            await adminService.addDomainAsync(domainName, cloneFromDomain, timestamp, signature);
         } catch (err) {
             res.statusCode = 500;
             return res.end();
@@ -186,6 +191,8 @@ function AdminService(exposeAllApis) {
         enclave.getAllRecords(DID_replacement, DOMAINS_TABLE, callback);
     }
 
+    this.getMainDomain = getMainDomain;
+
     this.checkForTemplate = function (path, callback) {
         const filter = "pk == ${path}";
         enclave.filter(DID_replacement, TEMPLATES_TABLE, filter, (err, template)=>{
@@ -229,8 +236,8 @@ function AdminService(exposeAllApis) {
 
     //from this line down there are only methods that change the state of the enclave.
     if (exposeAllApis) {
-        this.addDomain = async function (domainName, timestamp, signature, callback) {
-            enclave.insertRecord(DID_replacement, DOMAINS_TABLE, domainName, {name:domainName, active: true}, callback);
+        this.addDomain = async function (domainName, cloneFromDomain, timestamp, signature, callback) {
+            enclave.insertRecord(DID_replacement, DOMAINS_TABLE, domainName, {name:domainName, active: true, cloneFromDomain}, callback);
         }
 
         this.addDomainAsync = $$.promisify(this.addDomain);
