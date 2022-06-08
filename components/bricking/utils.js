@@ -1,5 +1,6 @@
 const { clone } = require("../../utils");
 const { getLocalBdnsEntryListExcludingSelfAsync, getHeadersWithExcludedProvidersIncludingSelf } = require("../../utils/request-utils");
+const config = require("../../config");
 
 function convertReadableStreamToBuffer(readStream, callback) {
     let buffers = [];
@@ -11,9 +12,26 @@ function convertReadableStreamToBuffer(readStream, callback) {
     readStream.on("end", () => callback(undefined, $$.Buffer.concat(buffers)));
 }
 
-function getBricksDomainConfig(domain) {
+async function getBricksDomainConfig(domain) {
     const config = require("../../config");
-    const domainConfiguration = config.getDomainConfig(domain);
+    let domainConfiguration = config.getDomainConfig(domain);
+
+    if(!domainConfiguration){
+        //if you don't have config we try to use admin service info to create one at runtime
+        try{
+            let adminService = require("./../admin").getAdminService();
+            const getDomainInfo = $$.promisify(adminService.getDomainInfo);
+            let domainInfo = await getDomainInfo(domain);
+            if(domainInfo && domain.active && domainInfo.cloneFromDomain){
+                const clonedDomainConfiguration = config.getDomainConfig(domainInfo.cloneFromDomain);
+                domainConfiguration = clonedDomainConfiguration;
+                console.log(`Config for domain '${domain}' was loaded from admin service.`);
+            }
+        }catch(err){
+            //we ignore any errors in this try-catch block because admin component may be disabled
+        }
+    }
+
     if (!domainConfiguration) {
         return;
     }

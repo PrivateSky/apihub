@@ -10,6 +10,7 @@ const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
 (function loadDefaultComponents(){
 	//next require lines are only for browserify build purpose
 	// Remove mock
+	require('./components/admin');
 	require('./components/config');
 	require('./components/contracts');
 	require('./components/bricking');

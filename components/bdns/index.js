@@ -1,11 +1,23 @@
 function BDNS(server) {
+    const DOMAIN_TEMPLATE = {
+        "replicas": [],
+        "brickStorages": [
+            "$ORIGIN"
+        ],
+        "anchoringServices": [
+            "$ORIGIN"
+        ],
+        "notifications": [
+            "$ORIGIN"
+        ]
+    };
     const URL_PREFIX = "/bdns";
     const {headersMiddleware} = require('../../utils/middlewares');
 
     let bdnsCache;
 
     let init_process_runned = false;
-    function initialize(){
+    async function initialize(){
         if(init_process_runned){
            return true;
         }
@@ -16,11 +28,34 @@ function BDNS(server) {
         const bdnsHostsPath = path.join(process.env.PSK_CONFIG_LOCATION, "bdns.hosts");
 
         bdnsCache = fs.readFileSync(bdnsHostsPath).toString();
+
+        try{
+            console.log("Testing to see if admin component is active and can be used to expand BDNS configuration.");
+            let adminService = require("./../admin").getAdminService();
+            let getDomains = $$.promisify(adminService.getDomains);
+            let domains = await getDomains();
+            if(domains){
+                let bdnsExtensions = {};
+                for(let i=0; i<domains.length; i++){
+                    let domain = domains[i];
+                    if(domain.active){
+                        bdnsExtensions[domain.name] = DOMAIN_TEMPLATE;
+                    }
+                }
+                let newRegistry = JSON.parse(bdnsCache);
+                Object.assign(newRegistry, bdnsExtensions);
+                bdnsCache = JSON.stringify(newRegistry);
+            }
+            console.log("BDNS configuration was updated accordingly to information retrieved from admin service");
+        }catch(err){
+            console.log(err);
+            console.info("Due to the error above not able to read any domains from admin service. This is not a problem, it's a configuration.");
+        }
     }
 
-    function bdnsHandler(request, response, next) {
+    async function bdnsHandler(request, response, next) {
         try {
-            initialize();
+            await initialize();
         } catch (e) {
             response.statusCode = 500;
             return response.end('Failed to initialize BDNS');

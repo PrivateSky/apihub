@@ -110,6 +110,68 @@ function StaticServer(server) {
 
     }
 
+    function tryToCreateAtRuntimeFromTemplates(req, callback){
+        let extractSubdomain = function(url){
+            let regex = new RegExp(/^([a-z]+\:\/{2})?([\w-]+\.[\w-]+\.\w+(\:[0-9]*)?)$/);
+            if(!!url.match(regex)){
+                let components = url.split(".");
+                return components[0];
+            }
+            return undefined;
+        }
+
+        let adminService;
+        try{
+            adminService = require("./../admin").getAdminService();
+        }catch(err){
+            return callback(err);
+        }
+
+        adminService.checkForTemplate(req.url, (err, template)=>{
+            if(err){
+                return callback(err);
+            }
+            if(template){
+                let fileContent = template.content;
+                let host = req.headers.host;
+                let subdomain = extractSubdomain(host);
+                if(!subdomain){
+                    return callback(new Error("Not able to detect a subdomain. Skipping template lookup."));
+                }
+
+                return adminService.getDomainInfo(subdomain, (err, domainInfo)=>{
+                    if(err || !domainInfo){
+                        return callback(err);
+                    }
+                    let domainVariables = Object.keys(domainInfo.variables);
+                    for(let i=0; i<domainVariables.length; i++){
+                        let variableName = domainVariables[i];
+                        let variableValue = domainInfo.variables[variableName];
+
+                        const lookupFor = "${"+variableName+"}";
+                        fileContent = fileContent.split(lookupFor).join(variableValue);
+                    }
+
+                    return callback(undefined, fileContent);
+                });
+            }else{
+                return callback(new Error(`Not template found for ${req.url}`));
+            }
+        });
+    }
+
+    function resolveFileAndSend(req, res, file){
+        tryToCreateAtRuntimeFromTemplates(req,(err, content)=>{
+            if(err){
+                //if any error... we fallback to normal sendFile method
+                return sendFile(res, file);
+            }
+            res.statusCode = 200;
+            res.setHeader('Cache-Control', 'no-store');
+            res.end(content);
+        });
+    }
+
     function sendFile(res, file) {
         if (excludedFilesRegex) {
             let index = excludedFilesRegex.findIndex(regExp => file.match(regExp) !== null);
@@ -181,9 +243,17 @@ function StaticServer(server) {
             //remove existing query params
             fs.stat(targetPath, function (err, stats) {
                 if (err) {
-                    res.statusCode = 404;
-                    res.end();
-                    return;
+                    return tryToCreateAtRuntimeFromTemplates(req,(err, content)=>{
+                        if(err){
+                            //if any error... we have to return 404
+                            res.statusCode = 404;
+                            res.end();
+                            return;
+                        }
+                        res.statusCode = 200;
+                        res.setHeader('Cache-Control', 'no-store');
+                        res.end(content);
+                    });
                 }
 
                 if (stats.isDirectory()) {
@@ -208,10 +278,10 @@ function StaticServer(server) {
                             return;
                         }
 
-                        return sendFile(res, defaultPath);
+                        return resolveFileAndSend(req, res, defaultPath);
                     });
                 } else {
-                    return sendFile(res, targetPath);
+                    return resolveFileAndSend(req, res, targetPath);
                 }
             });
         });

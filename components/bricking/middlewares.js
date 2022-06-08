@@ -1,7 +1,7 @@
-function requestFSBrickStorageMiddleware(request, response, next) {
+async function requestFSBrickStorageMiddleware(request, response, next) {
     const { domain: domainName } = request.params;
 
-    const domainConfig = require("./utils").getBricksDomainConfig(domainName);
+    const domainConfig = await require("./utils").getBricksDomainConfig(domainName);
     if (!domainConfig || !domainConfig.path) {
         const message = `[Bricking] Domain '${domainName}' not found!`;
         console.error(message);
