@@ -8,7 +8,7 @@ const getAnchoringDomainConfig = async (domain) => {
     if(!domainConfiguration){
         //if you don't have config we try to use admin service info to create one at runtime
         try{
-            let adminService = require("./../admin").getAdminService();
+            let adminService = require("./../../admin").getAdminService();
             const getDomainInfo = $$.promisify(adminService.getDomainInfo);
             let domainInfo = await getDomainInfo(domain);
             if(domainInfo && domain.active && domainInfo.cloneFromDomain){
