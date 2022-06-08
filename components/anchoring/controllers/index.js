@@ -2,7 +2,7 @@ const {ALIAS_SYNC_ERR_CODE} = require("../utils");
 const utils = require("../utils");
 const anchoringStrategies = require("../strategies");
 
-const getStrategy = (request) => {
+const getStrategy = async (request) => {
     let receivedDomain;
     let domainConfig;
     if (request.params.anchorId && request.params.domain) {
@@ -16,7 +16,7 @@ const getStrategy = (request) => {
             throw Error(`[Anchoring] Domain mismatch: '${receivedDomain}' != '${request.params.domain}'`);
         }
 
-        domainConfig = utils.getAnchoringDomainConfig(receivedDomain);
+        domainConfig = await utils.getAnchoringDomainConfig(receivedDomain);
         if (!domainConfig) {
             throw Error(`[Anchoring] Domain '${receivedDomain}' not found`);
         }
@@ -57,10 +57,10 @@ function getWritingHandler(response) {
     };
 }
 
-function updateAnchor(action, request, response) {
+async function updateAnchor(action, request, response) {
     let strategy;
     try {
-        strategy = getStrategy(request);
+        strategy = await getStrategy(request);
     } catch (e) {
         return response.send(500, e);
     }
@@ -86,10 +86,10 @@ function getReadingHandler(response) {
     }
 }
 
-function readDataForAnchor(action, request, response) {
+async function readDataForAnchor(action, request, response) {
     let strategy;
     try {
-        strategy = getStrategy(request);
+        strategy = await getStrategy(request);
     } catch (e) {
         return response.send(500, e);
     }
