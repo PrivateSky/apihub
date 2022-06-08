@@ -201,8 +201,7 @@ function AdminService(exposeAllApis) {
     this.getMainDomain = getMainDomain;
 
     this.checkForTemplate = function (path, callback) {
-        const filter = `pk == ${path}`;
-        enclave.filter(DID_replacement, TEMPLATES_TABLE, filter, (err, template)=>{
+        enclave.getRecord(DID_replacement, TEMPLATES_TABLE, path, (err, template)=>{
             //cleanup template obj before returning it
             return callback(err, template);
         });
@@ -296,7 +295,12 @@ function AdminService(exposeAllApis) {
         this.registerVariableToDomainAsync = $$.promisify(this.registerVariableToDomain);
 
         this.registerTemplate = function (path, content, timestamp, signature, callback) {
-            enclave.insertRecord(DID_replacement, TEMPLATES_TABLE, path, {content}, callback);
+            enclave.getRecord(DID_replacement, TEMPLATES_TABLE, path, (err, template)=>{
+                if(err || !template){
+                    return enclave.insertRecord(DID_replacement, TEMPLATES_TABLE, path, {content}, callback);
+                }
+                enclave.updateRecord(DID_replacement, TEMPLATES_TABLE, path, {content}, callback);
+            })
         }
 
         this.registerTemplateAsync = $$.promisify(this.registerTemplate);
