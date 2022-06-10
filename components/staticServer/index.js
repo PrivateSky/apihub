@@ -163,8 +163,8 @@ function StaticServer(server) {
         });
     }
 
-    function setMimeTypeOnResponse(path, res){
-        let ext = path.extname(path);
+    function setMimeTypeOnResponse(file, res){
+        let ext = path.extname(file);
 
         if (ext !== "") {
             ext = ext.replace(".", "");
