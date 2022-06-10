@@ -1,5 +1,3 @@
-const utils = require("../../utils");
-
 function StaticServer(server) {
     const fs = require("fs");
     const path = require('swarmutils').path;
