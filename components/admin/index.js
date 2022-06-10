@@ -2,6 +2,7 @@ const DATABASE_NAME = "adminEnclave";
 
 const DOMAINS_TABLE = "domains";
 const ADMINS_TABLE = "admins";
+const VARIABLES_TABLE = "variables";
 const TEMPLATES_TABLE = "templates";
 
 const DID_replacement = "";
@@ -158,11 +159,10 @@ function AdminComponentHandler(server) {
     }
 
     async function setVariable(req, res){
-        let {domainName} = req.params;
-        let {variableName, variableContent, timestamp, signature} = req.body;
+        let {dnsDomain, variableName, variableContent, timestamp, signature} = req.body;
 
         try {
-            await adminService.registerVariableToDomainAsync(domainName, variableName, variableContent, timestamp, signature);
+            await adminService.registerVariableAsync(dnsDomain, variableName, variableContent, timestamp, signature);
         } catch (err) {
             res.statusCode = 500;
             return res.end();
@@ -180,7 +180,7 @@ function AdminComponentHandler(server) {
     server.post("/admin/:mainDomain/disableDomain", disableDomain);
     server.post("/admin/:mainDomain/addAdmin", addAdmin);
     server.post("/admin/:mainDomain/addDomainAdmin", addDomainAdmin);
-    server.post("/admin/:mainDomain/:domainName/storeVariable", setVariable);
+    server.post("/admin/:mainDomain/storeVariable", setVariable);
     server.post("/admin/:mainDomain/registerTemplate", registerTemplate);
 }
 
@@ -226,17 +226,17 @@ function AdminService(exposeAllApis) {
         });
     }
 
-    this.getDomainSpecificVariables = function(domainName, callback){
-        enclave.getRecord(DID_replacement, DOMAINS_TABLE, domainName, (err, domain)=>{
+    this.getDomainSpecificVariables = function(dnsDomainName, callback){
+        enclave.getRecord(DID_replacement, VARIABLES_TABLE, dnsDomainName, (err, entry)=>{
             if(err){
                 return callback(err);
             }
 
-            if(!domain){
-                return callback(`Not able to find domain ${domainName}.`);
+            if(!entry){
+                return callback(`Not able to find domain ${dnsDomainName}.`);
             }
 
-            return callback(undefined, domain.variables || {});
+            return callback(undefined, entry.variables || {});
         });
     }
 
@@ -277,22 +277,22 @@ function AdminService(exposeAllApis) {
 
         this.registerDomainAdminAsync = $$.promisify(this.registerDomainAdmin);
 
-        this.registerVariableToDomain = function (domainName, variableName, variableContent, timestamp, signature, callback){
-            enclave.getRecord(DID_replacement, DOMAINS_TABLE, domainName, (err, domain)=>{
+        this.registerVariable = function (dnsDomain, variableName, variableContent, timestamp, signature, callback){
+            enclave.getRecord(DID_replacement, VARIABLES_TABLE, dnsDomain, (err, entry)=>{
                 if(err){
                     return callback(err);
                 }
 
-                if(!domain.variables){
-                    domain.variables = {};
+                if(!entry.variables){
+                    entry.variables = {};
                 }
 
-                domain.variables[variableName] = variableContent;
+                entry.variables[variableName] = variableContent;
 
-                enclave.updateRecord(DID_replacement, DOMAINS_TABLE, domainName, domain, callback);
+                enclave.updateRecord(DID_replacement, VARIABLES_TABLE, dnsDomain, entry, callback);
             });
         }
-        this.registerVariableToDomainAsync = $$.promisify(this.registerVariableToDomain);
+        this.registerVariableAsync = $$.promisify(this.registerVariable);
 
         this.registerTemplate = function (path, content, timestamp, signature, callback) {
             enclave.getRecord(DID_replacement, TEMPLATES_TABLE, path, (err, template)=>{

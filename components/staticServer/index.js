@@ -113,14 +113,6 @@ function StaticServer(server) {
     }
 
     function tryToCreateAtRuntimeFromTemplates(req, callback){
-        let extractSubdomain = function(url){
-            let regex = new RegExp(/^([a-z]+\:\/{2})?([\w-]+\.[\w-]+\.\w+(\:[0-9]*)?)$/);
-            if(!!url.match(regex)){
-                let components = url.split(".");
-                return components[0];
-            }
-            return undefined;
-        }
 
         let adminService;
         try{
@@ -135,20 +127,16 @@ function StaticServer(server) {
             }
             if(template){
                 let fileContent = template.content;
-                let host = req.headers.host;
-                let subdomain = extractSubdomain(host);
-                if(!subdomain){
-                    return callback(new Error("Not able to detect a subdomain. Skipping template lookup."));
-                }
+                let hostname = req.hostname;
 
-                return adminService.getDomainInfo(subdomain, (err, domainInfo)=>{
-                    if(err || !domainInfo){
+                return adminService.getDomainSpecificVariables(hostname, (err, entry)=>{
+                    if(err || !entry){
                         return callback(err);
                     }
-                    let domainVariables = Object.keys(domainInfo.variables);
+                    let domainVariables = Object.keys(entry.variables);
                     for(let i=0; i<domainVariables.length; i++){
                         let variableName = domainVariables[i];
-                        let variableValue = domainInfo.variables[variableName];
+                        let variableValue = entry.variables[variableName];
 
                         const lookupFor = "${"+variableName+"}";
                         fileContent = fileContent.split(lookupFor).join(variableValue);
