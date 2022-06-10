@@ -116,14 +116,14 @@ function StaticServer(server) {
         try{
             adminService = require("./../admin").getAdminService();
         }catch(err){
-            console.log("Caught an error durring admin service initialization", err);
+            //console.log("Caught an error durring admin service initialization", err);
             return callback(err);
         }
 
         adminService.checkForTemplate(req.url, (err, template)=>{
             if(err){
-                console.log("Not able to find template for", req.url);
-                console.trace(err);
+                //console.log("Not able to find template for", req.url);
+                //console.trace(err);
                 return callback(err);
             }
             if(template){
@@ -131,17 +131,17 @@ function StaticServer(server) {
                 const urlObject = new URL(req.url, `http://${req.headers.host}`);
                 let hostname = urlObject.hostname;
                 console.log("Preparing to read vars for ", hostname);
-                return adminService.getDomainSpecificVariables(hostname, (err, entry)=>{
-                    if(err || !entry){
+                return adminService.getDomainSpecificVariables(hostname, (err, variables)=>{
+                    if(err || !variables){
                         console.log("Not able to get any variable for ", hostname);
-                        console.log(err);
+                        //console.log(err);
                         return callback(err);
                     }
-                    let domainVariables = Object.keys(entry.variables);
+                    let domainVariables = Object.keys(variables);
                     console.log("Domain variables found:", JSON.stringify(domainVariables));
                     for(let i=0; i<domainVariables.length; i++){
                         let variableName = domainVariables[i];
-                        let variableValue = entry.variables[variableName];
+                        let variableValue = variables[variableName];
 
                         const lookupFor = "${"+variableName+"}";
                         fileContent = fileContent.split(lookupFor).join(variableValue);
@@ -158,7 +158,7 @@ function StaticServer(server) {
     function resolveFileAndSend(req, res, file){
         tryToCreateAtRuntimeFromTemplates(req,(err, content)=>{
             if(err){
-                console.trace(err);
+                //console.trace(err);
                 //if any error... we fallback to normal sendFile method
                 return sendFile(res, file);
             }
