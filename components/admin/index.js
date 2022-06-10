@@ -9,7 +9,7 @@ const DID_replacement = "";
 
 let internalServerRef;
 
-function getStorageFolder(){
+function getStorageFolder() {
     const config = internalServerRef.config;
 
     return require("path").join(internalServerRef.rootFolder, config.componentsConfig.admin.storageFolder);
@@ -37,8 +37,8 @@ function saveMainDomain(domain, callback) {
         if (err || !mainDomain) {
             const FS = "fs";
             const fs = require(FS);
-            fs.mkdir(getStorageFolder(), {recursive: true}, (err)=>{
-                if(err){
+            fs.mkdir(getStorageFolder(), {recursive: true}, (err) => {
+                if (err) {
                     return callback(err);
                 }
                 fs.writeFile(getMainDomainStorageFile(), domain, {}, callback);
@@ -69,16 +69,16 @@ function AdminComponentHandler(server) {
 
     let adminService = new AdminService(true);
 
-    async function enforceMainDomainMiddleware(req, res, next){
+    async function enforceMainDomainMiddleware(req, res, next) {
         let {mainDomain} = req.params;
         let testIfMainDomain = $$.promisify(isMainDomain);
-        try{
+        try {
             let isMain = await testIfMainDomain(mainDomain);
             if (!isMain) {
                 res.statusCode = 403;
                 return res.end();
             }
-        }catch(err){
+        } catch (err) {
             res.statusCode = 500;
             return res.end();
         }
@@ -88,7 +88,7 @@ function AdminComponentHandler(server) {
     async function addDomain(req, res) {
         let {domainName, timestamp, signature, cloneFromDomain} = req.body;
 
-        if(!cloneFromDomain){
+        if (!cloneFromDomain) {
             res.statusCode = 403;
             res.end();
         }
@@ -158,7 +158,7 @@ function AdminComponentHandler(server) {
         res.end();
     }
 
-    async function setVariable(req, res){
+    async function setVariable(req, res) {
         let {dnsDomain, variableName, variableContent, timestamp, signature} = req.body;
 
         try {
@@ -191,8 +191,8 @@ function AdminService(exposeAllApis) {
         enclave.getAllRecords(DID_replacement, DOMAINS_TABLE, callback);
     }
 
-    this.getDomainInfo = function (domainName, callback){
-        enclave.getRecord(DID_replacement, DOMAINS_TABLE, domainName, (err, domainInfo)=>{
+    this.getDomainInfo = function (domainName, callback) {
+        enclave.getRecord(DID_replacement, DOMAINS_TABLE, domainName, (err, domainInfo) => {
             //cleanup domain obj before returning it
             return callback(err, domainInfo);
         });
@@ -201,24 +201,24 @@ function AdminService(exposeAllApis) {
     this.getMainDomain = getMainDomain;
 
     this.checkForTemplate = function (path, callback) {
-        enclave.getRecord(DID_replacement, TEMPLATES_TABLE, path, (err, template)=>{
+        enclave.getRecord(DID_replacement, TEMPLATES_TABLE, path, (err, template) => {
             //cleanup template obj before returning it
             return callback(err, template);
         });
     }
 
-    this.checkIfAdmin = function(did, callback){
-        enclave.getRecord(DID_replacement, ADMINS_TABLE, did, (err, admin)=>{
-            if(err || !admin){
+    this.checkIfAdmin = function (did, callback) {
+        enclave.getRecord(DID_replacement, ADMINS_TABLE, did, (err, admin) => {
+            if (err || !admin) {
                 return callback(undefined, false);
             }
             return callback(undefined, true);
         });
     }
 
-    this.checkIfDomainAdmin = function(domainName, did, callback){
-        enclave.getRecord(DID_replacement, DOMAINS_TABLE, domainName, (err, domain)=>{
-            if(err || !domain || !domain.admins || domain.admins.indexOf(did) === -1){
+    this.checkIfDomainAdmin = function (domainName, did, callback) {
+        enclave.getRecord(DID_replacement, DOMAINS_TABLE, domainName, (err, domain) => {
+            if (err || !domain || !domain.admins || domain.admins.indexOf(did) === -1) {
                 return callback(undefined, false);
             }
 
@@ -226,13 +226,13 @@ function AdminService(exposeAllApis) {
         });
     }
 
-    this.getDomainSpecificVariables = function(dnsDomainName, callback){
-        enclave.getRecord(DID_replacement, VARIABLES_TABLE, dnsDomainName, (err, entry)=>{
-            if(err){
+    this.getDomainSpecificVariables = function (dnsDomainName, callback) {
+        enclave.getRecord(DID_replacement, VARIABLES_TABLE, dnsDomainName, (err, entry) => {
+            if (err) {
                 return callback(err);
             }
 
-            if(!entry){
+            if (!entry) {
                 return callback(`Not able to find domain ${dnsDomainName}.`);
             }
 
@@ -243,13 +243,20 @@ function AdminService(exposeAllApis) {
     //from this line down there are only methods that change the state of the enclave.
     if (exposeAllApis) {
         this.addDomain = async function (domainName, cloneFromDomain, timestamp, signature, callback) {
-            enclave.insertRecord(DID_replacement, DOMAINS_TABLE, domainName, {name:domainName, active: true, cloneFromDomain}, callback);
+            enclave.insertRecord(DID_replacement, DOMAINS_TABLE, domainName, {
+                name: domainName,
+                active: true,
+                cloneFromDomain
+            }, callback);
         }
 
         this.addDomainAsync = $$.promisify(this.addDomain);
 
         this.disableDomain = async function (domainName, timestamp, signature, callback) {
-            enclave.updateRecord(DID_replacement, DOMAINS_TABLE, domainName, {name: domainName, active:false}, callback);
+            enclave.updateRecord(DID_replacement, DOMAINS_TABLE, domainName, {
+                name: domainName,
+                active: false
+            }, callback);
         }
 
         this.disableDomainAsync = $$.promisify(this.disableDomain);
@@ -261,12 +268,12 @@ function AdminService(exposeAllApis) {
         this.registerAdminAsync = $$.promisify(this.registerAdmin);
 
         this.registerDomainAdmin = function (domainName, did, timestamp, signature, callback) {
-            enclave.getRecord(DID_replacement, DOMAINS_TABLE, domainName, (err, domain)=>{
-                if(err){
+            enclave.getRecord(DID_replacement, DOMAINS_TABLE, domainName, (err, domain) => {
+                if (err) {
                     return callback(err);
                 }
 
-                if(!domain.admins){
+                if (!domain.admins) {
                     domain.admins = [];
                 }
                 domain.admins.push(did);
@@ -277,13 +284,17 @@ function AdminService(exposeAllApis) {
 
         this.registerDomainAdminAsync = $$.promisify(this.registerDomainAdmin);
 
-        this.registerVariable = function (dnsDomain, variableName, variableContent, timestamp, signature, callback){
-            enclave.getRecord(DID_replacement, VARIABLES_TABLE, dnsDomain, (err, entry)=>{
-                if(err){
-                    return callback(err);
+        this.registerVariable = function (dnsDomain, variableName, variableContent, timestamp, signature, callback) {
+            enclave.getRecord(DID_replacement, VARIABLES_TABLE, dnsDomain, (err, entry) => {
+                if (err) {
+                    let entry = {
+                        variables: {}
+                    };
+                    entry.variables[variableName] = variableContent;
+                    enclave.insertRecord(DID_replacement, VARIABLES_TABLE, dnsDomain, entry, callback);
                 }
 
-                if(!entry.variables){
+                if (!entry.variables) {
                     entry.variables = {};
                 }
 
@@ -295,8 +306,8 @@ function AdminService(exposeAllApis) {
         this.registerVariableAsync = $$.promisify(this.registerVariable);
 
         this.registerTemplate = function (path, content, timestamp, signature, callback) {
-            enclave.getRecord(DID_replacement, TEMPLATES_TABLE, path, (err, template)=>{
-                if(err || !template){
+            enclave.getRecord(DID_replacement, TEMPLATES_TABLE, path, (err, template) => {
+                if (err || !template) {
                     return enclave.insertRecord(DID_replacement, TEMPLATES_TABLE, path, {content}, callback);
                 }
                 enclave.updateRecord(DID_replacement, TEMPLATES_TABLE, path, {content}, callback);
