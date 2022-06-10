@@ -1,3 +1,5 @@
+const utils = require("../../utils");
+
 function StaticServer(server) {
     const fs = require("fs");
     const path = require('swarmutils').path;
@@ -167,9 +169,23 @@ function StaticServer(server) {
                 return sendFile(res, file);
             }
             res.statusCode = 200;
+
+            setMimeTypeOnResponse(req.url, res);
+
             res.setHeader('Cache-Control', 'no-store');
             res.end(content);
         });
+    }
+
+    function setMimeTypeOnResponse(path, res){
+        let ext = path.extname(path);
+
+        if (ext !== "") {
+            ext = ext.replace(".", "");
+            res.setHeader('Content-Type', utils.getMimeTypeFromExtension(ext).name);
+        } else {
+            res.setHeader('Content-Type', "application/octet-stream");
+        }
     }
 
     function sendFile(res, file) {
@@ -182,14 +198,8 @@ function StaticServer(server) {
             }
         }
         let stream = fs.createReadStream(file);
-        let ext = path.extname(file);
+        setMimeTypeOnResponse(file, res);
 
-        if (ext !== "") {
-            ext = ext.replace(".", "");
-            res.setHeader('Content-Type', utils.getMimeTypeFromExtension(ext).name);
-        } else {
-            res.setHeader('Content-Type', "application/octet-stream");
-        }
 
         // instruct to not store response into cache
         res.setHeader('Cache-Control', 'no-store');
