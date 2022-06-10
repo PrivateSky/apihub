@@ -116,22 +116,28 @@ function StaticServer(server) {
         try{
             adminService = require("./../admin").getAdminService();
         }catch(err){
+            console.log("Caught an error durring admin service initialization", err);
             return callback(err);
         }
 
         adminService.checkForTemplate(req.url, (err, template)=>{
             if(err){
+                console.log("Not able to find template for", req.url);
+                console.trace(err);
                 return callback(err);
             }
             if(template){
                 let fileContent = template.content;
                 let hostname = req.hostname;
-
+                console.log("Preparing to read vars for ", hostname);
                 return adminService.getDomainSpecificVariables(hostname, (err, entry)=>{
                     if(err || !entry){
+                        console.log("Not able to get any variable for ", hostname);
+                        console.log(err);
                         return callback(err);
                     }
                     let domainVariables = Object.keys(entry.variables);
+                    console.log("Domain variables found:", JSON.stringify(domainVariables));
                     for(let i=0; i<domainVariables.length; i++){
                         let variableName = domainVariables[i];
                         let variableValue = entry.variables[variableName];
@@ -143,7 +149,7 @@ function StaticServer(server) {
                     return callback(undefined, fileContent);
                 });
             }else{
-                return callback(new Error(`Not template found for ${req.url}`));
+                return callback(new Error(`No template found for ${req.url}`));
             }
         });
     }
@@ -151,9 +157,11 @@ function StaticServer(server) {
     function resolveFileAndSend(req, res, file){
         tryToCreateAtRuntimeFromTemplates(req,(err, content)=>{
             if(err){
+                console.trace(err);
                 //if any error... we fallback to normal sendFile method
                 return sendFile(res, file);
             }
+            console.log("Responding with template instead of file.");
             res.statusCode = 200;
 
             setMimeTypeOnResponse(req.url, res);
