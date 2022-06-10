@@ -128,7 +128,7 @@ function StaticServer(server) {
             }
             if(template){
                 let fileContent = template.content;
-                const urlObject = new URL(req.headers.host);
+                const urlObject = new URL(req.url, `http://${req.headers.host}`);
                 let hostname = urlObject.hostname;
                 console.log("Preparing to read vars for ", hostname);
                 return adminService.getDomainSpecificVariables(hostname, (err, entry)=>{
