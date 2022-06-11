@@ -38,14 +38,14 @@ function addDsuWorker(seed) {
         resolver: new Promise((resolve, reject) => {
             crypto.randomBytes(64, (err, randomBuffer) => {
                 if (err) {
-                    console.log("[Iframe] Error while generating worker authorizationKey", err);
+                    console.log("[CloudWallet] Error while generating worker authorizationKey", err);
                     return reject(err);
                 }
 
                 const authorizationKey = randomBuffer.toString("hex");
                 dsuWorker.authorizationKey = authorizationKey;
 
-                console.log(`[Iframe] Starting worker for handling seed ${seed}`);
+                console.log(`[CloudWallet] Starting worker for handling seed ${seed}`);
                 const worker = new Worker(dsuBootPath, {
                     workerData: {
                         seed,
@@ -60,7 +60,7 @@ function addDsuWorker(seed) {
                     }
                     if (message.port) {
                         console.log(
-                            `[Iframe] Running worker on PORT ${message.port} for seed ${seed}. Startup took ${getElapsedTime(
+                            `[CloudWallet] Running worker on PORT ${message.port} for seed ${seed}. Startup took ${getElapsedTime(
                                 workerStartTime
                             )}`
                         );
@@ -69,11 +69,11 @@ function addDsuWorker(seed) {
                     }
                 });
                 worker.on("error", (error) => {
-                    console.log("[Iframe] worker error", error);
+                    console.log("[CloudWallet] worker error", error);
                 });
                 worker.on("exit", (code) => {
                     if (code !== 0) {
-                        console.log(`[Iframe] Worker stopped with exit code ${code}`);
+                        console.log(`[CloudWallet] Worker stopped with exit code ${code}`);
                         // remove the worker from list in order to be recreated when needed
                         delete dsuWorkers[seed];
                     }
@@ -135,14 +135,14 @@ function forwardRequestToWorker(dsuWorker, req, res) {
                 res.statusCode = statusCode;
                 res.end(bodyContent);
             } catch (err) {
-                console.log("[Iframe] worker response error", err);
+                console.log("[CloudWallet] worker response error", err);
                 res.statusCode = 500;
                 res.end();
             }
         });
     });
     workerRequest.on("error", (err) => {
-        console.log("[Iframe] worker request error", err);
+        console.log("[CloudWallet] worker request error", err);
         res.statusCode = 500;
         res.end();
     });
@@ -150,7 +150,7 @@ function forwardRequestToWorker(dsuWorker, req, res) {
     if (method === "POST" || method === "PUT") {
         let data = [];
         req.on("data", (chunk) => {
-            console.log("[Iframe] data.push(chunk);", chunk);
+            console.log("[CloudWallet] data.push(chunk);", chunk);
             data.push(chunk);
         });
 
@@ -160,7 +160,7 @@ function forwardRequestToWorker(dsuWorker, req, res) {
                 workerRequest.write(bodyContent);
                 workerRequest.end();
             } catch (err) {
-                console.log("[Iframe] worker response error", err);
+                console.log("[CloudWallet] worker response error", err);
                 res.statusCode = 500;
                 res.end();
             }
@@ -171,21 +171,21 @@ function forwardRequestToWorker(dsuWorker, req, res) {
 }
 
 function init(server) {
-    console.log(`Registering Iframe component`);
+    console.log(`Registering CloudWallet component`);
 
-    dsuBootPath = config.getConfig("componentsConfig", "iframe", "dsuBootPath");
+    dsuBootPath = config.getConfig("componentsConfig", "cloudWallet", "dsuBootPath");
 
     if (dsuBootPath.startsWith(".")) {
         dsuBootPath = path.resolve(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, dsuBootPath));
     }
 
-    console.log(`[Iframe] Using boot script for worker: ${dsuBootPath}`);
+    console.log(`[CloudWallet] Using boot script for worker: ${dsuBootPath}`);
 
     //if a listening event is fired from this point on...
     //it means that a restart was triggered
     server.on("listening", () => {
-        console.log(`[Iframe] Restarting process in progress...`);
-        console.log(`[Iframe] Stopping a number of ${Object.keys(dsuWorkers).length} thread workers`);
+        console.log(`[CloudWallet] Restarting process in progress...`);
+        console.log(`[CloudWallet] Stopping a number of ${Object.keys(dsuWorkers).length} thread workers`);
         for (let seed in dsuWorkers) {
             let worker = dsuWorkers[seed];
             if (worker && worker.terminate) {
@@ -195,7 +195,7 @@ function init(server) {
     });
 }
 
-function handleIframeRequest(request, response) {
+function handleCloudWalletRequest(request, response) {
     const { keySSI } = request.params;
 
     let dsuWorker = dsuWorkers[keySSI];
@@ -208,7 +208,7 @@ function handleIframeRequest(request, response) {
             forwardRequestToWorker(dsuWorker, request, response);
         })
         .catch((error) => {
-            console.log("[Iframe] worker resolver error", error);
+            console.log("[CloudWallet] worker resolver error", error);
             res.setHeader("Content-Type", "text/html");
             res.statusCode = 400;
             res.end(INVALID_DSU_HTML_RESPONSE);
@@ -217,5 +217,5 @@ function handleIframeRequest(request, response) {
 
 module.exports = {
     init,
-    handleIframeRequest,
+    handleCloudWalletRequest,
 };
