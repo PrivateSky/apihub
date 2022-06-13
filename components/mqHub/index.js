@@ -44,7 +44,7 @@ function MQHub(server) {
 	}
 
 	async function allowUnregisteredDID(domainName){
-		const domainConfig = await config.getSafeDomainConfig(domain);
+		const domainConfig = await config.getSafeDomainConfig(domainName);
 		let allowUnregisteredDID = defaultSettings.mq_allow_unregistered_did;
 		if(domainConfig && typeof domainConfig.mq_allow_unregistered_did !== "undefined"){
 			allowUnregisteredDID = !!domainConfig.mq_allow_unregistered_did;
@@ -168,11 +168,13 @@ function MQHub(server) {
 			let adminService = require("./../../components/admin").getAdminService();
 			let getDomains = $$.promisify(adminService.getDomains);
 			let virtualDomains = await getDomains();
+			//console.log("virtualDomains", virtualDomains);
 			for(let i=0; i<virtualDomains.length; i++){
 				let domainInfo = virtualDomains[i];
+				//console.log("domain info", domainInfo);
 				if(domainInfo && domainInfo.active && domainInfo.cloneFromDomain){
 					if(testIfMQEnabled(domainInfo.cloneFromDomain)){
-						console.log(`Successfully register mq endpoints for domain < ${domain} >.`);
+						console.log(`Successfully register mq endpoints for virtual domain < ${domainInfo.pk} >.`);
 						domains.push(domainInfo.pk);
 					}
 				}
