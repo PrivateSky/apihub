@@ -258,4 +258,4 @@ function updateDomainConfig(domain, config, callback) {
     })
 }
 
-module.exports = {getConfig, getTokenIssuers, getConfiguredDomains, getDomainConfig, updateDomainConfig};
+module.exports = {getConfig, getTokenIssuers, getConfiguredDomains, getDomainConfig, getSafeDomainConfig, updateDomainConfig};
