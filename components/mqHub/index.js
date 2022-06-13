@@ -139,30 +139,51 @@ function MQHub(server) {
 
 	server.get(`${URL_PREFIX}/:domain/take/:hashDID/:signature_of_did`, takeMessageHandler); //  > message
 
+	function testIfMQEnabled(domain){
+		let domainConfig = config.getDomainConfig(domain);
 
-	function setupDomainSpecificHandlers() {
+		if (domainConfig && domainConfig.enable && domainConfig.enable.indexOf("mq") !== -1) {
+			const adapterTypeName = domainConfig["mq_type"] || "local";
+			const adapter = adapterImpls[adapterTypeName];
+			if (!adapter) {
+				console.log(`Not able to recognize the mq_type < ${adapterTypeName} > from the domain < ${domain} > config.`);
+				return;
+			}
+
+			try {
+				console.log(`Preparing to register mq endpoints for domain < ${domain} > ... `);
+				adapter(server, URL_PREFIX, domain, domainConfig);
+			} catch (err) {
+				console.log(`Caught an error during initialization process of the mq for domain < ${domain} >`, err);
+				return;
+			}
+
+			return true;
+		}
+	}
+
+	async function setupDomainSpecificHandlers() {
 		let confDomains = typeof config.getConfiguredDomains !== "undefined" ? config.getConfiguredDomains() : ["default"];
+		try{
+			let adminService = require("./../../components/admin").getAdminService();
+			let getDomains = $$.promisify(adminService.getDomains);
+			let virtualDomains = await getDomains();
+			for(let i=0; i<virtualDomains.length; i++){
+				let domainInfo = virtualDomains[i];
+				if(domainInfo && domainInfo.active && domainInfo.cloneFromDomain){
+					if(testIfMQEnabled(domainInfo.cloneFromDomain)){
+						console.log(`Successfully register mq endpoints for domain < ${domain} >.`);
+						domains.push(domainInfo.pk);
+					}
+				}
+			}
+		}catch(err){
+			//we ignore any errors;
+		}
 
 		for (let i = 0; i < confDomains.length; i++) {
 			let domain = confDomains[i];
-			let domainConfig = config.getDomainConfig(domain);
-
-			if (domainConfig && domainConfig.enable && domainConfig.enable.indexOf("mq") !== -1) {
-				const adapterTypeName = domainConfig["mq_type"] || "local";
-				const adapter = adapterImpls[adapterTypeName];
-				if (!adapter) {
-					console.log(`Not able to recognize the mq_type < ${adapterTypeName} > from the domain < ${domain} > config.`);
-					continue;
-				}
-
-				try {
-					console.log(`Preparing to register mq endpoints for domain < ${domain} > ... `);
-					adapter(server, URL_PREFIX, domain, domainConfig);
-				} catch (err) {
-					console.log(`Caught an error during initialization process of the mq for domain < ${domain} >`, err);
-					continue;
-				}
-
+			if(testIfMQEnabled(domain)){
 				console.log(`Successfully register mq endpoints for domain < ${domain} >.`);
 				domains.push(domain);
 			}
