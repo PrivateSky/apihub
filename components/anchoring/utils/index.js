@@ -11,7 +11,7 @@ const getAnchoringDomainConfig = async (domain) => {
             let adminService = require("./../../admin").getAdminService();
             const getDomainInfo = $$.promisify(adminService.getDomainInfo);
             let domainInfo = await getDomainInfo(domain);
-            if(domainInfo && domain.active && domainInfo.cloneFromDomain){
+            if(domainInfo && domainInfo.active && domainInfo.cloneFromDomain){
                 const clonedDomainConfiguration = config.getDomainConfig(domainInfo.cloneFromDomain);
                 domainConfiguration = clonedDomainConfiguration;
                 console.log(`Config for domain '${domain}' was loaded from admin service.`);
