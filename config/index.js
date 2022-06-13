@@ -186,7 +186,7 @@ function getConfiguredDomains() {
 }
 
 async function getSafeDomainConfig(domain, ...configKeys){
-    let domainConfig = config.getDomainConfig(domain);
+    let domainConfig = getDomainConfig(domain);
     if(!domainConfig){
         try{
             let adminService = require("./../components/admin").getAdminService();

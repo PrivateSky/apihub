@@ -1,5 +1,4 @@
 const { clone } = require("../../../utils");
-const config = require("../../../config");
 
 const getAnchoringDomainConfig = async (domain) => {
     const config = require("../../../config");
