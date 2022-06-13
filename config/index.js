@@ -189,7 +189,7 @@ async function getSafeDomainConfig(domain, ...configKeys){
     let domainConfig = config.getDomainConfig(domain);
     if(!domainConfig){
         try{
-            let adminService = require("./../../admin").getAdminService();
+            let adminService = require("./../components/admin").getAdminService();
             const getDomainInfo = $$.promisify(adminService.getDomainInfo);
             let domainInfo = await getDomainInfo(domain);
             if(domainInfo && domainInfo.active && domainInfo.cloneFromDomain){
