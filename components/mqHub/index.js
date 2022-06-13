@@ -19,7 +19,9 @@ const defaultSettings = {
 	mq_allow_unregistered_did: false
 }
 
-function MQHub(server) {
+async function MQHub(server, signalAsyncLoading, doneLoading) {
+
+	signalAsyncLoading();
 
 	const config = require("./../../config/index");
 
@@ -192,7 +194,8 @@ function MQHub(server) {
 		}
 	}
 
-	setupDomainSpecificHandlers();
+	await setupDomainSpecificHandlers();
+	doneLoading();
 }
 
 module.exports = {

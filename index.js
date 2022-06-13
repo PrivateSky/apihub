@@ -205,7 +205,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
             }
         }
 
-        function addComponent(componentName, componentConfig) {
+        function addComponent(componentName, componentConfig, callback) {
             const path = require("swarmutils").path;
 
             let componentPath = componentConfig.module;
@@ -220,12 +220,28 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
             } catch(e){
                 throw e;
             }
+			let asyncLodingComponent = false;
+			const calledByAsynLoadingComponent = (cb)=>{
+				asyncLodingComponent = true;
+				//if the component calls before returning this function means that needs more time, is doing async calls etc.
+			}
+
+			let arguments = [server];
+
+			if(callback) {
+				arguments.push(calledByAsynLoadingComponent);
+				arguments.push(callback);
+			}
 
             if (typeof componentConfig.function !== 'undefined') {
-                middlewareImplementation[componentConfig.function](server);
+                middlewareImplementation[componentConfig.function](...arguments);
             } else {
-                middlewareImplementation(server);
+                middlewareImplementation(...arguments);
             }
+
+			if(!asyncLodingComponent && callback){
+				callback();
+			}
         }
 
 		function addComponents() {
@@ -264,24 +280,26 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 				console.log("Final comp:", middlewareList, conf.defaultComponents)
 			}
 
-			middlewareList.forEach(componentName => {
-                const componentConfig = conf.componentsConfig[componentName];
-                addComponent(componentName, componentConfig);
-            });
+			function installNextComponent(componentList){
+				const componentName = componentList[0];
+				const componentConfig = conf.componentsConfig[componentName];
+				addComponent(componentName, componentConfig, ()=>{
+					componentList.shift();
+					if(componentList.length>0){
+						installNextComponent(componentList);
+					}
+				});
+			}
+
+			if(middlewareList.indexOf("staticServer") === -1) {
+				middlewareList.push("staticServer");
+			}
+
+			installNextComponent(middlewareList);
 		}
 
         addRootMiddlewares();
 		addComponents();
-		setTimeout(function () {
-			//allow other endpoints registration before registering fallback handler
-			server.use(function (req, res) {
-				res.statusCode = 404;
-				res.end();
-			});
-			if (callback) {
-				return callback();
-			}
-		}, 100);
 	}
 
 	return server;
