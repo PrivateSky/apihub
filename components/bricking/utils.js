@@ -13,22 +13,26 @@ function convertReadableStreamToBuffer(readStream, callback) {
 }
 
 async function getBricksDomainConfig(domain) {
+    console.log("Looking for domain", domain);
     const config = require("../../config");
     let domainConfiguration = config.getDomainConfig(domain);
 
     if(!domainConfiguration){
+        //console.log("First domain search failed. Searchig for dinamic domains.");
         //if you don't have config we try to use admin service info to create one at runtime
         try{
             let adminService = require("./../admin").getAdminService();
             const getDomainInfo = $$.promisify(adminService.getDomainInfo);
             let domainInfo = await getDomainInfo(domain);
-            if(domainInfo && domain.active && domainInfo.cloneFromDomain){
+            //console.log("domainInfo", domainInfo);
+            if(domainInfo && domainInfo.active && domainInfo.cloneFromDomain){
                 const clonedDomainConfiguration = config.getDomainConfig(domainInfo.cloneFromDomain);
                 domainConfiguration = clonedDomainConfiguration;
                 console.log(`Config for domain '${domain}' was loaded from admin service.`);
             }
         }catch(err){
             //we ignore any errors in this try-catch block because admin component may be disabled
+            //console.log(err);
         }
     }
 
