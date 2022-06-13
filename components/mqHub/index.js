@@ -43,8 +43,8 @@ function MQHub(server) {
 		});
 	}
 
-	function allowUnregisteredDID(domainName){
-		const domainConfig = config.getDomainConfig(domainName);
+	async function allowUnregisteredDID(domainName){
+		const domainConfig = await config.getSafeDomainConfig(domain);
 		let allowUnregisteredDID = defaultSettings.mq_allow_unregistered_did;
 		if(domainConfig && typeof domainConfig.mq_allow_unregistered_did !== "undefined"){
 			allowUnregisteredDID = !!domainConfig.mq_allow_unregistered_did;
@@ -52,7 +52,7 @@ function MQHub(server) {
 		return allowUnregisteredDID;
 	}
 
-	function putMessageHandler(request, response, next) {
+	async function putMessageHandler(request, response, next) {
 		const domainName = request.params.domain;
 		if (domains.indexOf(domainName) === -1) {
 			console.log(`Caught an request to the MQs for domain ${domainName}. Looks like the domain doesn't have mq component enabled.`);
@@ -63,7 +63,7 @@ function MQHub(server) {
 
 		let token = request.headers['authorization'];
 
-		if(!allowUnregisteredDID(domainName) && !token){
+		if(! await allowUnregisteredDID(domainName) && !token){
 			console.log(`No token was available on the request and the domain ${domainName} configuration prohibits unregisteredDIDs to use the MQ api.`);
 			response.statusCode = 403;
 			response.end();
@@ -87,7 +87,7 @@ function MQHub(server) {
 		});
 	}
 
-	function getMessageHandler(request, response, next) {
+	async function getMessageHandler(request, response, next) {
 		const domainName = request.params.domain;
 		if (domains.indexOf(domainName) === -1) {
 			console.log(`Caught an request to the MQs for domain ${domainName}. Looks like the domain doesn't have mq component enabled.`);
@@ -98,7 +98,7 @@ function MQHub(server) {
 
 		let token = request.headers['authorization'];
 
-		if(!allowUnregisteredDID(domainName) && !token){
+		if(! await allowUnregisteredDID(domainName) && !token){
 			console.log(`No token was available on the request and the domain ${domainName} configuration prohibits unregisteredDIDs to use the MQ api.`);
 			response.statusCode = 403;
 			response.end();

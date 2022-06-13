@@ -49,7 +49,7 @@ function getWritingHandler(response) {
             } else if (err.code === 403) {
                 return response.send(403, errorMessage);
             }
-
+            console.log(err);
             return response.send(500, errorMessage);
         }
 
@@ -62,6 +62,7 @@ async function updateAnchor(action, request, response) {
     try {
         strategy = await getStrategy(request);
     } catch (e) {
+        console.log(e);
         return response.send(500, e);
     }
     strategy[action](getWritingHandler(response));
@@ -91,6 +92,7 @@ async function readDataForAnchor(action, request, response) {
     try {
         strategy = await getStrategy(request);
     } catch (e) {
+        console.log(e);
         return response.send(500, e);
     }
     strategy[action](getReadingHandler(response));

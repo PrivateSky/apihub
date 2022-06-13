@@ -185,6 +185,24 @@ function getConfiguredDomains() {
     return Object.keys(domainConfigs);
 }
 
+async function getSafeDomainConfig(domain, ...configKeys){
+    let domainConfig = config.getDomainConfig(domain);
+    if(!domainConfig){
+        try{
+            let adminService = require("./../../admin").getAdminService();
+            const getDomainInfo = $$.promisify(adminService.getDomainInfo);
+            let domainInfo = await getDomainInfo(domain);
+            if(domainInfo && domainInfo.active && domainInfo.cloneFromDomain){
+                console.log(`Config for domain '${domain}' was loaded from admin service.`);
+                return getDomainConfig(domainInfo.cloneFromDomain);
+            }
+        }catch(err){
+            //we ignore any errors in this try-catch block because admin component may be disabled
+        }
+    }
+    return getDomainConfig(domain, ...configKeys);
+}
+
 function getDomainConfig(domain, ...configKeys) {
     ensureConfigsAreLoaded();
     if(!domain) {
