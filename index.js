@@ -26,6 +26,8 @@ const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
 	require('./components/mqHub');
 	require('./components/enclave');
 	require('./components/secrets');
+	require('./components/cloudWallet');
+	require('./components/stream');
 	//end
 })();
 
@@ -177,11 +179,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 			const LoggerMiddleware = require('./middlewares/logger');
 			const AuthorisationMiddleware = require('./middlewares/authorisation');
 			const OAuth = require('./middlewares/oauth');
-			const IframeHandlerMiddleware = require('./middlewares/iframeHandler');
 			const ResponseHeaderMiddleware = require('./middlewares/responseHeader');
 			const genericErrorMiddleware = require('./middlewares/genericErrorMiddleware');
 			const requestEnhancements = require('./middlewares/requestEnhancements');
-			const StreamHandlerMiddleware = require('./middlewares/streamHandler');
 
 			if(conf.enableRequestLogger) {
 				new LoggerMiddleware(server);
@@ -199,17 +199,10 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 			if(conf.responseHeaders){
 				new ResponseHeaderMiddleware(server);
 			}
-            if(conf.iframeHandlerDsuBootPath) {
-                new IframeHandlerMiddleware(server);
-            }
             if(conf.enableInstallationDetails) {
                 const enableInstallationDetails = require("./components/installation-details");
                 enableInstallationDetails(server);
             }
-            if(conf.enableStreamHandler) {
-                new StreamHandlerMiddleware(server);
-            }
-
         }
 
         function addComponent(componentName, componentConfig) {
@@ -249,6 +242,27 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
                 	return include;
 				})
                 .filter(activeComponentName => !requiredComponentNames.includes(activeComponentName));
+
+			if(!middlewareList.includes("cloudWallet")) {
+				console.warn("WARNING: cloudWallet component is not configured inside activeComponents!")
+				console.warn("WARNING: temporary adding cloudWallet component to activeComponents! Please make sure to include cloudWallet component inside activeComponents!")
+
+				const addCloudWalletToComponentList = (list) => {
+					const indexOfStaticServer = list.indexOf("staticServer");
+					if(indexOfStaticServer !== -1) {
+						// staticServer needs to load last
+						list.splice(indexOfStaticServer, 0, "cloudWallet");
+					} else {
+						list.push("cloudWallet");
+					}
+				}
+
+				addCloudWalletToComponentList(middlewareList);
+				// need to also register to defaultComponents in order to be able to load the module correctly
+				addCloudWalletToComponentList(conf.defaultComponents);
+
+				console.log("Final comp:", middlewareList, conf.defaultComponents)
+			}
 
 			middlewareList.forEach(componentName => {
                 const componentConfig = conf.componentsConfig[componentName];
