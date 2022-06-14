@@ -141,7 +141,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 
 	server.get(`${URL_PREFIX}/:domain/take/:hashDID/:signature_of_did`, takeMessageHandler); //  > message
 
-	function testIfMQEnabled(domain){
+	function testIfMQEnabled(domain, domainToBeUsedByAdapter){
 		let domainConfig = config.getDomainConfig(domain);
 
 		if (domainConfig && domainConfig.enable && domainConfig.enable.indexOf("mq") !== -1) {
@@ -154,7 +154,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 
 			try {
 				console.log(`Preparing to register mq endpoints for domain < ${domain} > ... `);
-				adapter(server, URL_PREFIX, domain, domainConfig);
+				adapter(server, URL_PREFIX, domainToBeUsedByAdapter || domain, domainConfig);
 			} catch (err) {
 				console.log(`Caught an error during initialization process of the mq for domain < ${domain} >`, err);
 				return;
@@ -175,7 +175,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 				let domainInfo = virtualDomains[i];
 				//console.log("domain info", domainInfo);
 				if(domainInfo && domainInfo.active && domainInfo.cloneFromDomain){
-					if(testIfMQEnabled(domainInfo.cloneFromDomain)){
+					if(testIfMQEnabled(domainInfo.cloneFromDomain, domainInfo.pk)){
 						console.log(`Successfully register mq endpoints for virtual domain < ${domainInfo.pk} >.`);
 						domains.push(domainInfo.pk);
 					}
