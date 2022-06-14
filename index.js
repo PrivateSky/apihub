@@ -244,7 +244,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 			}
         }
 
-		function addComponents() {
+		function addComponents(cb) {
             const requiredComponentNames = ["config"];
             addComponent("config", {module: "./components/config"});
 
@@ -286,7 +286,10 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 				addComponent(componentName, componentConfig, ()=>{
 					componentList.shift();
 					if(componentList.length>0){
-						installNextComponent(componentList);
+						return installNextComponent(componentList);
+					}
+					if(cb){
+						cb();
 					}
 				});
 			}
@@ -299,7 +302,18 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 		}
 
         addRootMiddlewares();
-		addComponents();
+		addComponents(()=>{
+			//at this point all components were installed and we need to register the fallback handler
+			console.log(LOG_IDENTIFIER, "Registering the fallback handler. Any endpoint registered after this one will have zero changes to be executed.");
+			server.use(function (req, res) {
+				console.log(LOG_IDENTIFIER, "Response handled by fallback handler.");
+				res.statusCode = 404;
+				res.end();
+			});
+			if (callback) {
+				return callback();
+			}
+		});
 	}
 
 	return server;
