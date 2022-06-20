@@ -209,9 +209,9 @@ function handleCloudWalletRequest(request, response) {
         })
         .catch((error) => {
             console.log("[CloudWallet] worker resolver error", error);
-            res.setHeader("Content-Type", "text/html");
-            res.statusCode = 400;
-            res.end(INVALID_DSU_HTML_RESPONSE);
+            response.setHeader("Content-Type", "text/html");
+            response.statusCode = 400;
+            response.end(INVALID_DSU_HTML_RESPONSE);
         });
 }
 
