@@ -48,8 +48,7 @@ function BDNS(server) {
             }
             console.log("BDNS configuration was updated accordingly to information retrieved from admin service");
         }catch(err){
-            console.log(err);
-            console.info("Due to the error above not able to read any domains from admin service. This is not a problem, it's a configuration.");
+            console.info("Admin service not available, skipping the process of loading dynamic configured domains. This is not a problem, it's a configuration.");
         }
     }
 
