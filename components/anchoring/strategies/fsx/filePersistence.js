@@ -1,54 +1,70 @@
-
-function FilePersistenceStrategy(rootFolder,configuredPath){
+function FilePersistenceStrategy(rootFolder, configuredPath) {
     const self = this;
     const fileOperations = new FileOperations();
-    fileOperations.InitializeFolderStructure(rootFolder,configuredPath);
+    const FSLock = require("../utils/FSLock");
+    const AnchorPathResolver = require("../utils/AnchorPathResolver");
+    const anchorPathResolver = new AnchorPathResolver(rootFolder, configuredPath);
+    fileOperations.InitializeFolderStructure(rootFolder, configuredPath);
 
-    self.getLastVersion = function (anchorId, callback){
-        fileOperations.isFileNameValid(anchorId, (err) =>{
-            if (err){
+    const fsLocks = {};
+    self.prepareAnchoring = (anchorId, callback) => {
+        const anchorPath = anchorPathResolver.getAnchorPath(anchorId);
+        const fsLock = new FSLock(anchorPath);
+        fsLocks[anchorId] = fsLock;
+        fsLock.acquireLock(err => {
+            if (err) {
+                return callback({code: 428, message: "Versions out of sync"})
+            }
+
+            callback();
+        });
+    }
+
+    self.getLastVersion = function (anchorId, callback) {
+        fileOperations.isFileNameValid(anchorId, (err) => {
+            if (err) {
                 return callback(err);
             }
-            fileOperations.fileExist(anchorId,(err,exists) =>{
-                if (err){
-                    return callback(undefined,null);
+            fileOperations.fileExist(anchorId, (err, exists) => {
+                if (err) {
+                    return callback(undefined, null);
                 }
-                if (!exists){
-                    return callback(undefined,null);
+                if (!exists) {
+                    return callback(undefined, null);
                 }
                 //read the last hashlink for anchorId
                 return fileOperations.getlastVersion(anchorId, callback);
             })
         });
     }
-    self.getAllVersions = function (anchorId, callback){
+    self.getAllVersions = function (anchorId, callback) {
         // read all hashlinks for anchorId
-        fileOperations.isFileNameValid(anchorId, (err) =>{
-            if (err){
+        fileOperations.isFileNameValid(anchorId, (err) => {
+            if (err) {
                 return callback(err);
             }
-            fileOperations.fileExist(anchorId,(err, exists) =>{
-                if (err){
-                    return callback(undefined,[]);
+            fileOperations.fileExist(anchorId, (err, exists) => {
+                if (err) {
+                    return callback(undefined, []);
                 }
-                if (!exists){
-                    return callback(undefined,[]);
+                if (!exists) {
+                    return callback(undefined, []);
                 }
                 //read the last hashlink for anchorId
-                return fileOperations.getAllVersions(anchorId,callback);
+                return fileOperations.getAllVersions(anchorId, callback);
             })
         });
     }
-    self.createAnchor = function (anchorId, anchorValueSSI, callback){
-        fileOperations.isFileNameValid(anchorId, (err) =>{
-            if (err){
+    self.createAnchor = function (anchorId, anchorValueSSI, callback) {
+        fileOperations.isFileNameValid(anchorId, (err) => {
+            if (err) {
                 return callback(err);
             }
-            fileOperations.fileExist(anchorId,(err, exists) =>{
-                if (err){
+            fileOperations.fileExist(anchorId, (err, exists) => {
+                if (err) {
                     return callback(err);
                 }
-                if (!exists){
+                if (!exists) {
                     //file doesnt exist
                     return fileOperations.createAnchor(anchorId, anchorValueSSI, callback);
                 }
@@ -57,40 +73,56 @@ function FilePersistenceStrategy(rootFolder,configuredPath){
             })
         });
     }
-    self.appendAnchor = function(anchorId,anchorValueSSI, callback){
-        fileOperations.isFileNameValid(anchorId, (err) =>{
-            if (err){
+    self.appendAnchor = function (anchorId, anchorValueSSI, callback) {
+        const anchorPath = anchorPathResolver.getAnchorPath(anchorId);
+        const fsLock = fsLocks[anchorId]
+        fsLock.isMyLock((err, isMyLock) => {
+            if (err) {
                 return callback(err);
             }
-            fileOperations.fileExist(anchorId,(err,exists) =>{
-                if (err){
+
+            if (!isMyLock) {
+                return callback(Error(`File ${anchorPath} is locked by another process.`))
+            }
+
+            fileOperations.isFileNameValid(anchorId, (err) => {
+                if (err) {
                     return callback(err);
                 }
-                if (!exists){
-                    return callback(new Error(`Anchor ${anchorId} doesn't exist`));
-                }
-                return fileOperations.appendAnchor(anchorId, anchorValueSSI, callback);
-            })
-        });
-    }
+                fileOperations.fileExist(anchorId, (err, exists) => {
+                    if (err) {
+                        return callback(err);
+                    }
+                    if (!exists) {
+                        return callback(new Error(`Anchor ${anchorId} doesn't exist`));
+                    }
+                    return fileOperations.appendAnchor(anchorId, anchorValueSSI, err => {
+                        if (err) {
+                            return callback(err);
+                        }
 
+                        fsLock.releaseLock(callback);
+                    });
+                })
+            });
+        })
+    }
 }
 
 
-
-function FileOperations(){
-    const self =  this;
+function FileOperations() {
+    const self = this;
     const fs = require('fs');
     const path = require('path');
     let anchoringFolder;
     const endOfLine = require("os").EOL;
 
-    self.InitializeFolderStructure = function(rootFolder,configuredPath){
+    self.InitializeFolderStructure = function (rootFolder, configuredPath) {
         let storageFolder = path.join(rootFolder, configuredPath);
         anchoringFolder = path.resolve(storageFolder);
         try {
             if (!fs.existsSync(anchoringFolder)) {
-                fs.mkdirSync(anchoringFolder, { recursive: true });
+                fs.mkdirSync(anchoringFolder, {recursive: true});
             }
         } catch (e) {
             console.log("error creating anchoring folder", e);
@@ -98,7 +130,7 @@ function FileOperations(){
         }
     }
 
-    self.isFileNameValid = function(anchorId, callback){
+    self.isFileNameValid = function (anchorId, callback) {
         if (!anchorId || typeof anchorId !== "string") {
             return callback(new Error("No fileId specified."));
         }
@@ -111,12 +143,12 @@ function FileOperations(){
         return callback(undefined);
     }
 
-    self.fileExist = function(anchorId, callback){
+    self.fileExist = function (anchorId, callback) {
         const filePath = path.join(anchoringFolder, anchorId);
-        fs.stat(filePath,(err) => {
+        fs.stat(filePath, (err) => {
             if (err) {
                 if (err.code === "ENOENT") {
-                    return callback(undefined,false);
+                    return callback(undefined, false);
                 }
                 return callback(err, false);
             }
@@ -124,19 +156,19 @@ function FileOperations(){
         });
     }
 
-    self.getlastVersion = function(anchorId, callback){
-        self.getAllVersions(anchorId, (err, allVersions) =>{
-            if (err){
+    self.getlastVersion = function (anchorId, callback) {
+        self.getAllVersions(anchorId, (err, allVersions) => {
+            if (err) {
                 return callback(err);
             }
-            if (allVersions.length === 0){
-                return callback(undefined,null);
+            if (allVersions.length === 0) {
+                return callback(undefined, null);
             }
-            return callback(undefined,allVersions[allVersions.length-1]);
+            return callback(undefined, allVersions[allVersions.length - 1]);
         });
     }
 
-    self.getAllVersions = function(anchorId, callback){
+    self.getAllVersions = function (anchorId, callback) {
         const filePath = path.join(anchoringFolder, anchorId);
         fs.readFile(filePath, (err, fileHashes) => {
             if (err) {
@@ -148,16 +180,16 @@ function FileOperations(){
         });
     }
 
-    self.createAnchor = function(anchorId, anchorValueSSI, callback){
+    self.createAnchor = function (anchorId, anchorValueSSI, callback) {
         const fileContent = anchorValueSSI + endOfLine;
         const filePath = path.join(anchoringFolder, anchorId);
         fs.writeFile(filePath, fileContent, callback);
     }
 
-    self.appendAnchor = function(anchorId, anchorValueSSI, callback){
+    self.appendAnchor = function (anchorId, anchorValueSSI, callback) {
         const fileContent = anchorValueSSI + endOfLine;
         const filePath = path.join(anchoringFolder, anchorId);
-        fs.appendFile(filePath,fileContent, callback);
+        fs.appendFile(filePath, fileContent, callback);
     }
 }
 

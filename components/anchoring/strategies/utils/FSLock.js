@@ -1,6 +1,8 @@
 const fs = require("fs");
 
 function FSLock(filePath, maxTimeMilliSeconds, forcedLockDelay) {
+    maxTimeMilliSeconds = maxTimeMilliSeconds || 5000;
+    forcedLockDelay = forcedLockDelay || 10000;
     let lockCreationTime;
 
     this.acquireLock = (callback) => {
