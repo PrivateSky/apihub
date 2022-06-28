@@ -9,8 +9,8 @@ class FSX{
         this.commandData.anchorValue = anchorValue;
         this.commandData.jsonData = jsonData || {};
         const FilePersistence = require('./filePersistence').FilePersistenceStrategy;
-        const fps = new FilePersistence(server.rootFolder,domainConfig.option.path);
-        this.anchoringBehaviour = openDSU.loadApi("anchoring").getAnchoringBehaviour(fps);
+        this.fps = new FilePersistence(server.rootFolder,domainConfig.option.path);
+        this.anchoringBehaviour = openDSU.loadApi("anchoring").getAnchoringBehaviour(this.fps);
     }
 
     createAnchor(callback){

@@ -1,9 +1,10 @@
 const LOG_IDENTIFIER = "[OBA]";
-function OBA(...args) {
+
+function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
 
     let {FS, ETH} = require("../index");
-    const fsHandler = new FS(...args);
-    const ethHandler = new ETH(...args);
+    const fsHandler = new FS(server, domainConfig, anchorId, anchorValue, ...args);
+    const ethHandler = new ETH(server, domainConfig, anchorId, anchorValue, ...args);
 
     this.createAnchor = function (callback) {
         fsHandler.createAnchor((err, res) => {
@@ -13,7 +14,7 @@ function OBA(...args) {
             console.log(`${LOG_IDENTIFIER} optimistic create anchor ended with success.`);
             ethHandler.createAnchor((err, res) => {
                 //TODO: handler err and res
-                if(err && !res){
+                if (err && !res) {
                     console.log(`${LOG_IDENTIFIER} create for anchorId ${fsHandler.commandData.anchorId} will be synced later.`);
                     return;
                 }
@@ -31,7 +32,7 @@ function OBA(...args) {
             console.log(`${LOG_IDENTIFIER} optimistic append anchor ended with success.`);
             ethHandler.appendAnchor((err, res) => {
                 //TODO: handler err and res
-                if(err && !res){
+                if (err && !res) {
                     console.log(`${LOG_IDENTIFIER} update of anchorId ${fsHandler.commandData.anchorId} will be synced later.`);
                     return;
                 }
@@ -41,19 +42,68 @@ function OBA(...args) {
         });
     }
 
-    this.getAllVersions = function (callback) {
-        fsHandler.getAllVersions((err, res) => {
+    function readAllVersionsFromBlockchain(callback) {
+        console.log(`${LOG_IDENTIFIER} preparing to read info about anchorId ${fsHandler.commandData.anchorId} from the blockchain...`);
+        ethHandler.getAllVersions((err, anchorVersions) => {
             if (err) {
+                console.log(`${LOG_IDENTIFIER} anchorId ${fsHandler.commandData.anchorId} syncing blockchain failed. ${err}`);
                 return callback(err);
+            }
+
+            let history = "";
+            for (let i = 0; i < anchorVersions.length; i++) {
+                history += anchorVersions[i];
+                if (i + 1 < anchorVersions.length) {
+                    history += require("os").EOL;
+                }
+            }
+
+            if(history === ""){
+                console.log(`${LOG_IDENTIFIER} anchorId ${fsHandler.commandData.anchorId} synced but no history found.`);
+                //if we don't retrieve info from blockchain we exit
+                return callback(undefined, anchorVersions);
+            }
+
+            console.log(`${LOG_IDENTIFIER} found info about anchorId ${fsHandler.commandData.anchorId} in blockchain.`);
+
+            //storing locally the history of the anchorId read from the blockchain
+            fsHandler.fps.createAnchor(anchorId, history, (err) => {
+                if (err) {
+                    console.log(`${LOG_IDENTIFIER} failed to store info about anchorId ${fsHandler.commandData.anchorId} on local because of ${err}`);
+                    return callback(err);
+                }
+                console.log(`${LOG_IDENTIFIER} anchorId ${fsHandler.commandData.anchorId} fully synced.`);
+                //even if we read all the versions of anchorId we return only the last one
+                return callback(undefined, anchorVersions);
+            });
+        });
+    }
+
+    this.getAllVersions = function (callback) {
+        fsHandler.getAllVersions((error, res) => {
+            if (error || !res) {
+                return readAllVersionsFromBlockchain((err, allVersions) => {
+                    if (err) {
+                        //we return the error from FS because we were not able to read any from blockchain.
+                        return callback(error);
+                    }
+                    return callback(undefined, allVersions);
+                });
             }
             return callback(undefined, res);
         });
     }
 
     this.getLastVersion = function (callback) {
-        fsHandler.getLastVersion((err, res) => {
-            if (err) {
-                return callback(err);
+        fsHandler.getLastVersion((error, res) => {
+            if (error || !res) {
+                return readAllVersionsFromBlockchain((err, allVersions) => {
+                    if (err) {
+                        //we return the error from FS because we were not able to read any from blockchain.
+                        return callback(error);
+                    }
+                    return callback(undefined, allVersions.pop());
+                });
             }
             return callback(undefined, res);
         });
