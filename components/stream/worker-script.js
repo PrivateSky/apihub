@@ -18,11 +18,32 @@ module.exports = async () => {
 
     parentPort.on("message", async (task) => {
         console.log("Handling task", task);
-        const { requestedPath, range } = task;
+        const { requestedPath } = task;
+        let { range } = task;
 
         try {
-            const start = Number(range.replace(/\D/g, ""));
-            const end = start + CHUNK_SIZE;
+            let start;
+            let end;
+
+            if (range.indexOf("=") !== -1) {
+                range = range.split("=")[1];
+            }
+            if (range.indexOf("-") !== -1) {
+                parts = range.split("-");
+                start = parseInt(parts[0], 10);
+                if (parts[1]) {
+                    end = parseInt(parts[1], 10);
+                } else {
+                    end = start + CHUNK_SIZE;
+                }
+            } else {
+                start = parseInt(range, 10);
+                end = start + CHUNK_SIZE;
+            }
+            console.log(`Handling range start ${start} end ${end}`);
+
+            console.log("Refreshing DSU...")
+            await $$.promisify(dsu.refresh)();
 
             const streamRange = { start, end };
             const { totalSize, stream } = await $$.promisify(dsu.createBigFileReadStreamWithRange)(requestedPath, streamRange);
