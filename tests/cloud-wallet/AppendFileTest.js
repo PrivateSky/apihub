@@ -72,7 +72,7 @@ async function compareOriginalFileWithOneFromDSU(originalFilePath, chunkSize, st
             },
         });
         if (!streamResonse.ok) {
-            throw new Error("Stream fetch error", streamResonse);
+            throw new Error("Stream fetch error");
         }
         const dsuFileBuffer = await streamResonse.arrayBuffer();
         console.log("dsuFileBuffer size", dsuFileBuffer.byteLength);
