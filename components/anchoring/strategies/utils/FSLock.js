@@ -4,7 +4,7 @@ function FSLock(filePath, maxTimeMilliSeconds, forcedLockDelay) {
     maxTimeMilliSeconds = maxTimeMilliSeconds || 5000;
     forcedLockDelay = forcedLockDelay || 10000;
     let lockCreationTime;
-
+    const removeDir = require("swarmutils").removeDir;
     this.acquireLock = (callback) => {
         fs.mkdir(getLockPath(), async err => {
             if (err) {
@@ -26,7 +26,7 @@ function FSLock(filePath, maxTimeMilliSeconds, forcedLockDelay) {
                 return callback(err);
             }
             if (isMyLock) {
-                return fs.rm(getLockPath(filePath), {recursive: true}, callback);
+                return removeDir(getLockPath(filePath), {recursive: true}, callback);
             }
 
             callback(Error(`The lock is owned by another instance.`));
@@ -55,7 +55,7 @@ function FSLock(filePath, maxTimeMilliSeconds, forcedLockDelay) {
 
     const releaseExpiredLock = (callback)=>{
         return setTimeout(() => {
-            fs.rm(getLockPath(), {recursive: true}, (err)=>{
+            removeDir(getLockPath(), {recursive: true}, (err)=>{
                 if (err) {
                     return callback(err);
                 }

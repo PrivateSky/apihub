@@ -3,7 +3,6 @@ require("../../../../../../psknode/bundles/testsRuntime");
 const dc = require("double-check");
 const assert = dc.assert;
 const FSLock = require("../utils/FSLock");
-const fs = require("fs");
 const path = require("path");
 assert.callback("Trying to acquire multiple locks", (callback) => {
     dc.createTestFolder("testFolder", (err, folder)=>{
