@@ -1,3 +1,4 @@
+const config = require("../../config");
 const URL_PREFIX = "/mq";
 //known implementations for the MQ adapters
 const adapterImpls = {
@@ -39,7 +40,15 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 				return response.end();
 			}
 
-			response.statusCode = 200;
+			const mqConfig = config.getConfig("componentsConfig", "mq");
+			if (mqConfig && mqConfig.connectionTimeout) {
+				response.writeHead(200, {
+					"connection-timeout": mqConfig.connectionTimeout
+				});
+			} else {
+				response.statusCode = 200;
+			}
+
 			response.write(JSON.stringify(tokenObj));
 			response.end();
 		});

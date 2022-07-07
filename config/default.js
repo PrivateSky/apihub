@@ -13,6 +13,7 @@ const defaultConfig = {
         "mq":{
             "module": "./components/mqHub",
             "function": "MQHub",
+            "connectionTimeout": 10000
         },
         "enclave":{
             "module": "./components/enclave",
