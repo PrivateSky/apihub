@@ -26,7 +26,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 	const config = require("./../../config/index");
 
 	const JWTIssuer = require("./auth/JWTIssuer");
-	const issuer = new JWTIssuer();
+	const issuer = new JWTIssuer(server.rootFolder);
 
 	let domains = []; //config.getConfiguredDomains();
 

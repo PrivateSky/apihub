@@ -9,7 +9,7 @@ const defaultSettings = {
 	mq_nonce_expiration_time: 10 * 1000//sec
 }
 
-function JWTIssuer() {
+function JWTIssuer(workingDir) {
 
 	let seeder;
 	const config = require("./../../../config");
@@ -20,13 +20,17 @@ function JWTIssuer() {
 		return domainSpecificConfig;
 	}
 
+	function getSeederFilePath(){
+		return require("path").join(workingDir, config.getConfig("externalStorage"), SEEDER_FILE_NAME);
+	}
+
 	async function init() {
 		const fs = require("fs");
 		const opendsu = require("opendsu");
 		const keyssiApi = opendsu.loadApi("keyssi");
 
 		try {
-			seeder = await $$.promisify(fs.readFile)(SEEDER_FILE_NAME);
+			seeder = await $$.promisify(fs.readFile)(getSeederFilePath());
 		} catch (err) {
 			if (err.code !== "ENOENT") {
 				console.log("Not able to read the Issuer persistence file needed by JWT Auth Support layer!", err);
@@ -47,7 +51,7 @@ function JWTIssuer() {
 		//TODO: what happens if it fails to generate and write to file?
 
 		seeder = await $$.promisify(keyssiApi.createSeedSSI)(DOMAIN_NAME);
-		await $$.promisify(fs.writeFile)(SEEDER_FILE_NAME, seeder.getIdentifier());
+		await $$.promisify(fs.writeFile)(getSeederFilePath(), seeder.getIdentifier());
 		console.log("New MQ JWT AUTH Issuer created and saved for later use.");
 	}
 
