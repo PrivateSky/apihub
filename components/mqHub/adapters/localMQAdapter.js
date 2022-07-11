@@ -204,7 +204,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 
     function send(queueName, to, statusCode, message, headers) {
         if (openedConnections[queueName]) {
-            clearInterval(openedConnections[queueName]);
+            clearTimeout(openedConnections[queueName]);
             delete openedConnections[queueName];
         }
         to.statusCode = statusCode;
@@ -299,20 +299,19 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 	console.log(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
 
     const mqConfig = config.getConfig("componentsConfig", "mq");
-    if (mqConfig && mqConfig.connectionTimeout) {
+	if (mqConfig && mqConfig.connectionTimeout) {
+		function signalServerAlive(req, res, next) {
+			openedConnections[req.params.queueName] = setTimeout(() => {
+				res.statusCode = 204;
+				res.end();
+			}, mqConfig.connectionTimeout);
 
-        function signalServerAlive(req, res, next) {
-            next();
-            if (typeof openedConnections[req.params.queueName] !== "undefined") {
-                openedConnections[req.params.queueName] = setInterval(() => {
-                    res.statusCode = 100;
-                    res.end();
-                }, mqConfig.connectionTimeout);
-            }
-        }
-        server.get(`${prefix}/${domain}/get/:queueName/:signature_of_did`, signalServerAlive); //  > {message}
-        server.get(`${prefix}/${domain}/take/:queueName/:signature_of_did`, signalServerAlive); //  > message
-    }
+			next();
+		}
+
+		server.get(`${prefix}/${domain}/get/:queueName/:signature_of_did`, signalServerAlive); //  > {message}
+		server.get(`${prefix}/${domain}/take/:queueName/:signature_of_did`, signalServerAlive); //  > message
+	}
     
 	server.put(`${prefix}/${domain}/put/:queueName`, putMessageHandler); //< message
 
