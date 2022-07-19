@@ -115,7 +115,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 					return callback(Error("Message not found."));
 				}
 			} else {
-				messageId = messageIds[messageIds.length-1];
+				messageId = messageIds[0];
 			}
 			return getMessage(queueName, messageId, callback);
 		});
