@@ -52,7 +52,7 @@ function OAuthMiddleware(server) {
     }
     util.decryptLoginInfo(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, loginContextCookie, (err, loginContext) => {
       if (err) {
-        return sendUnauthorizedResponse(req, res, "Unable to decrypt login info");
+        return sendUnauthorizedResponse(req, res, "Unable to decrypt login info", err);
       }
 
       if (Date.now() - loginContext.date > oauthConfig.sessionTimeout) {
@@ -73,12 +73,12 @@ function OAuthMiddleware(server) {
         origin: req.headers.host,
       }, (err, tokenSet) => {
         if (err) {
-          return sendUnauthorizedResponse(req, res, "Unable to get token set");
+          return sendUnauthorizedResponse(req, res, "Unable to get token set", err);
         }
 
         util.encryptTokenSet(CURRENT_ENCRYPTION_KEY_PATH, tokenSet, (err, encryptedTokenSet) => {
           if (err) {
-            return sendUnauthorizedResponse(req, res, "Unable to encrypt access token");
+            return sendUnauthorizedResponse(req, res, "Unable to encrypt access token", err);
           }
           const {payload} = util.parseAccessToken(tokenSet.access_token);
           const SSODetectedId = payload.email || payload.preferred_username || payload.upn || payload.sub;
