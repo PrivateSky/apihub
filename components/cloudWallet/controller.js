@@ -30,7 +30,7 @@ const INVALID_DSU_HTML_RESPONSE = `
     </html>
 `;
 
-function addDsuWorker(seed) {
+function addDsuWorker(seed, cookie) {
     const workerStartTime = process.hrtime();
     const dsuWorker = {
         port: null,
@@ -44,12 +44,12 @@ function addDsuWorker(seed) {
 
                 const authorizationKey = randomBuffer.toString("hex");
                 dsuWorker.authorizationKey = authorizationKey;
-
                 console.log(`[CloudWallet] Starting worker for handling seed ${seed}`);
                 const worker = new Worker(dsuBootPath, {
                     workerData: {
                         seed,
                         authorizationKey,
+                        cookie
                     },
                 });
 
@@ -106,9 +106,13 @@ function forwardRequestToWorker(dsuWorker, req, res) {
         path: requestedPath,
         method,
         headers: {
-            authorization: dsuWorker.authorizationKey,
+            authorization: dsuWorker.authorizationKey
         },
     };
+
+    if(req.headers.cookie){
+        options.headers.cookie = req.headers.cookie
+    }
 
     if (req.headers["content-type"]) {
         options.headers["content-type"] = req.headers["content-type"];
@@ -200,7 +204,7 @@ function handleCloudWalletRequest(request, response) {
 
     let dsuWorker = dsuWorkers[keySSI];
     if (!dsuWorker) {
-        dsuWorker = addDsuWorker(keySSI);
+        dsuWorker = addDsuWorker(keySSI, request.headers.cookie);
     }
 
     dsuWorker.resolver
