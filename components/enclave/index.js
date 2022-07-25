@@ -1,6 +1,4 @@
 const config = require("../../config");
-const {headersMiddleware, responseModifierMiddleware, requestBodyJSONMiddleware} = require("../../utils/middlewares");
-const path = require("path");
 
 function DefaultEnclave(server) {
     const {
@@ -16,7 +14,7 @@ function DefaultEnclave(server) {
     const w3cDID = openDSU.loadAPI("w3cdid");
     const crypto = openDSU.loadAPI("crypto");
 
-    const storageFolder = path.join(server.rootFolder, "enclave");
+    const storageFolder = path.join(server.rootFolder, "external-volume", "enclave");
     try {
         fs.mkdirSync(storageFolder, {recursive: true})
     } catch (e) {
