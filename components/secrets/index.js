@@ -2,11 +2,9 @@ const fs = require("fs");
 const path = require("path");
 
 function secrets(server) {
-    const fs = require("fs");
-    const path = require("path");
     const secretsFolderPath = path.join(server.rootFolder, "external-volume", "secrets");
-    server.get("/getSecret/:appName/:userId", function (request, response) {
-        let userId = request.params.userId;
+    server.get("/getSSOSecret/:appName", function (request, response) {
+        let userId = request.headers["user-id"];
         let appName = request.params.appName;
         const fileDir = path.join(secretsFolderPath, appName);
         const filePath = path.join(fileDir, `${userId}.json`);
@@ -66,8 +64,8 @@ function secrets(server) {
         })
     }
 
-    server.put('/putSecret/:appName/:userId', function (request, response) {
-        let userId = request.params.userId;
+    server.put('/putSSOSecret/:appName', function (request, response) {
+        let userId = request.headers["user-id"];
         let appName = request.params.appName;
         let data = []
 
@@ -105,6 +103,34 @@ function secrets(server) {
             })
         })
     });
+
+    function deleteSSOSecret(request, response) {
+        let userId = request.params.userId;
+        let appName = request.params.appName;
+        const fileDir = path.join(secretsFolderPath, appName);
+        const filePath = path.join(fileDir, `${userId}.json`);
+        fs.access(filePath, (err) => {
+            if (err) {
+                response.statusCode = 204;
+                response.end(JSON.stringify({error: `${userId} not found`}));
+                return;
+            }
+
+            fs.unlink(filePath, (err) => {
+                if (err) {
+                    response.statusCode = 404;
+                    response.end(JSON.stringify({error: `Couldn't find a secret for ${userId}`}));
+                    return
+                }
+
+                response.statusCode = 200;
+                response.end();
+            })
+        })
+    }
+
+    server.delete("/deactivateSSOSecret/:appName/:userId", deleteSSOSecret);
+    server.delete("/removeSSOSecret/:appName/:userId", deleteSSOSecret);
 }
 
 module.exports = secrets;
