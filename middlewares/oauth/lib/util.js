@@ -264,6 +264,16 @@ function decryptAccessTokenCookie(currentEncryptionKeyPath, previousEncryptionKe
     })
 }
 
+function getDecryptedAccessToken(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, callback) {
+    decryptAccessTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, (err, decryptedAccessTokenCookie)=>{
+        if (err) {
+            return callback(err);
+        }
+
+        callback(undefined, parseAccessToken(decryptedAccessTokenCookie.token));
+    })
+}
+
 function decryptRefreshTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, encryptedRefreshToken, callback) {
     if (!encryptedRefreshToken) {
         return callback(Error(errorMessages.REFRESH_TOKEN_UNDEFINED));
@@ -393,5 +403,6 @@ module.exports = {
     validateAccessToken,
     validateEncryptedAccessToken,
     getUrlsToSkip,
-    rotateKey
+    rotateKey,
+    getDecryptedAccessToken
 }

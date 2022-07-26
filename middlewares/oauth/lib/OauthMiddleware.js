@@ -1,6 +1,7 @@
 const {sendUnauthorizedResponse} = require("../../../utils/middlewares");
 const util = require("./util");
 const urlModule = require("url");
+const errorMessages = require("./errorMessages");
 
 function OAuthMiddleware(server) {
   console.log(`Registering OAuthMiddleware`);
@@ -197,7 +198,15 @@ function OAuthMiddleware(server) {
         })
       }
 
-      next();
+      util.getDecryptedAccessToken(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, accessTokenCookie, (err, token)=>{
+        if (err) {
+            debugMessage("Logout because accessTokenCookie decryption failed or session has expired.")
+            return startLogoutPhase(res);
+        }
+
+        req.headers["user-id"] = token.payload.sub;
+        next();
+      })
     })
   });
 }
