@@ -8,6 +8,8 @@ const path = require("swarmutils").path;
 let dsuBootPath;
 const dsuWorkers = {};
 
+let cacheContainerPath;
+
 const getElapsedTime = (timer) => {
     const elapsed = process.hrtime(timer)[1] / 1000000;
     return `${elapsed.toFixed(3)} ms`;
@@ -49,7 +51,8 @@ function addDsuWorker(seed, cookie) {
                     workerData: {
                         seed,
                         authorizationKey,
-                        cookie
+                        cookie,
+                        cacheContainerPath,
                     },
                 });
 
@@ -184,6 +187,8 @@ function init(server) {
     }
 
     console.log(`[CloudWallet] Using boot script for worker: ${dsuBootPath}`);
+
+    cacheContainerPath = require("path").join(server.rootFolder, config.getConfig("externalStorage"), `cache`);
 
     //if a listening event is fired from this point on...
     //it means that a restart was triggered
