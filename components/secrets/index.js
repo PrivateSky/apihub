@@ -104,10 +104,20 @@ function secrets(server) {
         })
     });
 
+    function getUserIdFromDID(did, appName) {
+        const crypto = require("opendsu").loadAPI("crypto");
+        const decodedDID = crypto.decodeBase58(did);
+        const splitDecodedDID = decodedDID.split(":");
+        let name = splitDecodedDID.slice(3).join(":");
+        let userId = name.slice(appName.length + 1);
+        return userId;
+    }
+
     function deleteSSOSecret(request, response) {
-        let userId = request.params.userId;
+        let did = request.params.did;
         let appName = request.params.appName;
         const fileDir = path.join(secretsFolderPath, appName);
+        let userId = getUserIdFromDID(did, appName);
         const filePath = path.join(fileDir, `${userId}.json`);
         fs.access(filePath, (err) => {
             if (err) {
@@ -129,8 +139,8 @@ function secrets(server) {
         })
     }
 
-    server.delete("/deactivateSSOSecret/:appName/:userId", deleteSSOSecret);
-    server.delete("/removeSSOSecret/:appName/:userId", deleteSSOSecret);
+    server.delete("/deactivateSSOSecret/:appName/:did", deleteSSOSecret);
+    server.delete("/removeSSOSecret/:appName/:did", deleteSSOSecret);
 }
 
 module.exports = secrets;

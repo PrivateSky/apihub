@@ -265,12 +265,33 @@ function decryptAccessTokenCookie(currentEncryptionKeyPath, previousEncryptionKe
 }
 
 function getDecryptedAccessToken(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, callback) {
-    decryptAccessTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, (err, decryptedAccessTokenCookie)=>{
+    decryptAccessTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, (err, decryptedAccessTokenCookie) => {
         if (err) {
             return callback(err);
         }
 
         callback(undefined, parseAccessToken(decryptedAccessTokenCookie.token));
+    })
+}
+
+function getSSOUserIdFromDecryptedToken(decryptedToken) {
+    const {payload} = parseAccessToken(decryptedToken);
+    return payload.sub;
+}
+
+function getSSODetectedIdFromDecryptedToken(decryptedToken) {
+    const {payload} = parseAccessToken(decryptedToken);
+    const SSODetectedId = payload.email || payload.preferred_username || payload.upn || payload.sub;
+    return SSODetectedId;
+}
+
+function getSSODetectedIdFromEncryptedToken(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, callback) {
+    getDecryptedAccessToken(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, (err, token) => {
+        if (err) {
+            return callback(err);
+        }
+
+        return getSSODetectedIdFromDecryptedToken(token);
     })
 }
 
@@ -404,5 +425,7 @@ module.exports = {
     validateEncryptedAccessToken,
     getUrlsToSkip,
     rotateKey,
-    getDecryptedAccessToken
+    getSSODetectedIdFromDecryptedToken,
+    getSSODetectedIdFromEncryptedToken,
+    getSSOUserIdFromDecryptedToken
 }

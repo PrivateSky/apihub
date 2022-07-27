@@ -81,8 +81,9 @@ function OAuthMiddleware(server) {
           if (err) {
             return sendUnauthorizedResponse(req, res, "Unable to encrypt access token", err);
           }
+
           const {payload} = util.parseAccessToken(tokenSet.access_token);
-          const SSODetectedId = payload.email || payload.preferred_username || payload.upn || payload.sub;
+          const SSODetectedId = util.getSSODetectedIdFromDecryptedToken(tokenSet.access_token);
           res.writeHead(301, {
             Location: "/",
             "Set-Cookie": [`accessTokenCookie=${encryptedTokenSet.encryptedAccessToken}`, "isActiveSession=true", `refreshTokenCookie=${encryptedTokenSet.encryptedRefreshToken}`, `SSOUserId = ${payload.sub}`, `SSODetectedId = ${SSODetectedId}`, `loginContextCookie=; Max-Age=0`],
@@ -198,13 +199,13 @@ function OAuthMiddleware(server) {
         })
       }
 
-      util.getDecryptedAccessToken(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, accessTokenCookie, (err, token)=>{
+      util.getSSODetectedIdFromEncryptedToken(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, accessTokenCookie, (err, SSODetectedId)=>{
         if (err) {
             debugMessage("Logout because accessTokenCookie decryption failed or session has expired.")
             return startLogoutPhase(res);
         }
 
-        req.headers["user-id"] = token.payload.sub;
+        req.headers["user-id"] = SSODetectedId;
         next();
       })
     })
