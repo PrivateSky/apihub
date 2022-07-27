@@ -193,7 +193,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
             if(conf.enableJWTAuthorisation) {
                 new AuthorisationMiddleware(server);
             }
-			if(conf.enableOAuth) {
+			if(conf.enableOAuth && process.env.ENABLE_SSO !== "false") {
                 new OAuth(server);
             }
 			if(conf.responseHeaders){
