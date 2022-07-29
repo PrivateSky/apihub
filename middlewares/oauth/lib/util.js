@@ -270,7 +270,7 @@ function getDecryptedAccessToken(currentEncryptionKeyPath, previousEncryptionKey
             return callback(err);
         }
 
-        callback(undefined, parseAccessToken(decryptedAccessTokenCookie.token));
+        callback(undefined, decryptedAccessTokenCookie.token);
     })
 }
 
@@ -291,7 +291,7 @@ function getSSODetectedIdFromEncryptedToken(currentEncryptionKeyPath, previousEn
             return callback(err);
         }
 
-        return getSSODetectedIdFromDecryptedToken(token);
+        return callback(undefined, getSSODetectedIdFromDecryptedToken(token));
     })
 }
 
