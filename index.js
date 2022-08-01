@@ -205,11 +205,15 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
             }
         }
 
+		function isDefaultComponent(componentName) {
+			return conf.defaultComponents.indexOf(componentName) !== -1 || conf.componentsConfig[componentName];
+		}
+
         function addComponent(componentName, componentConfig, callback) {
             const path = require("swarmutils").path;
 
             let componentPath = componentConfig.module;
-            if (componentPath.startsWith('.') && conf.defaultComponents.indexOf(componentName) === -1) {
+            if (componentPath.startsWith('.') && !isDefaultComponent(componentName)) {
                 componentPath = path.resolve(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, componentPath));
             }
             console.log(`${LOG_IDENTIFIER} Preparing to register middleware from path ${componentPath}`);
