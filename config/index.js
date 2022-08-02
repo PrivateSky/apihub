@@ -122,6 +122,12 @@ function ApihubConfig(conf) {
 
     conf = createConfig(conf, defaultConf);
     conf.defaultComponents = defaultConf.activeComponents;
+    if(conf.isDefaultComponent){
+        console.log("\n\nBe aware that there is a method on the config called isDefaultComponent. You need to check and change your config name.\n\n");
+    }
+    conf.isDefaultComponent = function(componentName) {
+        return defaultConf.activeComponents.indexOf(componentName) !== -1 || defaultConf.componentsConfig[componentName];
+    }
     return conf;
 }
 
