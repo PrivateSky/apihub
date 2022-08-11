@@ -23,7 +23,8 @@ function requestBodyJSONMiddleware(request, response, next) {
         try {
             body = JSON.parse(data);
         } catch (e) {
-            return response.send(500, 'Unable to decode JSON request body')
+            response.statusCode = 500;
+            return response.end("Unable to decode JSON request body");
         }
         request.body = body;
         next();

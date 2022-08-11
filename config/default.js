@@ -92,6 +92,9 @@ const defaultConfig = {
         },
         "stream": {
             "module": "./components/stream"
+        },
+        "requestForwarder":{
+            "module": "./components/requestForwarder"
         }
     },
     "tokenBucket": {
