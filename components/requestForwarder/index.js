@@ -27,7 +27,7 @@ module.exports = function(server){
                 res.end();
             }
             response.on("data", res.write);
-            res.on('end', res.end);
+            response.on('end', res.end);
         });
 
         request.on("error", (err)=>{
