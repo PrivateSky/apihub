@@ -20,22 +20,28 @@ module.exports = function(server){
         }
 
         console.log(`Forwarding request ${options.method} to url ${url}`);
+        try {
 
-        let request = http.request(url, options, (response)=>{
+          let request = http.request(url, options, (response) => {
             res.statusCode = response.statusCode;
-            if(res.statusCode > 300){
-                res.end();
+            if (res.statusCode > 300) {
+              res.end();
             }
             response.on("data", res.write);
             response.on('end', res.end);
-        });
+          });
 
-        request.on("error", (err)=>{
+          request.on("error", (err) => {
             res.statusCode = 500;
             res.end();
-        });
+          });
 
-        request.write(body);
-        request.end();
+          request.write(body);
+          request.end();
+        } catch (e) {
+          console.log("Error on request: ", e);
+          res.statusCode = 500;
+          res.end();
+        }
     });
 }
