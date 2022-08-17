@@ -1,3 +1,7 @@
+process.on('uncaughtException', err => {
+	console.error('There was an uncaught error', err);
+});
+
 const {LOG_IDENTIFIER} = require("./moduleConstants");
 
 const httpWrapper = require('./libs/http-wrapper');
