@@ -3,7 +3,7 @@ openDSURequire('overwrite-require');
 const opendsu = openDSURequire("opendsu");
 const http = opendsu.loadApi("http");
 
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = "https://admin.pla.health";
 const dnsDomain = "pla.health";
 
 const MAIN_DOMAIN = "demo.epi";
