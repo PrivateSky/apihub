@@ -1,7 +1,6 @@
 const {sendUnauthorizedResponse} = require("../../../utils/middlewares");
 const util = require("./util");
 const urlModule = require("url");
-const errorMessages = require("./errorMessages");
 
 function OAuthMiddleware(server) {
   console.log(`Registering OAuthMiddleware`);
@@ -103,9 +102,13 @@ function OAuthMiddleware(server) {
       post_logout_redirect_uri: oauthConfig.client.postLogoutRedirectUrl,
       client_id: oauthConfig.client.clientId,
     };
-    res.writeHead(301, {Location: urlModule.format(logoutUrl)});
+    res.writeHead(301, {
+      Location: urlModule.format(logoutUrl),
+      "Set-Cookie": `sessionExpiryTime=; Path=/`
+    });
     res.end();
   }
+
 
   function debugMessage(...args) {
     if (oauthConfig.debugLogEnabled) {
@@ -115,7 +118,8 @@ function OAuthMiddleware(server) {
 
   server.use(function (req, res, next) {
     let {url} = req;
-
+    const sessionExpiryTime = util.removeTimezoneOffsetFromTimestamp(Date.now()) + oauthConfig.sessionTimeout;
+    res.setHeader("Set-Cookie", `sessionExpiryTime=${sessionExpiryTime}; Path=/`)
     function isCallbackPhaseActive() {
       const redirectUrlObj = new urlModule.URL(oauthConfig.client.redirectPath);
       const redirectPath = oauthConfig.client.redirectPath.slice(redirectUrlObj.origin.length);
@@ -206,7 +210,15 @@ function OAuthMiddleware(server) {
         }
 
         req.headers["user-id"] = SSODetectedId;
-        next();
+        util.updateAccessTokenExpiration(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, accessTokenCookie, (err, encryptedAccessToken)=>{
+          if (err) {
+            debugMessage("Logout because accessTokenCookie decryption failed.")
+            return startLogoutPhase(res);
+          }
+
+          res.setHeader("Set-Cookie", `accessTokenCookie=${encryptedAccessToken}; Path=/;`)
+          next();
+        })
       })
     })
   });

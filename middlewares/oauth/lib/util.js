@@ -405,6 +405,21 @@ function getUrlsToSkip() {
     return urlsToSkip;
 }
 
+function removeTimezoneOffsetFromTimestamp(timestamp) {
+    let currentDate = new Date(timestamp);
+    return timestamp + currentDate.getTimezoneOffset() * 60 * 1000;
+}
+
+function updateAccessTokenExpiration(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, callback) {
+    decryptAccessTokenCookie(currentEncryptionKeyPath, previousEncryptionKeyPath, accessTokenCookie, (err, decryptedTokenCookie)=>{
+        if (err) {
+            return callback(err);
+        }
+
+        encryptAccessToken(currentEncryptionKeyPath, decryptedTokenCookie.token, callback);
+    })
+}
+
 module.exports = {
     pkce,
     pkceChallenge,
@@ -427,5 +442,7 @@ module.exports = {
     rotateKey,
     getSSODetectedIdFromDecryptedToken,
     getSSODetectedIdFromEncryptedToken,
-    getSSOUserIdFromDecryptedToken
+    getSSOUserIdFromDecryptedToken,
+    removeTimezoneOffsetFromTimestamp,
+    updateAccessTokenExpiration
 }
