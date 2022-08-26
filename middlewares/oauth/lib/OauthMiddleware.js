@@ -118,8 +118,7 @@ function OAuthMiddleware(server) {
 
   server.use(function (req, res, next) {
     let {url} = req;
-    const sessionExpiryTime = util.removeTimezoneOffsetFromTimestamp(Date.now()) + oauthConfig.sessionTimeout;
-    res.setHeader("Set-Cookie", `sessionExpiryTime=${sessionExpiryTime}; Path=/`)
+
     function isCallbackPhaseActive() {
       const redirectUrlObj = new urlModule.URL(oauthConfig.client.redirectPath);
       const redirectPath = oauthConfig.client.redirectPath.slice(redirectUrlObj.origin.length);
@@ -210,13 +209,19 @@ function OAuthMiddleware(server) {
         }
 
         req.headers["user-id"] = SSODetectedId;
+        if (url.includes("/mq/")) {
+          return next();
+        }
+        res.setHeader("Set-Cookie", `sessionExpiryTime=${sessionExpiryTime}; Path=/`)
         util.updateAccessTokenExpiration(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, accessTokenCookie, (err, encryptedAccessToken)=>{
           if (err) {
             debugMessage("Logout because accessTokenCookie decryption failed.")
             return startLogoutPhase(res);
           }
 
-          res.setHeader("Set-Cookie", `accessTokenCookie=${encryptedAccessToken}; Path=/;`)
+          const sessionExpiryTime = util.removeTimezoneOffsetFromTimestamp(Date.now()) + oauthConfig.sessionTimeout;
+          const cookies = [`sessionExpiryTime=${sessionExpiryTime}; Path=/`, `accessTokenCookie=${encryptedAccessToken}; Path=/`]
+          res.setHeader("Set-Cookie", cookies);
           next();
         })
       })
