@@ -1,3 +1,4 @@
+const { resolve } = require("path");
 const config = require("../../config");
 
 function DefaultEnclave(server) {
@@ -13,13 +14,30 @@ function DefaultEnclave(server) {
     const openDSU = require("opendsu");
     const w3cDID = openDSU.loadAPI("w3cdid");
     const crypto = openDSU.loadAPI("crypto");
+    const scAPI = openDSU.loadAPI("sc");
+    let didDocument;
 
     const storageFolder = path.join(server.rootFolder, "external-volume", "enclave");
+
     try {
-        fs.mkdirSync(storageFolder, {recursive: true})
+        fs.mkdirSync(storageFolder, { recursive: true })
     } catch (e) {
         console.log(`Failed to create folder ${storageFolder}`, e);
     }
+
+    const sc = scAPI.getSecurityContext();
+
+    sc.on("initialised", async () => {
+        console.log("@@AICI")
+        w3cDID.createIdentity("ssi:name", "default", "remote", (err, didDocument) => {
+            console.log("@@DOCUMENT CREATED");
+            didDocument.readMessage((err, res) => {
+                console.log("ERR", err);
+                console.log("@@SUBSCRIBED");
+            });
+        });
+
+    })
 
     function requestServerMiddleware(request, response, next) {
         request.server = server;
