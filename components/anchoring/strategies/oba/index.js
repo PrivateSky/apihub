@@ -1,26 +1,30 @@
+const {getEthereumSyncServiceSingleton} = require("./ehereumSyncService");
 const LOG_IDENTIFIER = "[OBA]";
 
 function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
-
     let {FS, ETH} = require("../index");
     const fsHandler = new FS(server, domainConfig, anchorId, anchorValue, ...args);
     const ethHandler = new ETH(server, domainConfig, anchorId, anchorValue, ...args);
+    const ethSyncService = getEthereumSyncServiceSingleton(server);
 
+    ethSyncService.synchronize();
     this.createAnchor = function (callback) {
+        console.log("Create anchor", anchorId, anchorValue);
         fsHandler.createAnchor((err, res) => {
             if (err) {
                 return callback(err);
             }
             console.log(`${LOG_IDENTIFIER} optimistic create anchor ended with success.`);
-            ethHandler.createAnchor((err, res) => {
-                //TODO: handler err and res
-                if (err && !res) {
-                    console.log(`${LOG_IDENTIFIER} create for anchorId ${fsHandler.commandData.anchorId} will be synced later.`);
+
+            ethSyncService.storeAnchor("createAnchor", anchorId, anchorValue, domainConfig,(err) => {
+                if (err) {
+                    console.log(`${LOG_IDENTIFIER} failed to store anchor ${fsHandler.commandData.anchorId} in db.`);
                     return;
                 }
-                console.log(`${LOG_IDENTIFIER} create for anchorId ${fsHandler.commandData.anchorId} synced with success.`);
-            });
-            return callback(undefined, res);
+
+                console.log(`${LOG_IDENTIFIER} anchor ${fsHandler.commandData.anchorId} stored in db successfully.`);
+                return callback(undefined, res);
+            })
         });
     }
 
@@ -30,15 +34,16 @@ function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
                 return callback(err);
             }
             console.log(`${LOG_IDENTIFIER} optimistic append anchor ended with success.`);
-            ethHandler.appendAnchor((err, res) => {
-                //TODO: handler err and res
-                if (err && !res) {
-                    console.log(`${LOG_IDENTIFIER} update of anchorId ${fsHandler.commandData.anchorId} will be synced later.`);
+            ethSyncService.storeAnchor("appendAnchor", anchorId, anchorValue, domainConfig, (err) => {
+                if (err) {
+                    console.log(`${LOG_IDENTIFIER} failed to store anchor ${fsHandler.commandData.anchorId} in db.`);
                     return;
                 }
-                console.log(`${LOG_IDENTIFIER} update of anchorId ${fsHandler.commandData.anchorId} synced with success.`);
-            });
-            return callback(undefined, res);
+
+                console.log(`${LOG_IDENTIFIER} anchor ${fsHandler.commandData.anchorId} stored in db successfully.`);
+                return callback(undefined, res);
+
+            })
         });
     }
 
@@ -58,7 +63,7 @@ function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
                 }
             }
 
-            if(history === ""){
+            if (history === "") {
                 console.log(`${LOG_IDENTIFIER} anchorId ${fsHandler.commandData.anchorId} synced but no history found.`);
                 //if we don't retrieve info from blockchain we exit
                 return callback(undefined, anchorVersions);
