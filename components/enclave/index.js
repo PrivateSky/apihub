@@ -1,33 +1,26 @@
-const { resolve } = require("path");
-const config = require("../../config");
-const {
-    headersMiddleware,
-    responseModifierMiddleware,
-    requestBodyJSONMiddleware,
-    bodyReaderMiddleware
-} = require('../../utils/middlewares');
-const path = require("path");
-const fs = require("fs");
+const loki = require("./lib/lokijs/src/lokijs.js");
+const lfsa = require("./lib/lokijs/src/loki-fs-sync-adapter.js");
+const adapter = new lfsa();
+
 const openDSU = require("opendsu");
 const w3cDID = openDSU.loadAPI("w3cdid");
-const crypto = openDSU.loadAPI("crypto");
 
 function DefaultEnclave(server) {
-    const domains = [];
-    const storageFolder = path.join(server.rootFolder, "external-volume", "enclave");
-    const commandMapping = {
-        "getRecord": getRecord,
-        "insertRecord": insertRecord
-    }
 
-    try {
-        fs.mkdirSync(storageFolder, { recursive: true })
-    } catch (e) {
-        console.log(`Failed to create folder ${storageFolder}`, e);
-    }
+    let initialized = false;
+
+    let db = new loki(server.rootFolder, {
+        adapter: adapter,
+        autoload: true,
+        autoloadCallback: () => { initialized = true; },
+        autosave: true,
+        autosaveInterval: 1000
+    });
 
     w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDocument) => {
         didDocument.subscribe((err, res) => {
+            if (!initialized) return;
+
             if (err) {
                 console.log(err);
             }
@@ -36,7 +29,7 @@ function DefaultEnclave(server) {
                 const command = resObj.commandName;
                 const params = resObj.params;
                 const clientDID = params[params.length - 1];
-                const result = JSON.stringify(commandMapping[command].apply(this, params));
+                const result = JSON.stringify(this[command].apply(this, params));
                 didDocument.sendMessage(result, clientDID, (err, res) => {
                     if (err) {
                         console.log(err);
@@ -49,112 +42,51 @@ function DefaultEnclave(server) {
         });
     });
 
-    function insertRecord(DID, table, recordId, record) {
-        return { "record": "allgood insert" }
-    }
-
-    function getRecord(DID, table, recordId) {
-        return { "record": "allgood get record" }
-    }
-
-    function requestServerMiddleware(request, response, next) {
-        request.server = server;
-        next();
-    }
-
-    function domainIsConfigured(request, response) {
-        const domainName = request.params.domain;
-        if (domains.indexOf(domainName) === -1) {
-            console.log(`Caught an request to the enclave for domain ${domainName}. Looks like the domain doesn't have enclave component enabled.`);
-            response.statusCode = 405;
-            response.end();
-            return false;
+    this.insertRecord = function (forDID, tableName, pk, record) {
+        let table = db.getCollection(tableName) || db.addCollection(tableName);
+        const foundRecord = table.findOne({ 'pk': pk });
+        if (foundRecord) {
+            return `A record with pk ${pk} already exists in ${tableName}`;
         }
-        return true;
+        let result;
+        try {
+            result = table.insert({ "pk": pk, ...record, "did": forDID, "__timestamp": Date.now() });
+        } catch (err) {
+            return err;
+        }
+        return result;
     }
 
-    function runEnclaveEncryptedCommand(request, response) {
-        if (!domainIsConfigured(request, response)) {
+    this.getRecord = function (forDID, tableName, pk) {
+        let table = db.getCollection(tableName);
+        if (!table) {
             return;
         }
-
-        const enclaveDID = request.params.enclaveDID;
-
-        w3cDID.resolveDID(enclaveDID, (err, didDocument) => {
-            if (err) {
-                response.statusCode = 500;
-                response.end();
-                return;
-            }
-
-            didDocument.getPublicKey("raw", (err, publicKey) => {
-                if (err) {
-                    response.statusCode = 500;
-                    response.end();
-                    return;
-                }
-
-                const encryptionKey = crypto.deriveEncryptionKey(publicKey);
-                let decryptedCommand;
-                try {
-                    decryptedCommand = crypto.decrypt(request.body, encryptionKey);
-                    decryptedCommand = JSON.parse(decryptedCommand.toString());
-                } catch (e) {
-                    response.statusCode = 500;
-                    response.end();
-                    return;
-                }
-
-                request.body = decryptedCommand;
-                runEnclaveCommand(request, response);
-            })
-        })
-    }
-
-    function runEnclaveCommand(request, response) {
-        if (!domainIsConfigured(request, response)) {
-            return;
+        let result;
+        try {
+            result = table.findObject({ 'pk': pk });
+        } catch (err) {
+            return err;
         }
-        response.setHeader("Content-Type", "application/json");
 
-        request.body.params.push(path.join(storageFolder, crypto.encodeBase58(Buffer.from(request.params.enclaveDID))));
-        const command = require("./commands").createCommand(request.body.commandName, ...request.body.params);
-        command.execute((err, data) => {
-            if (err) {
-                console.log(err);
-                return response.send(500, `Failed to execute command ${request.body.commandName}`);
-            }
-
-            return response.send(200, data);
-        })
+        return result;
     }
 
-    function getConfiguredDomains() {
-        let confDomains = typeof config.getConfiguredDomains !== "undefined" ? config.getConfiguredDomains() : ["default"];
-
-        for (let i = 0; i < confDomains.length; i++) {
-            let domain = confDomains[i];
-            let domainConfig = config.getDomainConfig(domain);
-
-            if (domainConfig && domainConfig.enable && domainConfig.enable.indexOf("enclave") !== -1) {
-                console.log(`Successfully register enclave endpoints for domain < ${domain} >.`);
-                domains.push(domain);
-            }
+    this.getAllRecords = function (forDID, tableName) {
+        let table = db.getCollection(tableName);
+        if (!table) {
+            return [];
         }
+
+        let results;
+        try {
+            results = table.find();
+        } catch (err) {
+            return err;
+        }
+        return results
     }
 
-    getConfiguredDomains();
-    server.use(`/runEnclaveCommand/:domain/*`, headersMiddleware);
-    server.use(`/runEnclaveCommand/:domain/*`, responseModifierMiddleware);
-    server.use(`/runEnclaveCommand/:domain/*`, requestBodyJSONMiddleware);
-    server.use(`/runEnclaveCommand/:domain/*`, requestServerMiddleware);
-    server.put("/runEnclaveCommand/:domain/:enclaveDID", runEnclaveCommand);
-
-    server.use(`/runEnclaveEncryptedCommand/:domain/*`, headersMiddleware);
-    server.use(`/runEnclaveEncryptedCommand/:domain/*`, responseModifierMiddleware);
-    server.use(`/runEnclaveEncryptedCommand/:domain/*`, bodyReaderMiddleware);
-    server.use(`/runEnclaveEncryptedCommand/:domain/*`, requestServerMiddleware);
-    server.put("/runEnclaveEncryptedCommand/:domain/:enclaveDID", runEnclaveEncryptedCommand);
 }
 
 module.exports = {
