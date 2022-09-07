@@ -1,35 +1,62 @@
-const {resolve} = require("path");
+const { resolve } = require("path");
 const config = require("../../config");
+const {
+    headersMiddleware,
+    responseModifierMiddleware,
+    requestBodyJSONMiddleware,
+    bodyReaderMiddleware
+} = require('../../utils/middlewares');
+const path = require("path");
+const fs = require("fs");
+const openDSU = require("opendsu");
+const { Console } = require("console");
+const w3cDID = openDSU.loadAPI("w3cdid");
+const crypto = openDSU.loadAPI("crypto");
 
 function DefaultEnclave(server) {
-    const {
-        headersMiddleware,
-        responseModifierMiddleware,
-        requestBodyJSONMiddleware,
-        bodyReaderMiddleware
-    } = require('../../utils/middlewares');
     const domains = [];
-    const path = require("path");
-    const fs = require("fs");
-    const openDSU = require("opendsu");
-    const w3cDID = openDSU.loadAPI("w3cdid");
-    const crypto = openDSU.loadAPI("crypto");
-
     const storageFolder = path.join(server.rootFolder, "external-volume", "enclave");
+    const commandMapping = {
+        "getRecord": getRecord,
+        "insertRecord": insertRecord
+    }
 
     try {
-        fs.mkdirSync(storageFolder, {recursive: true})
+        fs.mkdirSync(storageFolder, { recursive: true })
     } catch (e) {
         console.log(`Failed to create folder ${storageFolder}`, e);
     }
 
     w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDocument) => {
-        didDocument.readMessage((err, res) => {
-            console.log("Error", err);
-            console.log("Res", res);
+        didDocument.subscribe((err, res) => {
+            if (err) {
+                console.log(err);
+            }
+            try {
+                const resObj = JSON.parse(res);
+                const command = resObj.commandName;
+                const params = resObj.params;
+                const clientDID = params[params.length - 1];
+                const result = JSON.stringify(commandMapping[command].apply(this, params));
+                didDocument.sendMessage(result, clientDID, (err, res) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                })
+            }
+            catch (err) {
+                console.log(err);
+            }
         });
     });
 
+    function insertRecord(DID, table, recordId, record) {
+        return { "record": "allgood insert" }
+    }
+
+    function getRecord(DID, table, recordId) {
+        return { "record": "allgood get record" }
+    }
 
     function requestServerMiddleware(request, response, next) {
         request.server = server;
