@@ -9,7 +9,6 @@ const {
 const path = require("path");
 const fs = require("fs");
 const openDSU = require("opendsu");
-const { Console } = require("console");
 const w3cDID = openDSU.loadAPI("w3cdid");
 const crypto = openDSU.loadAPI("crypto");
 
