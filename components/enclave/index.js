@@ -31,7 +31,7 @@ function DefaultEnclave(server) {
         try {
             const command = resObj.commandName;
             const params = resObj.params;
-            const result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params);
+            const result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params) ?? {};
             return JSON.stringify(result);
         }
         catch (err) {
