@@ -1,12 +1,9 @@
 
 const openDSU = require("opendsu");
+const { getDefaultEnclave } = require("./commands/DefaultEnclave");
 const w3cDID = openDSU.loadAPI("w3cdid");
-const LokiAdaptor = require("default-enclave");
 
 function DefaultEnclave(server) {
-
-    const storageFolder = require("path").join(getStorageFolder(), "enclave");
-    const lokiAdaptor = new LokiAdaptor(storageFolder);
 
     w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDocument) => {
         didDocument.subscribe(async (err, res) => {
@@ -18,7 +15,10 @@ function DefaultEnclave(server) {
             try {
                 const resObj = JSON.parse(res);
                 const clientDID = resObj.params.pop();
-                const result = await executeCommand(resObj);
+                // the last parameter is used for stotage folder - where should this be specified?
+                const lokiAdaptor = getDefaultEnclave(clientDID);
+
+                const result = await executeCommand(resObj, lokiAdaptor);
                 sendResult(didDocument, result, clientDID);
             }
             catch (err) {
@@ -27,11 +27,11 @@ function DefaultEnclave(server) {
         });
     });
 
-    async function executeCommand(resObj) {
+    async function executeCommand(resObj, lokiAdaptor) {
         try {
             const command = resObj.commandName;
             const params = resObj.params;
-            const result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params);
+            const result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params) ?? {};
             return JSON.stringify(result);
         }
         catch (err) {
@@ -47,13 +47,6 @@ function DefaultEnclave(server) {
             }
         })
     }
-
-    function getStorageFolder() {
-        const config = server.config;
-        const storage = require("path").join(server.rootFolder, config.componentsConfig.enclave.storageFolder);
-        return storage;
-    }
-
 
 }
 
