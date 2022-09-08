@@ -18,6 +18,7 @@ const defaultConfig = {
         "enclave":{
             "module": "./components/enclave",
             "function": "DefaultEnclave",
+            "storageFolder": './external-volume/config/enclave'
         },
         "secrets":{
             "module": "./components/secrets"

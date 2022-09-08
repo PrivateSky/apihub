@@ -1,134 +1,58 @@
-const {resolve} = require("path");
-const config = require("../../config");
+
+const openDSU = require("opendsu");
+const { getDefaultEnclave } = require("./commands/DefaultEnclave");
+const w3cDID = openDSU.loadAPI("w3cdid");
+const path = require("path")
 
 function DefaultEnclave(server) {
-    const {
-        headersMiddleware,
-        responseModifierMiddleware,
-        requestBodyJSONMiddleware,
-        bodyReaderMiddleware
-    } = require('../../utils/middlewares');
-    const domains = [];
-    const path = require("path");
-    const fs = require("fs");
-    const openDSU = require("opendsu");
-    const w3cDID = openDSU.loadAPI("w3cdid");
-    const crypto = openDSU.loadAPI("crypto");
-
-    const storageFolder = path.join(server.rootFolder, "external-volume", "enclave");
-
-    try {
-        fs.mkdirSync(storageFolder, {recursive: true})
-    } catch (e) {
-        console.log(`Failed to create folder ${storageFolder}`, e);
-    }
 
     w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDocument) => {
-        didDocument.readMessage((err, res) => {
-            console.log("Error", err);
-            console.log("Res", res);
+        didDocument.subscribe(async (err, res) => {
+            if (err) {
+                console.log(err);
+                return
+            }
+
+            try {
+                const resObj = JSON.parse(res);
+                const clientDID = resObj.params.pop();
+                const lokiAdaptor = getDefaultEnclave(getStorageFolder());
+
+                const result = await executeCommand(resObj, lokiAdaptor);
+                sendResult(didDocument, result, clientDID);
+            }
+            catch (err) {
+                console.log(err);
+            }
         });
     });
 
-
-    function requestServerMiddleware(request, response, next) {
-        request.server = server;
-        next();
+    async function executeCommand(resObj, lokiAdaptor) {
+        try {
+            const command = resObj.commandName;
+            const params = resObj.params;
+            const result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params) ?? {};
+            return JSON.stringify(result);
+        }
+        catch (err) {
+            console.log(err);
+            return err;
+        }
     }
 
-    function domainIsConfigured(request, response) {
-        const domainName = request.params.domain;
-        if (domains.indexOf(domainName) === -1) {
-            console.log(`Caught an request to the enclave for domain ${domainName}. Looks like the domain doesn't have enclave component enabled.`);
-            response.statusCode = 405;
-            response.end();
-            return false;
-        }
-        return true;
-    }
-
-    function runEnclaveEncryptedCommand(request, response) {
-        if (!domainIsConfigured(request, response)) {
-            return;
-        }
-
-        const enclaveDID = request.params.enclaveDID;
-
-        w3cDID.resolveDID(enclaveDID, (err, didDocument) => {
-            if (err) {
-                response.statusCode = 500;
-                response.end();
-                return;
-            }
-
-            didDocument.getPublicKey("raw", (err, publicKey) => {
-                if (err) {
-                    response.statusCode = 500;
-                    response.end();
-                    return;
-                }
-
-                const encryptionKey = crypto.deriveEncryptionKey(publicKey);
-                let decryptedCommand;
-                try {
-                    decryptedCommand = crypto.decrypt(request.body, encryptionKey);
-                    decryptedCommand = JSON.parse(decryptedCommand.toString());
-                } catch (e) {
-                    response.statusCode = 500;
-                    response.end();
-                    return;
-                }
-
-                request.body = decryptedCommand;
-                runEnclaveCommand(request, response);
-            })
-        })
-    }
-
-    function runEnclaveCommand(request, response) {
-        if (!domainIsConfigured(request, response)) {
-            return;
-        }
-        response.setHeader("Content-Type", "application/json");
-
-        request.body.params.push(path.join(storageFolder, crypto.encodeBase58(Buffer.from(request.params.enclaveDID))));
-        const command = require("./commands").createCommand(request.body.commandName, ...request.body.params);
-        command.execute((err, data) => {
+    function sendResult(didDocument, result, clientDID) {
+        didDocument.sendMessage(result, clientDID, (err, res) => {
             if (err) {
                 console.log(err);
-                return response.send(500, `Failed to execute command ${request.body.commandName}`);
             }
-
-            return response.send(200, data);
         })
     }
 
-    function getConfiguredDomains() {
-        let confDomains = typeof config.getConfiguredDomains !== "undefined" ? config.getConfiguredDomains() : ["default"];
-
-        for (let i = 0; i < confDomains.length; i++) {
-            let domain = confDomains[i];
-            let domainConfig = config.getDomainConfig(domain);
-
-            if (domainConfig && domainConfig.enable && domainConfig.enable.indexOf("enclave") !== -1) {
-                console.log(`Successfully register enclave endpoints for domain < ${domain} >.`);
-                domains.push(domain);
-            }
-        }
+    function getStorageFolder() {
+        const enclavePath = server.config.componentsConfig.enclave.storageFolder ?? path.join("external-volume", "enclave");
+        return path.join(server.rootFolder, enclavePath);
     }
 
-    getConfiguredDomains();
-    server.use(`/runEnclaveCommand/:domain/*`, headersMiddleware);
-    server.use(`/runEnclaveCommand/:domain/*`, responseModifierMiddleware);
-    server.use(`/runEnclaveCommand/:domain/*`, requestBodyJSONMiddleware);
-    server.use(`/runEnclaveCommand/:domain/*`, requestServerMiddleware);
-    server.put("/runEnclaveCommand/:domain/:enclaveDID", runEnclaveCommand);
-
-    server.use(`/runEnclaveEncryptedCommand/:domain/*`, headersMiddleware);
-    server.use(`/runEnclaveEncryptedCommand/:domain/*`, responseModifierMiddleware);
-    server.use(`/runEnclaveEncryptedCommand/:domain/*`, bodyReaderMiddleware);
-    server.use(`/runEnclaveEncryptedCommand/:domain/*`, requestServerMiddleware);
-    server.put("/runEnclaveEncryptedCommand/:domain/:enclaveDID", runEnclaveEncryptedCommand);
 }
 
 module.exports = {
