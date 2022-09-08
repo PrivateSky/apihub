@@ -2,6 +2,7 @@
 const openDSU = require("opendsu");
 const { getDefaultEnclave } = require("./commands/DefaultEnclave");
 const w3cDID = openDSU.loadAPI("w3cdid");
+const path = require("path")
 
 function DefaultEnclave(server) {
 
@@ -16,7 +17,7 @@ function DefaultEnclave(server) {
                 const resObj = JSON.parse(res);
                 const clientDID = resObj.params.pop();
                 // the last parameter is used for stotage folder - where should this be specified?
-                const lokiAdaptor = getDefaultEnclave(clientDID);
+                const lokiAdaptor = getDefaultEnclave(path.join(getStorageFolder(), clientDID));
 
                 const result = await executeCommand(resObj, lokiAdaptor);
                 sendResult(didDocument, result, clientDID);
@@ -46,6 +47,12 @@ function DefaultEnclave(server) {
                 console.log(err);
             }
         })
+    }
+
+    function getStorageFolder() {
+        const config = server.config;
+        const storage = require("path").join(server.rootFolder, config.componentsConfig.enclave.storageFolder);
+        return storage;
     }
 
 }
