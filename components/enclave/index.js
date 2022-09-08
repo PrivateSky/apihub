@@ -16,8 +16,7 @@ function DefaultEnclave(server) {
             try {
                 const resObj = JSON.parse(res);
                 const clientDID = resObj.params.pop();
-                // the last parameter is used for stotage folder - where should this be specified?
-                const lokiAdaptor = getDefaultEnclave(path.join(getStorageFolder(), clientDID));
+                const lokiAdaptor = getDefaultEnclave(getStorageFolder());
 
                 const result = await executeCommand(resObj, lokiAdaptor);
                 sendResult(didDocument, result, clientDID);
@@ -50,9 +49,8 @@ function DefaultEnclave(server) {
     }
 
     function getStorageFolder() {
-        const config = server.config;
-        const storage = require("path").join(server.rootFolder, config.componentsConfig.enclave.storageFolder);
-        return storage;
+        const enclavePath = server.config.componentsConfig.enclave.storageFolder ?? path.join("external-volume", "enclave");
+        return path.join(server.rootFolder, enclavePath);
     }
 
 }
