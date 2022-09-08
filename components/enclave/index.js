@@ -1,40 +1,25 @@
-const loki = require("./lib/lokijs/src/lokijs.js");
-const lfsa = require("./lib/lokijs/src/loki-fs-sync-adapter.js");
-const adapter = new lfsa();
 
 const openDSU = require("opendsu");
 const w3cDID = openDSU.loadAPI("w3cdid");
+const LokiAdaptor = require("default-enclave");
 
 function DefaultEnclave(server) {
 
-    let initialized = false;
-
-    let db = new loki(server.rootFolder, {
-        adapter: adapter,
-        autoload: true,
-        autoloadCallback: () => { initialized = true; },
-        autosave: true,
-        autosaveInterval: 1000
-    });
+    const storageFolder = require("path").join(getStorageFolder(), "enclave");
+    const lokiAdaptor = new LokiAdaptor(storageFolder);
 
     w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDocument) => {
-        didDocument.subscribe((err, res) => {
-            if (!initialized) return;
-
+        didDocument.subscribe(async (err, res) => {
             if (err) {
                 console.log(err);
+                return
             }
+
             try {
                 const resObj = JSON.parse(res);
-                const command = resObj.commandName;
-                const params = resObj.params;
-                const clientDID = params[params.length - 1];
-                const result = JSON.stringify(this[command].apply(this, params));
-                didDocument.sendMessage(result, clientDID, (err, res) => {
-                    if (err) {
-                        console.log(err);
-                    }
-                })
+                const clientDID = resObj.params.pop();
+                const result = await executeCommand(resObj);
+                sendResult(didDocument, result, clientDID);
             }
             catch (err) {
                 console.log(err);
@@ -42,50 +27,33 @@ function DefaultEnclave(server) {
         });
     });
 
-    this.insertRecord = function (forDID, tableName, pk, record) {
-        let table = db.getCollection(tableName) || db.addCollection(tableName);
-        const foundRecord = table.findOne({ 'pk': pk });
-        if (foundRecord) {
-            return `A record with pk ${pk} already exists in ${tableName}`;
-        }
-        let result;
+    async function executeCommand(resObj) {
         try {
-            result = table.insert({ "pk": pk, ...record, "did": forDID, "__timestamp": Date.now() });
-        } catch (err) {
+            const command = resObj.commandName;
+            const params = resObj.params;
+            const result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params);
+            return JSON.stringify(result);
+        }
+        catch (err) {
+            console.log(err);
             return err;
         }
-        return result;
     }
 
-    this.getRecord = function (forDID, tableName, pk) {
-        let table = db.getCollection(tableName);
-        if (!table) {
-            return;
-        }
-        let result;
-        try {
-            result = table.findObject({ 'pk': pk });
-        } catch (err) {
-            return err;
-        }
-
-        return result;
+    function sendResult(didDocument, result, clientDID) {
+        didDocument.sendMessage(result, clientDID, (err, res) => {
+            if (err) {
+                console.log(err);
+            }
+        })
     }
 
-    this.getAllRecords = function (forDID, tableName) {
-        let table = db.getCollection(tableName);
-        if (!table) {
-            return [];
-        }
-
-        let results;
-        try {
-            results = table.find();
-        } catch (err) {
-            return err;
-        }
-        return results
+    function getStorageFolder() {
+        const config = server.config;
+        const storage = require("path").join(server.rootFolder, config.componentsConfig.enclave.storageFolder);
+        return storage;
     }
+
 
 }
 
