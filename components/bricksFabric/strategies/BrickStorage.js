@@ -105,7 +105,7 @@ function BrickStorage() {
             this.pendingBuffer.splice(0, this.pendingBuffer.length);
         }
     }
-    function storeData(anchorData, server, callback) {
+    this.storeData = function(anchorData, server, callback) {
         if (this.isCommitingBlock === true)
         {
             console.log("transaction cached");
