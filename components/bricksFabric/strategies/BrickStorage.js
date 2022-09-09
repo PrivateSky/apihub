@@ -55,7 +55,7 @@ function BrickStorage() {
             block.transactions.push(this.pendingTransactions[i])
         }
 
-        this.__SaveBlockToBrickStorage(JSON.stringify(block), server, callback);
+        __SaveBlockToBrickStorage(JSON.stringify(block), server, callback);
     }
     function __SaveBlockToBrickStorage(data, server, callback){
 
@@ -71,16 +71,16 @@ function BrickStorage() {
             server.makeLocalRequest(blockMethod, blockPath, data, blockHeaders, (err, result) => {
                 if (err) {
                     console.log(err);
-                    this.__pushBuffer();
+                    __pushBuffer();
                     this.isCommitingBlock = false;
                     callback(err, undefined);
                 }
 
                 if (result) {
                     this.lastBlockHashLink = JSON.parse(result).message;
-                    this.__storeLastHashLink();
+                    __storeLastHashLink();
                     this.pendingTransactions.splice(0, this.pendingTransactions.length);
-                    this.__pushBuffer();
+                    __pushBuffer();
                     this.isCommitingBlock = false;
                     //console.log(result);
                     console.log('block finished');
