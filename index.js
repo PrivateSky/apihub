@@ -30,6 +30,7 @@ const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
 	require('./components/mqHub');
 	require('./components/enclave');
 	require('./components/secrets');
+	require('./components/mainDSU');
 	require('./components/cloudWallet');
 	require('./components/stream');
 	require('./components/requestForwarder');
@@ -260,26 +261,29 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 				})
                 .filter(activeComponentName => !requiredComponentNames.includes(activeComponentName));
 
-			if(!middlewareList.includes("cloudWallet")) {
-				console.warn("WARNING: cloudWallet component is not configured inside activeComponents!")
-				console.warn("WARNING: temporary adding cloudWallet component to activeComponents! Please make sure to include cloudWallet component inside activeComponents!")
+            const addRequiredComponent = (componentName) => {
+                if(!middlewareList.includes(`${componentName}`)) {
+                    console.warn(`WARNING: ${componentName} component is not configured inside activeComponents!`)
+                    console.warn(`WARNING: temporary adding ${componentName} component to activeComponents! Please make sure to include ${componentName} component inside activeComponents!`)
+    
+                    const addComponentToComponentList = (list) => {
+                        const indexOfStaticServer = list.indexOf("staticServer");
+                        if(indexOfStaticServer !== -1) {
+                            // staticServer needs to load last
+                            list.splice(indexOfStaticServer, 0, componentName);
+                        } else {
+                            list.push(componentName);
+                        }
+                    }
+    
+                    addComponentToComponentList(middlewareList);
+                    // need to also register to defaultComponents in order to be able to load the module correctly
+                    addComponentToComponentList(conf.defaultComponents);
+                }
+            }
 
-				const addCloudWalletToComponentList = (list) => {
-					const indexOfStaticServer = list.indexOf("staticServer");
-					if(indexOfStaticServer !== -1) {
-						// staticServer needs to load last
-						list.splice(indexOfStaticServer, 0, "cloudWallet");
-					} else {
-						list.push("cloudWallet");
-					}
-				}
-
-				addCloudWalletToComponentList(middlewareList);
-				// need to also register to defaultComponents in order to be able to load the module correctly
-				addCloudWalletToComponentList(conf.defaultComponents);
-
-				console.log("Final comp:", middlewareList, conf.defaultComponents)
-			}
+            addRequiredComponent("cloudWallet");
+            addRequiredComponent("mainDSU");
 
 			function installNextComponent(componentList){
 				const componentName = componentList[0];
