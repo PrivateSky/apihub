@@ -37,10 +37,6 @@ const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
 })();
 
 function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restartIntervalCheck, retryTimeout }, callback) {
-	if (typeof $$.flows === "undefined") {
-		require('callflow').initialise();
-	}
-
 	if(typeof restartIntervalCheck === "undefined"){
 		restartIntervalCheck = CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL;
 	}

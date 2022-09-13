@@ -3,9 +3,8 @@ const path = require('swarmutils').path;
 const BRICKSFABRIC_ERROR_CODE = 'bricks fabric error';
 
 
-$$.flow.describe('BrickStorage', {
-
-    init : function (brickFabricRootFolder,noOfTransactionsPerBlock) {
+function BrickStorage() {
+    this.init = function (brickFabricRootFolder,noOfTransactionsPerBlock) {
         this.rootFolder = brickFabricRootFolder;
         this.transactionsPerBlock = noOfTransactionsPerBlock;
         this.hashlinkfile = 'lasthashlink';
@@ -13,21 +12,23 @@ $$.flow.describe('BrickStorage', {
         this.pendingTransactions = [];
         this.pendingBuffer = [];
         this.isCommitingBlock = false;
-    },
-    bootUp : function(){
+    }
+
+    this.bootUp = function(){
       //get latest hashlink
         const hashlinkpath = path.join(this.rootFolder,this.hashlinkfile);
         if (fs.existsSync(hashlinkpath))
         {
             this.lastBlockHashLink = fs.readFileSync(hashlinkpath).toString();
         }
-    },
-    __storeLastHashLink : function () {
+    }
+
+    function __storeLastHashLink() {
         const hashlinkpath = path.join(this.rootFolder,this.hashlinkfile);
         fs.writeFileSync(hashlinkpath,this.lastBlockHashLink);
-    },
-    completeBlock : function (server, callback) {
+    }
 
+    this.completeBlock = function (server, callback) {
         if (callback === undefined)
         {
             callback = (err, result) => {
@@ -54,9 +55,9 @@ $$.flow.describe('BrickStorage', {
             block.transactions.push(this.pendingTransactions[i])
         }
 
-        this.__SaveBlockToBrickStorage(JSON.stringify(block), server, callback);
-    },
-    __SaveBlockToBrickStorage : function (data, server, callback){
+        __SaveBlockToBrickStorage(JSON.stringify(block), server, callback);
+    }
+    function __SaveBlockToBrickStorage(data, server, callback){
 
         const blockHeaders = {
             'Content-Type': 'application/json',
@@ -70,16 +71,16 @@ $$.flow.describe('BrickStorage', {
             server.makeLocalRequest(blockMethod, blockPath, data, blockHeaders, (err, result) => {
                 if (err) {
                     console.log(err);
-                    this.__pushBuffer();
+                    __pushBuffer();
                     this.isCommitingBlock = false;
                     callback(err, undefined);
                 }
 
                 if (result) {
                     this.lastBlockHashLink = JSON.parse(result).message;
-                    this.__storeLastHashLink();
+                    __storeLastHashLink();
                     this.pendingTransactions.splice(0, this.pendingTransactions.length);
-                    this.__pushBuffer();
+                    __pushBuffer();
                     this.isCommitingBlock = false;
                     //console.log(result);
                     console.log('block finished');
@@ -93,8 +94,8 @@ $$.flow.describe('BrickStorage', {
         {
             console.log("bricks fabric", err);
         }
-    },
-    __pushBuffer : function (){
+    }
+    function __pushBuffer(){
         if (this.pendingBuffer.length > 0)
         {
             console.log("push buffer to pending block", this.pendingBuffer);
@@ -103,8 +104,8 @@ $$.flow.describe('BrickStorage', {
             }
             this.pendingBuffer.splice(0, this.pendingBuffer.length);
         }
-    },
-    storeData : function (anchorData, server, callback) {
+    }
+    this.storeData = function(anchorData, server, callback) {
         if (this.isCommitingBlock === true)
         {
             console.log("transaction cached");
@@ -123,15 +124,6 @@ $$.flow.describe('BrickStorage', {
             callback(undefined,"Transaction was added to the block.");
         }
     }
-
-
-
-
-
-
-
-
-
-});
-
+}
+global["BrickStorage"] = BrickStorage;
 module.exports = { BRICKSFABRIC_ERROR_CODE};

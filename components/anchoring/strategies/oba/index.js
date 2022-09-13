@@ -1,4 +1,4 @@
-const {getEthereumSyncServiceSingleton} = require("./ehereumSyncService");
+const {getEthereumSyncServiceSingleton} = require("./ethereumSyncService");
 const LOG_IDENTIFIER = "[OBA]";
 
 function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
