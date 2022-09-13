@@ -7,7 +7,7 @@ const path = require("path")
 function DefaultEnclave(server) {
 
     w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDocument) => {
-        didDocument.subscribe(async (err, res) => {
+        didDocument.waitForMessages(async (err, res) => {
             if (err) {
                 console.log(err);
                 return
@@ -31,7 +31,8 @@ function DefaultEnclave(server) {
         try {
             const command = resObj.commandName;
             const params = resObj.params;
-            const result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params) ?? {};
+            let result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params) ?? {};
+            result.commandID = resObj.commandID;
             return JSON.stringify(result);
         }
         catch (err) {
