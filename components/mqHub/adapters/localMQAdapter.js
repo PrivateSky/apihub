@@ -1,3 +1,5 @@
+const FS = require("fs");
+
 function LocalMQAdapter(server, prefix, domain, configuration) {
 	const subscribers = {};
 	const config = require("../../../config");
@@ -5,6 +7,8 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 	const swarmUtils = require('swarmutils');
 	let path = swarmUtils.path;
 	const readBody = utils.streams.readStringFromStream;
+	const FILENAME_DELIMITER = "_special_mqs_delimiter_";
+
 	let storage = config.getConfig('componentsConfig', 'mqs', 'storage');
 	if (typeof storage === "undefined") {
 		storage = path.join(server.rootFolder, "external-volume", "mqs", domain);
@@ -20,7 +24,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 
 	Object.assign(settings, configuration);
 
-    let openedConnections = {};
+	let openedConnections = {};
 	function getQueueStoragePath(queueName) {
 		const opendsu = require("opendsu");
 		const crypto = opendsu.loadAPI('crypto');
@@ -39,6 +43,14 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 		});
 	}
 
+	function sanitizeFileName(filename){
+		if(filename.indexOf(FILENAME_DELIMITER)!==-1){
+			//if we find filename_delimiter in filename then we need to remove the delimiter in order to be able to sort the queue
+			filename = filename.split(FILENAME_DELIMITER)[0];
+		}
+		return filename;
+	}
+
 	function loadQueue(queueName, callback) {
 		require('fs').readdir(getQueueStoragePath(queueName), (err, files) => {
 			if (err) {
@@ -49,6 +61,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 				return callback(undefined, []);
 			}
 			let messages = files.filter(fileNamesAsTimestamp => {
+				fileNamesAsTimestamp = sanitizeFileName(fileNamesAsTimestamp);
 				let valid = (new Date(Number(fileNamesAsTimestamp))).getTime() > 0;
 				if (!valid) {
 					console.log(`Found garbage in queue ${queueName} (file: ${fileNamesAsTimestamp}). Ignoring it!`);
@@ -57,11 +70,43 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 			});
 
 			messages.sort(function (a, b) {
+				a = sanitizeFileName(a);
+				b = sanitizeFileName(b);
 				return (new Date(Number(a))).getTime() - (new Date(Number(b))).getTime();
 			});
-
+			console.log("++\n\n messages", JSON.stringify(messages));
 			return callback(undefined, messages);
 		});
+	}
+
+	function constructFileName(proposedFileName, callback) {
+		let finalName = proposedFileName;
+		let filename = sanitizeFileName(finalName);
+		let counter = -1;
+
+		let FS = require('fs');
+
+		if(filename!==finalName){
+			counter = Number(finalName.replace(filename+FILENAME_DELIMITER, ""));
+		}
+
+		let exists = FS.statSync(finalName, {throwIfNoEntry: false});
+		if(!exists){
+			try{
+				FS.writeFileSync(finalName, "");
+			}catch (e){
+				//we ignore this e on purpose
+			}
+		}else{
+			console.log("===\nPreparing to generate new filename");
+			counter++;
+			console.log("Counter value", counter);
+			finalName = filename+FILENAME_DELIMITER+counter;
+			constructFileName(finalName, callback);
+			return;
+		}
+		console.log("\n\n=== we reserved the filename", finalName);
+		callback(undefined, finalName);
 	}
 
 	function storeMessage(queueName, message, callback) {
@@ -72,11 +117,14 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 			}
 
 			let fileName = path.join(getQueueStoragePath(queueName), new Date().getTime());
-			require('fs').writeFile(fileName, message, (err) => {
-				if (err) {
-					return callback(err);
-				}
-				return callback(undefined, fileName);
+			let FS = require('fs');
+			constructFileName(fileName, (err, finalName)=>{
+				FS.writeFile(finalName, message, (err) => {
+					if (err) {
+						return callback(err);
+					}
+					return callback(undefined, finalName);
+				});
 			});
 		});
 	}
@@ -202,24 +250,24 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 		});
 	}
 
-    function send(queueName, to, statusCode, message, headers) {
-        if (openedConnections[queueName]) {
-            clearTimeout(openedConnections[queueName]);
-            delete openedConnections[queueName];
-        }
-        to.statusCode = statusCode;
+	function send(queueName, to, statusCode, message, headers) {
+		if (openedConnections[queueName]) {
+			clearTimeout(openedConnections[queueName]);
+			delete openedConnections[queueName];
+		}
+		to.statusCode = statusCode;
 
-        if (headers) {
-            for (let prop in headers) {
-                to.setHeader(prop, headers[prop]);
-            }
-        }
+		if (headers) {
+			for (let prop in headers) {
+				to.setHeader(prop, headers[prop]);
+			}
+		}
 
-        if (message) {
-            to.write(message);
-        }
-        to.end();
-    }
+		if (message) {
+			to.write(message);
+		}
+		to.end();
+	}
 
 	function putMessageHandler(request, response) {
 		let queueName = request.params.queueName;
@@ -253,8 +301,8 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 	}
 
 	function getMessageHandler(request, response) {
-        let queueName = request.params.queueName;
-        readMessage(queueName, (err, message) => {
+		let queueName = request.params.queueName;
+		readMessage(queueName, (err, message) => {
 			if (err) {
 				send(queueName, response, 500);
 				return;
@@ -298,7 +346,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 	console.log(`Warning: Local MQ Adapter should be used only during development!`);
 	console.log(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
 
-    const mqConfig = config.getConfig("componentsConfig", "mq");
+	const mqConfig = config.getConfig("componentsConfig", "mq");
 	if (mqConfig && mqConfig.connectionTimeout) {
 		function signalServerAlive(req, res, next) {
 			openedConnections[req.params.queueName] = setTimeout(() => {
@@ -312,7 +360,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 		server.get(`${prefix}/${domain}/get/:queueName/:signature_of_did`, signalServerAlive); //  > {message}
 		server.get(`${prefix}/${domain}/take/:queueName/:signature_of_did`, signalServerAlive); //  > message
 	}
-    
+
 	server.put(`${prefix}/${domain}/put/:queueName`, putMessageHandler); //< message
 
 	server.get(`${prefix}/${domain}/get/:queueName/:signature_of_did`, getMessageHandler); //  > {message}
