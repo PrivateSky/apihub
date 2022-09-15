@@ -74,7 +74,6 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 				b = sanitizeFileName(b);
 				return (new Date(Number(a))).getTime() - (new Date(Number(b))).getTime();
 			});
-			console.log("++\n\n messages", JSON.stringify(messages));
 			return callback(undefined, messages);
 		});
 	}
@@ -98,14 +97,11 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 				//we ignore this e on purpose
 			}
 		}else{
-			console.log("===\nPreparing to generate new filename");
 			counter++;
-			console.log("Counter value", counter);
 			finalName = filename+FILENAME_DELIMITER+counter;
 			constructFileName(finalName, callback);
 			return;
 		}
-		console.log("\n\n=== we reserved the filename", finalName);
 		callback(undefined, finalName);
 	}
 
