@@ -1,5 +1,3 @@
-const FS = require("fs");
-
 function LocalMQAdapter(server, prefix, domain, configuration) {
 	const subscribers = {};
 	const config = require("../../../config");
