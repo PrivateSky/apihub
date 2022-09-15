@@ -2,7 +2,7 @@
 const openDSU = require("opendsu");
 const { getDefaultEnclave } = require("./commands/DefaultEnclave");
 const w3cDID = openDSU.loadAPI("w3cdid");
-const path = require("path")
+const path = require("path");
 
 function DefaultEnclave(server) {
 
@@ -31,9 +31,8 @@ function DefaultEnclave(server) {
         try {
             const command = resObj.commandName;
             const params = resObj.params;
-            let result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params) ?? {};
-            result.commandID = resObj.commandID;
-            return JSON.stringify(result);
+            let dbResult = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params) ?? {};
+            return JSON.stringify({ "commandResult": dbResult, "commandID": resObj.commandID })
         }
         catch (err) {
             console.log(err);
