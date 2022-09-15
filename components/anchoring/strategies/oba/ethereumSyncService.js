@@ -43,7 +43,7 @@ function EthereumSyncService(server) {
             return callback(undefined);
         })
 
-        lokiEnclaveFacade.listQueue(undefined, ANCHORS_TABLE_NAME, "asc", (err, anchorHashes) => {
+        lokiEnclaveFacade.listQueue(undefined, ANCHORS_TABLE_NAME, "asc", 100, (err, anchorHashes) => {
             if (err) {
                 return callback(err);
             }
@@ -53,7 +53,6 @@ function EthereumSyncService(server) {
                 return;
             }
 
-            console.log("Pending anchors", Date.now(), anchorHashes);
             taskCounter.increment(anchorHashes.length);
             anchorHashes.forEach(anchorHash => {
                 lokiEnclaveFacade.getObjectFromQueue(undefined, ANCHORS_TABLE_NAME, anchorHash, (err, anchorObj) => {
@@ -84,7 +83,7 @@ function EthereumSyncService(server) {
 
     function resendAnchorsToBlockchain() {
         processPendingAnchors( () => {
-            setTimeout(resendAnchorsToBlockchain, 3000);
+            setTimeout(resendAnchorsToBlockchain, 10000);
         });
     }
 

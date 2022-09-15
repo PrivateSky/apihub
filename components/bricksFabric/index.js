@@ -24,7 +24,7 @@ function BricksFabric(server) {
     const strategyType = bricksFabricStrategy.name;
 
     //init strategy
-    let flow = $$.flow.start(strategyType);
+    let flow = new global[strategyType];
     flow.init(rootFolder,noOfTran);
 
     //resume if necessary
