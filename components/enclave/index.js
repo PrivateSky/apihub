@@ -6,8 +6,11 @@ const path = require("path");
 
 function DefaultEnclave(server) {
 
-    w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDoc) => {
+    let didDocument;
 
+    w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDoc) => {
+        didDocument = didDoc;
+        
         didDocument.waitForMessages(async (err, res) => {
             if (err) {
                 console.log(err);
