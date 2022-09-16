@@ -2,11 +2,15 @@
 const openDSU = require("opendsu");
 const { getDefaultEnclave } = require("./commands/DefaultEnclave");
 const w3cDID = openDSU.loadAPI("w3cdid");
-const path = require("path")
+const path = require("path");
 
 function DefaultEnclave(server) {
 
-    w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDocument) => {
+    let didDocument;
+
+    w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDoc) => {
+        didDocument = didDoc;
+        
         didDocument.waitForMessages(async (err, res) => {
             if (err) {
                 console.log(err);
@@ -14,12 +18,7 @@ function DefaultEnclave(server) {
             }
 
             try {
-                const resObj = JSON.parse(res);
-                const clientDID = resObj.params.pop();
-                const lokiAdaptor = getDefaultEnclave(getStorageFolder());
-
-                const result = await executeCommand(resObj, lokiAdaptor);
-                sendResult(didDocument, result, clientDID);
+                processCommand(JSON.parse(res));
             }
             catch (err) {
                 console.log(err);
@@ -27,13 +26,20 @@ function DefaultEnclave(server) {
         });
     });
 
+    async function processCommand(resObj) {
+        const clientDID = resObj.params.pop();
+        const lokiAdaptor = getDefaultEnclave(getStorageFolder());
+
+        const result = await executeCommand(resObj, lokiAdaptor);
+        sendResult(didDocument, result, clientDID);
+    }
+
     async function executeCommand(resObj, lokiAdaptor) {
         try {
             const command = resObj.commandName;
             const params = resObj.params;
-            let result = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params) ?? {};
-            result.commandID = resObj.commandID;
-            return JSON.stringify(result);
+            let dbResult = await $$.promisify(lokiAdaptor[command]).apply(lokiAdaptor, params) ?? {};
+            return JSON.stringify({ "commandResult": dbResult, "commandID": resObj.commandID })
         }
         catch (err) {
             console.log(err);
