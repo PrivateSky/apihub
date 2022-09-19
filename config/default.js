@@ -8,7 +8,7 @@ const defaultConfig = {
     "zeromqForwardAddress": "tcp://127.0.0.1:5001",
     "preventRateLimit": false,
     // staticServer needs to load last
-    "activeComponents": ["config", "mq", "enclave","secrets", "virtualMQ", "messaging", "notifications", "filesManager", "bdns", "bricking", "anchoring", "bricksFabric", "contracts", "dsu-wizard", 'debugLogger', "mainDSU", "cloudWallet", "stream", "staticServer"],
+    "activeComponents": ["config", "mq", "enclave","secrets", "notifications", "filesManager", "bdns", "bricking", "anchoring", "bricksFabric", "contracts", "dsu-wizard", 'debugLogger', "mainDSU", "cloudWallet", "stream", "staticServer"],
     "componentsConfig": {
         "mq":{
             "module": "./components/mqHub",
@@ -23,23 +23,9 @@ const defaultConfig = {
         "secrets":{
             "module": "./components/secrets"
         },
-        "messaging": {
-            "module": "./components/mqManager",
-            "workingDirPath": "./external-volume/messaging",
-            "storageDirPath": "./external-volume/messaging/storage"
-        },
         "notifications": {
             "module": "./components/keySsiNotifications",
             "workingDirPath": "./external-volume/notifications"
-        },
-        "virtualMQ": {
-            "module": "./components/channelManager",
-            "channelsFolderName": "external-volume/channels",
-            "maxSize": 100,
-            "tokenSize": 48,
-            "tokenHeaderName": "x-tokenHeader",
-            "signatureHeaderName": "x-signature",
-            "enableSignatureCheck": true
         },
         "dsu-wizard": {
             "module": "dsu-wizard",
@@ -126,7 +112,6 @@ const defaultConfig = {
         "/bricking",
         "/bricksFabric",
         "/create-channel",
-        "/forward-zeromq",
         "/send-message",
         "/receive-message",
         "/files",

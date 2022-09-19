@@ -19,12 +19,10 @@ const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
 	require('./components/contracts');
 	require('./components/bricking');
 	require('./components/anchoring');
-	require('./components/channelManager');
 	require('./components/bdns');
 	require('./components/fileManager');
 	require('./components/bricksFabric');
 	require('./components/staticServer');
-	require('./components/mqManager');
 	require('./components/keySsiNotifications');
 	require('./components/debugLogger');
 	require('./components/mqHub');
@@ -126,7 +124,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 		server.use(function (req, res, next) {
 			res.setHeader('Access-Control-Allow-Origin', req.headers.origin || req.headers.host);
 			res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-			res.setHeader('Access-Control-Allow-Headers', `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, ${conf.componentsConfig.virtualMQ.signatureHeaderName}, token`);
+			res.setHeader('Access-Control-Allow-Headers', `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, token`);
 			res.setHeader('Access-Control-Allow-Credentials', true);
 			next();
 		});
@@ -164,7 +162,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 			headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, DELETE, OPTIONS';
 			headers['Access-Control-Allow-Credentials'] = true;
 			headers['Access-Control-Max-Age'] = '3600'; //one hour
-			headers['Access-Control-Allow-Headers'] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, Authorization, ${conf.componentsConfig.virtualMQ.signatureHeaderName}, token`;
+			headers['Access-Control-Allow-Headers'] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, Authorization, token`;
 			
 			if(conf.CORS){
 				console.log("Applying custom CORS headers");
@@ -336,12 +334,6 @@ module.exports.createInstance = function (port, folder, sslConfig, callback) {
 module.exports.start = function(options, callback){
 	return new HttpServer(options, callback);
 }
-
-module.exports.getVMQRequestFactory = function (virtualMQAddress, zeroMQAddress) {
-	const VMQRequestFactory = require('./components/vmq/requestFactory');
-
-	return new VMQRequestFactory(virtualMQAddress, zeroMQAddress);
-};
 
 module.exports.getHttpWrapper = function () {
 	return require('./libs/http-wrapper');
