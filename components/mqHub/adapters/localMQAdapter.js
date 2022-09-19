@@ -94,13 +94,12 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 			}catch (e){
 				//we ignore this e on purpose
 			}
-		}else{
+            callback(undefined, finalName);
+        }else{
 			counter++;
 			finalName = filename+FILENAME_DELIMITER+counter;
 			constructFileName(finalName, callback);
-			return;
 		}
-		callback(undefined, finalName);
 	}
 
 	function storeMessage(queueName, message, callback) {
