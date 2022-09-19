@@ -35,7 +35,7 @@ async function handleDefaultMainDSURequest(request, response) {
     }
 
     try {
-        const environmentJsPath = require("path").join(rootFolderPath, "../environment.js");
+        const environmentJsPath = require("path").join(rootFolderPath, "environment.js");
         console.log(`[MainDSU] Loading environment.js config file from: ${environmentJsPath}`);
 
         const environmentConfig = require(environmentJsPath);
