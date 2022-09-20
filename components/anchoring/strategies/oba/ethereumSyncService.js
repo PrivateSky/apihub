@@ -22,7 +22,6 @@ function EthereumSyncService(server, config) {
     const TaskCounter = require("swarmutils").TaskCounter;
     let lokiEnclaveFacade = getLokiEnclaveFacade(DB_STORAGE_FILE);
     const ANCHORS_TABLE_NAME = "anchors_table";
-    const LOG_IDENTIFIER = "[OBA - ETH_SYNC]";
     let syncInProgress = false;
     const {ETH} = require("../index");
 
@@ -96,7 +95,7 @@ function EthereumSyncService(server, config) {
             logger.info(`Version anchor ${anchor.anchorValue} for anchor ${anchor.anchorId} has been successfully stored in blockchain: transaction ${transactionHash}`);
             lokiEnclaveFacade.deleteRecord(undefined, ANCHORS_TABLE_NAME, anchor.pk, err => {
                 if (err) {
-                    logger.log(`${LOG_IDENTIFIER}: Failed to delete anchor ${anchor.anchorId} from db: ${err}`);
+                    logger.log(`Failed to delete anchor ${anchor.anchorId} from db: ${err}`);
                 }
             })
         })
@@ -136,7 +135,7 @@ function EthereumSyncService(server, config) {
         lokiEnclaveFacade.filter(undefined, ANCHORS_TABLE_NAME, ["scheduled != null", "scheduled != sent", `scheduled < ${Date.now()}`], "asc", config.burstSize, (err, anchors) => {
             if (err) {
                 if (err.code !== 404) {
-                    logger.error(`${LOG_IDENTIFIER}: Failed to get anchors from db: ${err}`);
+                    logger.error(`Failed to get anchors from db: ${err}`);
                 }
                 return;
             }
