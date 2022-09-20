@@ -1,10 +1,10 @@
 
 const openDSU = require("opendsu");
-const { getDefaultEnclave } = require("./commands/DefaultEnclave");
+const { getLokiEnclaveFacade } = require("./commands/LokiEnclaveFacade");
 const w3cDID = openDSU.loadAPI("w3cdid");
 const path = require("path");
 
-function DefaultEnclave(server) {
+function LokiEnclaveFacade(server) {
 
     let didDocument;
 
@@ -28,7 +28,7 @@ function DefaultEnclave(server) {
 
     async function processCommand(resObj) {
         const clientDID = resObj.params.pop();
-        const lokiAdaptor = getDefaultEnclave(getStorageFolder());
+        const lokiAdaptor = getLokiEnclaveFacade(getStorageFolder());
 
         const result = await executeCommand(resObj, lokiAdaptor);
         sendResult(didDocument, result, clientDID);
@@ -63,5 +63,5 @@ function DefaultEnclave(server) {
 }
 
 module.exports = {
-    DefaultEnclave
+    LokiEnclaveFacade
 };

@@ -22,7 +22,7 @@ function getMainDomainStorageFile() {
 
 function getEnclave() {
     const storageFolder = require("path").join(getStorageFolder(), DATABASE_NAME);
-    const Enclave = require("default-enclave");
+    const Enclave = require("loki-enclave-facade");
     return new Enclave(storageFolder);
 }
 

@@ -8,7 +8,7 @@ const getLokiEnclaveFacade = (storageFile) => {
         } catch (e) {
             fs.mkdirSync(path.dirname(storageFile), {recursive: true});
         }
-        const LokiEnclaveFacade = require("default-enclave");
+        const LokiEnclaveFacade = require("loki-enclave-facade");
         $$.lokiEnclaveFacade = new LokiEnclaveFacade(storageFile);
     }
 

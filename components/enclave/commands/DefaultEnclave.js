@@ -1,12 +1,12 @@
-const getDefaultEnclave = (storageFolder) => {
-    if (!$$.defaultEnclave) {
-        const DefaultEnclave = require("default-enclave");
-        $$.defaultEnclave = new DefaultEnclave(storageFolder)
+const getLokiEnclaveFacade = (storageFolder) => {
+    if (!$$.LokiEnclaveFacade) {
+        const LokiEnclaveFacade = require("loki-enclave-facade");
+        $$.LokiEnclaveFacade = new LokiEnclaveFacade(storageFolder)
     }
 
-    return $$.defaultEnclave;
+    return $$.LokiEnclaveFacade;
 }
 
 module.exports = {
-    getDefaultEnclave
+    getLokiEnclaveFacade
 }

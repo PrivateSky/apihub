@@ -17,7 +17,7 @@ const defaultConfig = {
         },
         "enclave":{
             "module": "./components/enclave",
-            "function": "DefaultEnclave",
+            "function": "LokiEnclaveFacade",
             "storageFolder": './external-volume/config/enclave'
         },
         "secrets":{
