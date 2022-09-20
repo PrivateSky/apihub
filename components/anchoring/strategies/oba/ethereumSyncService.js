@@ -116,7 +116,9 @@ function EthereumSyncService(server, config) {
     const scheduleAnchors = () => {
         lokiEnclaveFacade.filter(undefined, ANCHORS_TABLE_NAME, ["scheduled == null"], "asc", (err, anchors) => {
             if (err) {
-                logger.error(`Failed to get anchors from db: ${err}`);
+                if (err.code !== 404) {
+                    logger.error(`Failed to get anchors from db: ${err}`);
+                }
                 return;
             }
             anchors.forEach(anchor => {
@@ -133,7 +135,9 @@ function EthereumSyncService(server, config) {
     const sendAnchorsToBlockchain = () => {
         lokiEnclaveFacade.filter(undefined, ANCHORS_TABLE_NAME, ["scheduled != null", "scheduled != sent", `scheduled < ${Date.now()}`], "asc", config.burstSize, (err, anchors) => {
             if (err) {
-                logger.error(`${LOG_IDENTIFIER}: Failed to get anchors from db: ${err}`);
+                if (err.code !== 404) {
+                    logger.error(`${LOG_IDENTIFIER}: Failed to get anchors from db: ${err}`);
+                }
                 return;
             }
 
