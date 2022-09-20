@@ -7,7 +7,6 @@ function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
     const ethHandler = new ETH(server, domainConfig, anchorId, anchorValue, ...args);
     const ethSyncService = getEthereumSyncServiceSingleton(server);
 
-    ethSyncService.synchronize();
     this.createAnchor = function (callback) {
         console.log("Create anchor", anchorId, anchorValue);
         fsHandler.createAnchor((err, res) => {

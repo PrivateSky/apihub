@@ -1,14 +1,15 @@
 const fs = require("fs");
+const path = require("path");
 
-const getLokiEnclaveFacade = (storageFolder) => {
+const getLokiEnclaveFacade = (storageFile) => {
     if(typeof $$.lokiEnclaveFacade === "undefined") {
         try {
-            fs.accessSync(storageFolder);
+            fs.accessSync(path.dirname(storageFile));
         } catch (e) {
-            fs.mkdirSync(storageFolder, {recursive: true});
+            fs.mkdirSync(path.dirname(storageFile), {recursive: true});
         }
         const LokiEnclaveFacade = require("default-enclave");
-        $$.lokiEnclaveFacade = new LokiEnclaveFacade(storageFolder);
+        $$.lokiEnclaveFacade = new LokiEnclaveFacade(storageFile);
     }
 
     return $$.lokiEnclaveFacade;

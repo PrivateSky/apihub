@@ -1,3 +1,4 @@
+
 function Anchoring(server) {
     function requestServerMiddleware(request, response, next) {
         request.server = server;
@@ -15,6 +16,10 @@ function Anchoring(server) {
     } = require("./controllers");
 
     const {responseModifierMiddleware, requestBodyJSONMiddleware} = require("../../utils/middlewares");
+    const {getEthereumSyncServiceSingleton} = require("./strategies/oba/ethereumSyncService");
+
+    const ethSyncService = getEthereumSyncServiceSingleton(server);
+    ethSyncService.synchronize();
 
     server.use(`/anchor/:domain/*`, requestServerMiddleware);
     server.use(`/anchor/:domain/*`, responseModifierMiddleware);
