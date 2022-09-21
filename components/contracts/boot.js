@@ -87,7 +87,7 @@ async function boot(validatorDID, serverUrl, domain, domainConfig, rootFolder, s
     }
 
     process.on("uncaughtException", (err) => {
-        console.error(`${logPrefix} unchaughtException inside worker`, err);
+        logger.error(`${logPrefix} unchaughtException inside worker`, err);
         setTimeout(() => {
             process.exit(1);
         }, 100);

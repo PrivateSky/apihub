@@ -1,8 +1,8 @@
-process.on('uncaughtException', err => {
-	console.error('There was an uncaught error', err);
-});
+const logger = $$.getLogger("HttpServer", "apihub");
 
-const {LOG_IDENTIFIER} = require("./moduleConstants");
+process.on('uncaughtException', err => {
+	logger.error('There was an uncaught error', err);
+});
 
 const httpWrapper = require('./libs/http-wrapper');
 const Server = httpWrapper.Server;
@@ -10,7 +10,6 @@ const Server = httpWrapper.Server;
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
 const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
-const logger = $$.getLogger("HttpServer", "apihub");
 
 (function loadDefaultComponents(){
 	//next require lines are only for browserify build purpose

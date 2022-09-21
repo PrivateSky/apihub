@@ -1,4 +1,5 @@
 const { getBrickWithExternalProvidersFallbackAsync } = require("./utils");
+const logger = $$.getLogger("bricking", "apihub/bricking");
 
 async function getBrick(request, response) {
     response.setHeader("content-type", "application/octet-stream");
@@ -18,13 +19,13 @@ function putBrick(request, response) {
     const utils = require("./utils");
     utils.convertReadableStreamToBuffer(request, (error, brickData) => {
         if (error) {
-            console.error("[Bricking] Fail to convert Stream to Buffer!", error.message);
+            logger.error("[Bricking] Fail to convert Stream to Buffer!", error.message);
             return response.send(500);
         }
 
         request.fsBrickStorage.addBrick(brickData, (error, brickHash) => {
             if (error) {
-                console.error("[Bricking] Fail to manage current brick!", error.message);
+                logger.error("[Bricking] Fail to manage current brick!", error.message);
                 return response.send(error.code === "EACCES" ? 409 : 500);
             }
 
@@ -53,7 +54,7 @@ function downloadMultipleBricks(request, response) {
             return response.send(200, data);
         })
         .catch((error) => {
-            console.error("[Bricking] Fail to get multiple bricks!", error.message);
+            logger.error("[Bricking] Fail to get multiple bricks!", error.message);
             return response.send(500);
         });
 }

@@ -1,4 +1,5 @@
 const responseWrapper = require('../responseWrapper');
+const logger = $$.getLogger("middlewares", "apihub/utils");
 
 function requestBodyJSONMiddleware(request, response, next) {
     /**
@@ -73,7 +74,7 @@ function bodyReaderMiddleware(req, res, next) {
 }
 
 function sendUnauthorizedResponse(req, res, reason, error) {
-    console.error(`[Auth] [${req.method}] ${req.url} blocked: ${reason}`, error);
+    logger.error(`[Auth] [${req.method}] ${req.url} blocked: ${reason}`, error);
     res.statusCode = 403;
     res.end();
 }
