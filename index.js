@@ -10,6 +10,7 @@ const Server = httpWrapper.Server;
 const TokenBucket = require('./libs/TokenBucket');
 const START_TOKENS = 6000000;
 const CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL = 500;
+const logger = $$.getLogger("HttpServer", "apihub");
 
 (function loadDefaultComponents(){
 	//next require lines are only for browserify build purpose
@@ -47,10 +48,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 	const server = new Server(sslConfig);
 	server.config = conf;
 	server.rootFolder = rootFolder;
-
 	let listenCallback = (err) => {
 		if (err) {
-			console.log(LOG_IDENTIFIER, err);
+			logger.error(err);
 			if (!dynamicPort && callback) {
 				return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to listen on port <${port}>`, err));
 			}
@@ -65,14 +65,13 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 					dynamicPort -= 1;
 				}
 				let timeValue = retryTimeout || CHECK_FOR_RESTART_COMMAND_FILE_INTERVAL;
-				console.log(LOG_IDENTIFIER, `setting a timeout value of before retrying ${timeValue}`);
-				setTimeout(bootup, );
+				setTimeout(bootup, timeValue);
 			}
 		}
 	};
 
 	function bootup(){
-		console.log(LOG_IDENTIFIER, `Trying to listen on port ${port}`);
+		logger.info(`Trying to listen on port ${port}`);
 		server.listen(port, conf.host, listenCallback);
 	};
 
@@ -85,12 +84,12 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 			const fs = require(fsname);
 			fs.readFile(restartServerFile, function(error, content) {
 				if (!error && content.toString() !== "") {
-					console.log(`${LOG_IDENTIFIER} ### Preparing to restart because of the request done by file: <${restartServerFile}> File content: ${content}`);
+					logger.log(`### Preparing to restart because of the request done by file: <${restartServerFile}> File content: ${content}`);
 					server.close();
 					server.listen(port, conf.host, () => {
 						fs.writeFile(restartServerFile, "", function(){
 							//we don't care about this file.. we just clear it's content the prevent recursive restarts
-							console.log(`${LOG_IDENTIFIER} ### Restart operation finished.`);
+							logger.log(`### Restart operation finished.`);
 						});
 					});
 				}
@@ -103,7 +102,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 
 	function bindFinished(err) {
 		if (err) {
-			console.log(err);
+			logger.error(err);
 			if (callback) {
 				return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to bind on port <${port}>`, err));
 			}
@@ -151,7 +150,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 				});
 			});
 		} else {
-			console.log(`${LOG_IDENTIFIER} Rate limit mechanism disabled!`);
+			logger.info(`Rate limit mechanism disabled!`);
 		}
 
 		server.options('/*', function (req, res) {
@@ -163,14 +162,14 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 			headers['Access-Control-Allow-Credentials'] = true;
 			headers['Access-Control-Max-Age'] = '3600'; //one hour
 			headers['Access-Control-Allow-Headers'] = `Content-Type, Content-Length, X-Content-Length, Access-Control-Allow-Origin, User-Agent, Authorization, token`;
-			
+
 			if(conf.CORS){
-				console.log("Applying custom CORS headers");
+				logger.info("Applying custom CORS headers");
 				for(let prop in conf.CORS){
 					headers[prop] = conf.CORS[prop];
 				}
 			}
-			
+
 			res.writeHead(200, headers);
 			res.end();
         });
@@ -212,7 +211,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
             if (componentPath.startsWith('.') && !conf.isDefaultComponent(componentName)) {
                 componentPath = path.resolve(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, componentPath));
             }
-            console.log(`${LOG_IDENTIFIER} Preparing to register middleware from path ${componentPath}`);
+            logger.info(`Preparing to register middleware from path ${componentPath}`);
 
             let middlewareImplementation;
             try{
@@ -253,7 +252,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
                 .filter(activeComponentName => {
                 	let include = conf.componentsConfig[activeComponentName];
                 	if(!include){
-                		console.log(`${LOG_IDENTIFIER} Not able to find config for component called < ${activeComponentName} >. Excluding it from the active components list!`);
+                		logger.info(`Not able to find config for component called < ${activeComponentName} >. Excluding it from the active components list!`);
 					}
                 	return include;
 				})
@@ -261,9 +260,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
 
             const addRequiredComponent = (componentName) => {
                 if(!middlewareList.includes(`${componentName}`)) {
-                    console.warn(`WARNING: ${componentName} component is not configured inside activeComponents!`)
-                    console.warn(`WARNING: temporary adding ${componentName} component to activeComponents! Please make sure to include ${componentName} component inside activeComponents!`)
-    
+                    logger.warn(`WARNING: ${componentName} component is not configured inside activeComponents!`)
+                    logger.warn(`WARNING: temporary adding ${componentName} component to activeComponents! Please make sure to include ${componentName} component inside activeComponents!`)
+
                     const addComponentToComponentList = (list) => {
                         const indexOfStaticServer = list.indexOf("staticServer");
                         if(indexOfStaticServer !== -1) {
@@ -273,7 +272,7 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
                             list.push(componentName);
                         }
                     }
-    
+
                     addComponentToComponentList(middlewareList);
                     // need to also register to defaultComponents in order to be able to load the module correctly
                     addComponentToComponentList(conf.defaultComponents);
@@ -307,9 +306,9 @@ function HttpServer({ listeningPort, rootFolder, sslConfig, dynamicPort, restart
         addRootMiddlewares();
 		addComponents(()=>{
 			//at this point all components were installed and we need to register the fallback handler
-			console.log(LOG_IDENTIFIER, "Registering the fallback handler. Any endpoint registered after this one will have zero changes to be executed.");
+			logger.info("Registering the fallback handler. Any endpoint registered after this one will have zero changes to be executed.");
 			server.use(function (req, res) {
-				console.log(LOG_IDENTIFIER, "Response handled by fallback handler.");
+				logger.info("Response handled by fallback handler.");
 				res.statusCode = 404;
 				res.end();
 			});
@@ -340,13 +339,13 @@ module.exports.getHttpWrapper = function () {
 };
 
 module.exports.getServerConfig = function () {
-	console.log(`${LOG_IDENTIFIER} apihub.getServerConfig() method is deprecated, please use server.config to retrieve necessary info.`);
+	logger.warn(`apihub.getServerConfig() method is deprecated, please use server.config to retrieve necessary info.`);
 	const config = require('./config');
 	return config.getConfig();
 };
 
 module.exports.getDomainConfig = function (domain, ...configKeys) {
-	console.log(`${LOG_IDENTIFIER} apihub.getServerConfig() method is deprecated, please use server.config.getDomainConfig(...) to retrieve necessary info.`);
+	logger.warn(`apihub.getServerConfig() method is deprecated, please use server.config.getDomainConfig(...) to retrieve necessary info.`);
 	const config = require('./config');
 	return config.getDomainConfig(domain, ...configKeys);
 };

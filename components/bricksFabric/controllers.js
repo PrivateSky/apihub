@@ -3,7 +3,6 @@ function createHandler(flow, server) {
 
     return function storeTransaction (request, response, next) {
 
-        console.log('store anchored called');
         //strategy is already booted up
         flow.storeData(request.body, server, (err, result) => {
             if (err) {

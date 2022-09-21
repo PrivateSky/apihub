@@ -1,5 +1,7 @@
 function ResponseHeaders(server) {
-    console.log(`Registering Response Headers middleware`);
+    const logger = $$.getLogger("ResponseHeaders", "apihub/responseHeaders");
+
+    logger.info(`Registering Response Headers middleware`);
 
     const config = require("../../config");
     const responseHeaders = config.getConfig("responseHeaders");

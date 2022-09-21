@@ -6,6 +6,7 @@ const {
 } = require("./utils");
 
 function Contract(server) {
+    const logger = $$.getLogger("Contract", "apihub/contracts");
     const config = require("../../config");
 
     const serverUrl = `${server.protocol}://${config.getConfig("host")}:${config.getConfig("port")}`;
@@ -38,7 +39,7 @@ function Contract(server) {
             return callback(`[Contracts] Cannot boot worker for domain '${domain}' due to missing validatorDID`);
         }
 
-        console.log(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
+        logger.info(`[Contracts] Starting contract handler for domain '${domain}'...`, domainConfig);
 
         const { rootFolder } = server;
         const externalStorageFolder = require("path").join(rootFolder, config.getConfig("externalStorage"));

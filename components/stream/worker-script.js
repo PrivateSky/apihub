@@ -1,13 +1,10 @@
 module.exports = async () => {
+    const logger = $$.getLogger("worker-script", "apihub/stream");
     //we inject a supplementary tag in order make it more clear the source of the log
-    let originalLog = console.log;
-    console.log = function (...args) {
-        originalLog("\t[StreamHandler]", ...args);
-    };
 
     const worker_threads = "worker_threads";
     const { parentPort, workerData } = require(worker_threads);
-    console.log(`Node worker started for: `, workerData);
+    logger.info(`Node worker started for: `, workerData);
 
     const resolver = require("opendsu").loadApi("resolver");
     const dsu = await $$.promisify(resolver.loadDSU)(workerData.keySSI);
@@ -17,7 +14,7 @@ module.exports = async () => {
     const CHUNK_SIZE = 1024 * 1024;
 
     parentPort.on("message", async (task) => {
-        console.log("Handling task", task);
+        logger.info("Handling task", task);
         const { requestedPath } = task;
         let { range } = task;
 
@@ -40,9 +37,6 @@ module.exports = async () => {
                 start = parseInt(range, 10);
                 end = start + CHUNK_SIZE;
             }
-            console.log(`Handling range start ${start} end ${end}`);
-
-            console.log("Refreshing DSU...")
             await $$.promisify(dsu.refresh)();
 
             const streamRange = { start, end };
@@ -73,7 +67,7 @@ module.exports = async () => {
     });
 
     process.on("uncaughtException", (error) => {
-        console.error("[StreamHandler] uncaughtException inside node worker", error);
+        logger.error("[StreamHandler] uncaughtException inside node worker", error);
 
         setTimeout(() => process.exit(1), 100);
     });

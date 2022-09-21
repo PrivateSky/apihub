@@ -1,27 +1,26 @@
 const {getEthereumSyncServiceSingleton} = require("./ethereumSyncService");
-const LOG_IDENTIFIER = "[OBA]";
 
 function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
     let {FS, ETH} = require("../index");
     const fsHandler = new FS(server, domainConfig, anchorId, anchorValue, ...args);
     const ethHandler = new ETH(server, domainConfig, anchorId, anchorValue, ...args);
     const ethSyncService = getEthereumSyncServiceSingleton(server);
+    const logger = $$.getLogger("OBA", "apihub/anchoring");
 
     this.createAnchor = function (callback) {
-        console.log("Create anchor", anchorId, anchorValue);
         fsHandler.createAnchor((err, res) => {
             if (err) {
                 return callback(err);
             }
-            console.log(`${LOG_IDENTIFIER} optimistic create anchor ended with success.`);
+            logger.info(`optimistic create anchor ended with success.`);
 
             ethSyncService.storeAnchor("createAnchor", anchorId, anchorValue, domainConfig,(err) => {
                 if (err) {
-                    console.log(`${LOG_IDENTIFIER} failed to store anchor ${fsHandler.commandData.anchorId} in db.`);
+                    logger.error(`Failed to store anchor ${fsHandler.commandData.anchorId} in db.`);
                     return;
                 }
 
-                console.log(`${LOG_IDENTIFIER} anchor ${fsHandler.commandData.anchorId} stored in db successfully.`);
+                logger.info(`Anchor ${fsHandler.commandData.anchorId} stored in db successfully.`);
                 return callback(undefined, res);
             })
         });
@@ -32,14 +31,14 @@ function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
             if (err) {
                 return callback(err);
             }
-            console.log(`${LOG_IDENTIFIER} optimistic append anchor ended with success.`);
+            logger.info(`Optimistic append anchor ended with success.`);
             ethSyncService.storeAnchor("appendAnchor", anchorId, anchorValue, domainConfig, (err) => {
                 if (err) {
-                    console.log(`${LOG_IDENTIFIER} failed to store anchor ${fsHandler.commandData.anchorId} in db.`);
+                    logger.error(`failed to store anchor ${fsHandler.commandData.anchorId} in db.`);
                     return;
                 }
 
-                console.log(`${LOG_IDENTIFIER} anchor ${fsHandler.commandData.anchorId} stored in db successfully.`);
+                logger.info(`Anchor ${fsHandler.commandData.anchorId} stored in db successfully.`);
                 return callback(undefined, res);
 
             })
@@ -47,10 +46,10 @@ function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
     }
 
     function readAllVersionsFromBlockchain(callback) {
-        console.log(`${LOG_IDENTIFIER} preparing to read info about anchorId ${fsHandler.commandData.anchorId} from the blockchain...`);
+        logger.info(`Preparing to read info about anchorId ${fsHandler.commandData.anchorId} from the blockchain...`);
         ethHandler.getAllVersions((err, anchorVersions) => {
             if (err) {
-                console.log(`${LOG_IDENTIFIER} anchorId ${fsHandler.commandData.anchorId} syncing blockchain failed. ${err}`);
+                logger.error(`AnchorId ${fsHandler.commandData.anchorId} syncing blockchain failed. ${err}`);
                 return callback(err);
             }
 
@@ -63,20 +62,20 @@ function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
             }
 
             if (history === "") {
-                console.log(`${LOG_IDENTIFIER} anchorId ${fsHandler.commandData.anchorId} synced but no history found.`);
+                logger.info(`AnchorId ${fsHandler.commandData.anchorId} synced but no history found.`);
                 //if we don't retrieve info from blockchain we exit
                 return callback(undefined, anchorVersions);
             }
 
-            console.log(`${LOG_IDENTIFIER} found info about anchorId ${fsHandler.commandData.anchorId} in blockchain.`);
+            logger.info(`Found info about anchorId ${fsHandler.commandData.anchorId} in blockchain.`);
 
             //storing locally the history of the anchorId read from the blockchain
             fsHandler.fps.createAnchor(anchorId, history, (err) => {
                 if (err) {
-                    console.log(`${LOG_IDENTIFIER} failed to store info about anchorId ${fsHandler.commandData.anchorId} on local because of ${err}`);
+                    logger.error(`Failed to store info about anchorId ${fsHandler.commandData.anchorId} on local because of ${err}`);
                     return callback(err);
                 }
-                console.log(`${LOG_IDENTIFIER} anchorId ${fsHandler.commandData.anchorId} fully synced.`);
+                logger.info(`AnchorId ${fsHandler.commandData.anchorId} fully synced.`);
                 //even if we read all the versions of anchorId we return only the last one
                 return callback(undefined, anchorVersions);
             });

@@ -1,6 +1,7 @@
 async function boot(validatorDID, serverUrl, domain, domainConfig, rootFolder, storageFolder) {
+    const logger = $$.getLogger("boot", "apihub/contracts");
     const logPrefix = `[contract-worker][${validatorDID}][domain]`;
-    console.log(
+    logger.info(
         `${logPrefix} Booting contracts for domain ${domain} and domainConfig ${JSON.stringify(domainConfig)} booting...`,
         domainConfig
     );
@@ -78,7 +79,7 @@ async function boot(validatorDID, serverUrl, domain, domainConfig, rootFolder, s
             });
         });
 
-        console.log(`${logPrefix} ready`);
+        logger.info(`${logPrefix} ready`);
         parentPort.postMessage("ready");
     } catch (error) {
         parentPort.postMessage({ error });

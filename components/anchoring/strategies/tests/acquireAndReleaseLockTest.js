@@ -26,7 +26,6 @@ assert.callback("Acquire and release lock", (callback) => {
                 await $$.promisify(newFsLock.acquireLock)();
                 callback();
             } catch (e) {
-                console.log(e);
                 assert.true(typeof e === "undefined");
             }
         })

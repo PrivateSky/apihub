@@ -3,7 +3,9 @@ const util = require("./util");
 const config = require("../../../config");
 
 function AccessTokenValidator(server) {
-    console.log(`Registering AccessTokenValidator middleware`);
+    const logger = $$.getLogger("AccessTokenValidator", "apihub/oauth");
+
+    logger.info(`Registering AccessTokenValidator middleware`);
     const urlsToSkip = util.getUrlsToSkip();
 
     server.use(function (req, res, next) {

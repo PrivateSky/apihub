@@ -13,6 +13,8 @@ const levels = {
   debug: 'debug',
 };
 
+const logger = $$.getLogger("debugLogger", "apihub/debugLogger");
+
 function createHandlerAppendToLog(server) {
   return function appendToLog(request, response) {
     if (!request.body || !request.body.message) {
@@ -45,7 +47,8 @@ function createHandlerAppendToLog(server) {
         fs.writeFile(fileName, JSON.stringify(json), (err) => {
           if (err) {
             response.send(500);
-            console.log(err);
+            logger.error(err);
+            logger.error(err);
             return;
           } else {
             response.send(200, data);
@@ -56,7 +59,7 @@ function createHandlerAppendToLog(server) {
         fs.writeFile(fileName, JSON.stringify([data]), (err) => {
           if (err) {
             response.send(500);
-            console.log(err);
+            logger.error(err);
             return;
           } else {
             response.send(200, data);
@@ -65,15 +68,15 @@ function createHandlerAppendToLog(server) {
         });
       }
     } catch (err) {
-      console.log(err);
-      console.log('Error writing file to disk');
+      logger.error(err);
+      logger.error('Error writing file to disk');
     }
   };
 }
 
 function createHandlerReadFromLog(server) {
   return function readFromLog(request, response) {
-    console.log('running');
+    logger.log('running');
     const today = new Date().toISOString().split('T')[0];
     const anchorID = request.params.anchorID;
     const queryObject = url.parse(request.url, true).query;

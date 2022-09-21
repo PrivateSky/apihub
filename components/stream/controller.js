@@ -1,4 +1,5 @@
 const syndicate = require("syndicate");
+const logger = $$.getLogger("stream", "apihub/stream");
 
 const dsuWorkers = {};
 
@@ -22,7 +23,7 @@ async function handleCreateWallet(request, response) {
         const walletSSI = keySSISpace.createTemplateWalletSSI(domain, credential);
         const seedSSI = await $$.promisify(keySSISpace.createSeedSSI)(domain);
 
-        console.log(`[Stream] Creating wallet ${walletSSI.getIdentifier()} for user ${userId}...`);
+        logger.info(`[Stream] Creating wallet ${walletSSI.getIdentifier()} for user ${userId}...`);
         const walletDSU = await $$.promisify(resolver.createDSUForExistingSSI)(walletSSI, { dsuTypeSSI: seedSSI });
 
         const writableDSU = walletDSU.getWritableDSU();
@@ -43,7 +44,7 @@ async function handleCreateWallet(request, response) {
             sharedEnclaveKeySSI,
         };
 
-        console.log(`[Stream] Settings config for wallet ${walletSSI.getIdentifier()}`, environmentConfig);
+        logger.info(`[Stream] Settings config for wallet ${walletSSI.getAnchorId().getIdentifier()}`, environmentConfig);
         await $$.promisify(writableDSU.writeFile)("/environment.json", JSON.stringify(environmentConfig));
 
         await $$.promisify(writableDSU.writeFile)("/metadata.json", JSON.stringify({ userId }));
@@ -51,7 +52,7 @@ async function handleCreateWallet(request, response) {
         response.statusCode = 200;
         return response.end(walletSSI.getIdentifier());
     } catch (error) {
-        console.log("[Stream] Error", error);
+        logger.error("[Stream] Error", error);
         response.statusCode = 500;
         return response.end(error);
     }
@@ -118,7 +119,7 @@ async function handleStreamRequest(request, response) {
         response.writeHead(206, taskResult.headers);
         response.end(taskResult.buffer);
     } catch (error) {
-        console.log("[Stream] error", error);
+        logger.error("[Stream] error", error);
         response.statusCode = 500;
         return response.end(error);
     }

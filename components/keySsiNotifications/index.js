@@ -1,4 +1,5 @@
 function KeySSINotifications(server) {
+	const logger = $$.getLogger("KeySSINotifications", "apihub/keySsiNotifications");
 	let notificationManager;
 	const utils = require('../../utils');
 	const readBody = utils.streams.readStringFromStream;
@@ -70,7 +71,7 @@ function KeySSINotifications(server) {
 					response.send(200, message);
 				} catch (err) {
 					//here we expect to get errors when a connection has reached timeout
-					console.log(err);
+					logger.error(err);
 					response.send(400, 'opps');
 				}
 			});
@@ -84,7 +85,7 @@ function KeySSINotifications(server) {
 
 	require('./../../libs/Notifications').getManagerInstance(workingDirPath, (err, instance) => {
 		if (err) {
-			return console.log(err);
+			return logger.error(err);
 		}
 
 		notificationManager = instance;

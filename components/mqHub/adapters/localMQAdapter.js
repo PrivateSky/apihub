@@ -1,4 +1,5 @@
 function LocalMQAdapter(server, prefix, domain, configuration) {
+	const logger = $$.getLogger("LocalMQAdapter", "apihub/mqHub");
 	const subscribers = {};
 	const config = require("../../../config");
 	const utils = require('./../../../utils');
@@ -62,7 +63,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 				fileNamesAsTimestamp = sanitizeFileName(fileNamesAsTimestamp);
 				let valid = (new Date(Number(fileNamesAsTimestamp))).getTime() > 0;
 				if (!valid) {
-					console.log(`Found garbage in queue ${queueName} (file: ${fileNamesAsTimestamp}). Ignoring it!`);
+					logger.log(`Found garbage in queue ${queueName} (file: ${fileNamesAsTimestamp}). Ignoring it!`);
 				}
 				return valid;
 			});
@@ -231,10 +232,10 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 				return _readMessage(queueName, (err, message) => {
 					deliverMessage(subs, message, (err, successCount) => {
 						if (err) {
-							console.log(err);
+							logger.error(err);
 						}
 
-						console.log(`Successfully sent message to a number of ${successCount} subs.`);
+						logger.info(`Successfully sent message to a number of ${successCount} subs.`);
 					});
 				});
 			} else {
@@ -266,7 +267,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 		let queueName = request.params.queueName;
 		readBody(request, (err, message) => {
 			if (err) {
-				console.log(`Caught an error during body reading from put message request`, err);
+				logger.error(`Caught an error during body reading from put message request`, err);
 				return send(queueName, response, 500);
 			}
 
@@ -279,13 +280,13 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 						return;
 					}
 				}catch(err){
-					console.log("Not able to confirm message size. Going on with the flow...");
+					logger.error("Not able to confirm message size. Going on with the flow...");
 				}
 			}
 
 			putMessage(queueName, message, (err) => {
 				if (err) {
-					console.log(`Caught an error during adding message to queue`, err);
+					logger.error(`Caught an error during adding message to queue`, err);
 					return send(queueName, response, 500, err.sendToUser ? err.message : undefined);
 				}
 				send(queueName, response, 200);
@@ -309,7 +310,7 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 		let {queueName, messageId} = request.params;
 		deleteMessage(queueName, messageId, (err) => {
 			if (err) {
-				console.log(`Caught an error during deleting message ${messageId} from queue ${queueName}`, err);
+				logger.error(`Caught an error during deleting message ${messageId} from queue ${queueName}`, err);
 			}
 			send(queueName, response, err ? 500 : 200);
 		});
@@ -319,13 +320,13 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 		const queueName = request.params.queueName;
 		readMessage(queueName, (err, message) => {
 			if (err) {
-				console.log(`Caught an error during message reading from ${queueName}`, err);
+				logger.error(`Caught an error during message reading from ${queueName}`, err);
 				send(queueName, response, 500);
 				return;
 			}
 			deleteMessage(queueName, message.messageId, (err) => {
 				if (err) {
-					console.log(`Caught an error during message deletion from ${queueName} on the take handler`, err);
+					logger.error(`Caught an error during message deletion from ${queueName} on the take handler`, err);
 					return send(queueName, response, 500);
 				}
 
@@ -334,10 +335,10 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 		});
 	}
 
-	console.log(`Loading Local MQ Adapter for domain: ${domain}`);
-	console.log(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
-	console.log(`Warning: Local MQ Adapter should be used only during development!`);
-	console.log(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
+	logger.warn(`Loading Local MQ Adapter for domain: ${domain}`);
+	logger.warn(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
+	logger.warn(`Warning: Local MQ Adapter should be used only during development!`);
+	logger.warn(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
 
 	const mqConfig = config.getConfig("componentsConfig", "mq");
 	if (mqConfig && mqConfig.connectionTimeout) {

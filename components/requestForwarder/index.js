@@ -1,5 +1,5 @@
 const registeredUrl = "/forwardRequestForAuthenticatedClient";
-
+const logger = $$.getLogger("requestForwarder", "apihub/requestForwarder");
 module.exports = function(server){
     server.post(registeredUrl, require("./../../utils/middlewares/index").requestBodyJSONMiddleware);
 
@@ -19,7 +19,7 @@ module.exports = function(server){
             http = require("https");
         }
 
-        console.log(`Forwarding request ${options.method} to url ${url}`);
+        logger.info(`Forwarding request ${options.method} to url ${url}`);
         try {
 
           let request = http.request(url, options, (response) => {
@@ -39,7 +39,7 @@ module.exports = function(server){
           request.write(body);
           request.end();
         } catch (e) {
-          console.log("Error on request: ", e);
+          logger.error("Error on request: ", e);
           res.statusCode = 500;
           res.end();
         }

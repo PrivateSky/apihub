@@ -1,3 +1,5 @@
+const logger = $$.getLogger("utils", "contracts");
+
 function escapePath(path) {
     return path ? path.replace(/\\/g, "\\\\").replace(".js", "") : "";
 }
@@ -12,7 +14,7 @@ function ensureContractConstitutionIsPresent(domain, domainConfig) {
         // ensure we have the SSI for the contracts DSU speficied inside domainConfig.contracts.constitution
         if (process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI) {
             contractsConfig.constitution = process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI;
-            console.log(
+            logger.info(
                 `[Contracts] no constitution found for domain ${domain}. Found process.env.PSK_APIHUB_DEFAULT_CONTRACTS_DOMAIN_SSI: ${contractsConfig.constitution}`
             );
         } else {
@@ -24,7 +26,7 @@ function ensureContractConstitutionIsPresent(domain, domainConfig) {
             const pskFolder = process.env.PSK_ROOT_INSTALATION_FOLDER || path.resolve("." + __dirname + "/../../../..");
             const defaultDomainSeedPath = path.join(pskFolder, "modules/apihub-contracts/domain-seed");
 
-            console.log(
+            logger.info(
                 `[Contracts] no constitution found for domain ${domain}. Trying to load constitution at ${defaultDomainSeedPath}...`
             );
 
@@ -33,7 +35,7 @@ function ensureContractConstitutionIsPresent(domain, domainConfig) {
                 const defaultDomainSeedData = fs.readFileSync(defaultDomainSeedPath);
                 contractsConfig.constitution = defaultDomainSeedData.toString();
             } catch (error) {
-                console.log(`Cannot access default domain-seed at: ${defaultDomainSeedPath}`);
+                logger.error(`Cannot access default domain-seed at: ${defaultDomainSeedPath}`);
             }
         }
     }

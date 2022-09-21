@@ -1,4 +1,6 @@
 function BDNS(server) {
+    const logger = $$.getLogger("BDNS", "apihub/bdns");
+
     const DOMAIN_TEMPLATE = {
         "replicas": [],
         "brickStorages": [
@@ -45,12 +47,12 @@ function BDNS(server) {
                 Object.assign(newRegistry, bdnsExtensions);
                 bdnsCache = JSON.stringify(newRegistry);
             } catch (e) {
-                console.log(`Failed to get bdns hosts from url`, e);
+                logger.error(`Failed to get bdns hosts from url`, e);
             }
         }
 
         try {
-            console.log("Testing to see if admin component is active and can be used to expand BDNS configuration.");
+            logger.info("Testing to see if admin component is active and can be used to expand BDNS configuration.");
             let adminService = require("./../admin").getAdminService();
             let getDomains = $$.promisify(adminService.getDomains);
             let domains = await getDomains();
@@ -66,9 +68,9 @@ function BDNS(server) {
                 Object.assign(newRegistry, bdnsExtensions);
                 bdnsCache = JSON.stringify(newRegistry);
             }
-            console.log("BDNS configuration was updated accordingly to information retrieved from admin service");
+            logger.info("BDNS configuration was updated accordingly to information retrieved from admin service");
         } catch (err) {
-            console.info("Admin service not available, skipping the process of loading dynamic configured domains. This is not a problem, it's a configuration.");
+            logger.info("Admin service not available, skipping the process of loading dynamic configured domains. This is not a problem, it's a configuration.");
         }
     }
 
@@ -77,6 +79,7 @@ function BDNS(server) {
             await initialize();
         } catch (e) {
             response.statusCode = 500;
+            logger.error('Failed to initialize BDNS', e);
             return response.end('Failed to initialize BDNS');
         }
 
@@ -85,8 +88,9 @@ function BDNS(server) {
             response.statusCode = 200;
             response.end(bdnsCache);
         } else {
-            console.log("Bdns config not available at this moment. A 404 response will be sent.");
+            logger.info("Bdns config not available at this moment. A 404 response will be sent.");
             response.statusCode = 404;
+            logger.error('BDNS hosts not found');
             return response.end('BDNS hosts not found');
         }
     }

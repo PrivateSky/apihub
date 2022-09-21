@@ -4,7 +4,9 @@ const crypto = openDSU.loadApi("crypto");
 const {sendUnauthorizedResponse} = require("../../utils/middlewares");
 
 function Authorisation(server) {
-  console.log(`Registering Authorisation middleware`);
+  const logger = $$.getLogger("Authorisation", "apihub/authorisation");
+
+  logger.info(`Registering Authorisation middleware`);
 
   const config = require("../../config");
   const skipJWTAuthorisation = config.getConfig("skipJWTAuthorisation");

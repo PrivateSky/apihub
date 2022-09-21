@@ -4,6 +4,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 	const queues = {};
 	const subscribers = {};
 	const swarmUtils = require('swarmutils');
+	const logger = $$.getLogger("NotificationsManager", "apihub/libs");
 
 	this.createQueue = function (queueName, callback) {
 		if (typeof queues[queueName] !== "undefined") {
@@ -143,7 +144,7 @@ function NotificationsManager(workingFolderPath, storageFolderPath) {
 						try {
 							require('fs').unlinkSync(notificationObject.filename);
 						} catch (err) {
-							console.log(err);
+							logger.error(err);
 						}
 					}
 				}

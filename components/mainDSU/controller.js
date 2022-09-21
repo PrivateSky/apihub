@@ -1,11 +1,12 @@
 const config = require("../../config");
+const logger = $$.getLogger("controller", "apihub/mainDSU");
 
 let mainDSUSeedSSI = null;
 let rootFolderPath;
 let mainDSUSeedSSIFilePath;
 
 function init(server) {
-    console.log(`Registering MainDSU component`);
+    logger.info(`Registering MainDSU component`);
     rootFolderPath = server.rootFolder;
     mainDSUSeedSSIFilePath = require("path").join(server.rootFolder, config.getConfig("externalStorage"), "maindsu");
 }
@@ -28,33 +29,33 @@ async function handleDefaultMainDSURequest(request, response) {
     try {
         const fileContent = await $$.promisify(fs.readFile)(mainDSUSeedSSIFilePath, { encoding: "utf-8" });
         mainDSUSeedSSI = keySSISpace.parse(fileContent);
-        console.log(`[MainDSU] Read existing mainDSU from ${mainDSUSeedSSIFilePath}: ${mainDSUSeedSSI.getIdentifier()}`);
+        logger.info(`[MainDSU] Read existing mainDSU from ${mainDSUSeedSSIFilePath}: ${mainDSUSeedSSI.getAnchorId().getIdentifier()}`);
         return sendMainDSUSeedSSI(response);
     } catch (error) {
-        console.log(`[MainDSU] Failed to read/parse keySSI from ${mainDSUSeedSSIFilePath}. Generating new keySSI...`, error);
+        logger.error(`[MainDSU] Failed to read/parse keySSI from ${mainDSUSeedSSIFilePath}. Generating new keySSI...`, error);
     }
 
     try {
         const environmentJsPath = require("path").join(rootFolderPath, "environment.js");
-        console.log(`[MainDSU] Loading environment.js config file from: ${environmentJsPath}`);
+        logger.info(`[MainDSU] Loading environment.js config file from: ${environmentJsPath}`);
 
         const environmentConfig = require(environmentJsPath);
 
         const seedSSI = await $$.promisify(keySSISpace.createSeedSSI)(environmentConfig.vaultDomain);
         const mainDSU = await $$.promisify(resolver.createDSUForExistingSSI)(seedSSI);
 
-        console.log(`[MainDSU] Settings config for seed ${seedSSI.getIdentifier()}`, environmentConfig);
+        logger.info(`[MainDSU] Settings config for seed ${seedSSI.getAnchorId().getIdentifier()}`, environmentConfig);
         await $$.promisify(mainDSU.writeFile)("/environment.json", JSON.stringify(environmentConfig));
 
         mainDSUSeedSSI = seedSSI;
-        console.log("[MainDSU] Generated mainDSUSeedSSI: ", mainDSUSeedSSI.getIdentifier(), mainDSUSeedSSI);
+        logger.info("[MainDSU] Generated mainDSUSeedSSI: ", mainDSUSeedSSI.getAnchorId().getIdentifier(), mainDSUSeedSSI);
 
-        console.log(`[MainDSU] Writing generated mainDSU to ${mainDSUSeedSSIFilePath}: ${mainDSUSeedSSI.getIdentifier()}`);
+        logger.info(`[MainDSU] Writing generated mainDSU to ${mainDSUSeedSSIFilePath}: ${mainDSUSeedSSI.getAnchorId().getIdentifier()}`);
         await $$.promisify(fs.writeFile)(mainDSUSeedSSIFilePath, mainDSUSeedSSI.getIdentifier(), "utf-8");
 
         sendMainDSUSeedSSI(response);
     } catch (error) {
-        console.log("[MainDSU] Failed to create seedSSI", error);
+        logger.error("[MainDSU] Failed to create seedSSI", error);
         response.statusCode = 500;
         response.setHeader("Content-Type", "text/html");
         response.end("Failed to create seedSSI");

@@ -1,3 +1,5 @@
+const logger = $$.getLogger("config-migrator", "apihub/config");
+
 function removeConfigComponent(config) {
     if (config.componentsConfig && config.componentsConfig.config) {
         delete config.componentsConfig.config;
@@ -24,7 +26,6 @@ function traverseObjectProvidedPrimitiveValues(item, onItemTraversal) {
 function replaceInternalVolumePathsWithExternalVolume(config) {
     traverseObjectProvidedPrimitiveValues(config, (item, key) => {
         let value = item[key];
-        console.log("Traversed", key, value);
         if (key === "path" && typeof value === "string" && value.indexOf("internal-volume") !== -1) {
             item[key] = value.replace("internal-volume", "external-volume");
         }
@@ -135,7 +136,7 @@ function migrate(oldConfig, configFolderPath) {
     const path = require("path");
     const fs = require("fs");
     const apihubJsonConfigPath = path.join(configFolderPath, "apihub.json");
-    console.log(`Generating apihub.json config file at ${apihubJsonConfigPath}...`);
+    logger.info(`Generating apihub.json config file at ${apihubJsonConfigPath}...`);
 
     if (!fs.existsSync(configFolderPath)) {
         fs.mkdirSync(configFolderPath, { recursive: true });
@@ -150,7 +151,7 @@ function migrate(oldConfig, configFolderPath) {
     Object.keys(domainConfigs).forEach((domain) => {
         const domainConfig = domainConfigs[domain];
         const domainConfigPath = path.join(domainConfigsFolderPath, `${domain}.json`);
-        console.log(`Generating config file for domain '${domain}' at ${domainConfigPath}...`);
+        logger.info(`Generating config file for domain '${domain}' at ${domainConfigPath}...`);
         fs.writeFileSync(domainConfigPath, JSON.stringify(domainConfig, null, 2));
     });
 

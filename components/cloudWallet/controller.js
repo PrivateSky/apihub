@@ -4,7 +4,7 @@ const worker_threads = "worker_threads";
 const { Worker } = require(worker_threads);
 const config = require("../../config");
 const path = require("swarmutils").path;
-
+const logger = $$.getLogger("CloudWallet", "apihub/cloudWallet");
 let dsuBootPath;
 const dsuWorkers = {};
 
@@ -40,13 +40,13 @@ function addDsuWorker(seed, cookie) {
         resolver: new Promise((resolve, reject) => {
             crypto.randomBytes(64, (err, randomBuffer) => {
                 if (err) {
-                    console.log("[CloudWallet] Error while generating worker authorizationKey", err);
+                    logger.error("Error while generating worker authorizationKey", err);
                     return reject(err);
                 }
 
                 const authorizationKey = randomBuffer.toString("hex");
                 dsuWorker.authorizationKey = authorizationKey;
-                console.log(`[CloudWallet] Starting worker for handling seed ${seed}`);
+                logger.info(`Starting worker for handling seed ${seed}`);
                 const worker = new Worker(dsuBootPath, {
                     workerData: {
                         seed,
@@ -62,8 +62,8 @@ function addDsuWorker(seed, cookie) {
                         return reject(message.error);
                     }
                     if (message.port) {
-                        console.log(
-                            `[CloudWallet] Running worker on PORT ${message.port} for seed ${seed}. Startup took ${getElapsedTime(
+                        logger.info(
+                            `Running worker on PORT ${message.port} for seed ${seed}. Startup took ${getElapsedTime(
                                 workerStartTime
                             )}`
                         );
@@ -72,11 +72,11 @@ function addDsuWorker(seed, cookie) {
                     }
                 });
                 worker.on("error", (error) => {
-                    console.log("[CloudWallet] worker error", error);
+                    logger.error("worker error", error);
                 });
                 worker.on("exit", (code) => {
                     if (code !== 0) {
-                        console.log(`[CloudWallet] Worker stopped with exit code ${code}`);
+                        logger.info(`Worker stopped with exit code ${code}`);
                         // remove the worker from list in order to be recreated when needed
                         delete dsuWorkers[seed];
                     }
@@ -142,14 +142,14 @@ function forwardRequestToWorker(dsuWorker, req, res) {
                 res.statusCode = statusCode;
                 res.end(bodyContent);
             } catch (err) {
-                console.log("[CloudWallet] worker response error", err);
+                logger.error("worker response error", err);
                 res.statusCode = 500;
                 res.end();
             }
         });
     });
     workerRequest.on("error", (err) => {
-        console.log("[CloudWallet] worker request error", err);
+        logger.error("worker request error", err);
         res.statusCode = 500;
         res.end();
     });
@@ -157,7 +157,7 @@ function forwardRequestToWorker(dsuWorker, req, res) {
     if (method === "POST" || method === "PUT") {
         let data = [];
         req.on("data", (chunk) => {
-            console.log("[CloudWallet] data.push(chunk);", chunk);
+            logger.info("data.push(chunk);", chunk);
             data.push(chunk);
         });
 
@@ -167,7 +167,7 @@ function forwardRequestToWorker(dsuWorker, req, res) {
                 workerRequest.write(bodyContent);
                 workerRequest.end();
             } catch (err) {
-                console.log("[CloudWallet] worker response error", err);
+                logger.error("worker response error", err);
                 res.statusCode = 500;
                 res.end();
             }
@@ -178,7 +178,7 @@ function forwardRequestToWorker(dsuWorker, req, res) {
 }
 
 function init(server) {
-    console.log(`Registering CloudWallet component`);
+    logger.info(`Registering CloudWallet component`);
 
     dsuBootPath = config.getConfig("componentsConfig", "cloudWallet", "dsuBootPath");
 
@@ -186,15 +186,15 @@ function init(server) {
         dsuBootPath = path.resolve(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, dsuBootPath));
     }
 
-    console.log(`[CloudWallet] Using boot script for worker: ${dsuBootPath}`);
+    logger.info(`Using boot script for worker: ${dsuBootPath}`);
 
     cacheContainerPath = require("path").join(server.rootFolder, config.getConfig("externalStorage"), `cache`);
 
     //if a listening event is fired from this point on...
     //it means that a restart was triggered
     server.on("listening", () => {
-        console.log(`[CloudWallet] Restarting process in progress...`);
-        console.log(`[CloudWallet] Stopping a number of ${Object.keys(dsuWorkers).length} thread workers`);
+        logger.info(`Restarting process in progress...`);
+        logger.info(`Stopping a number of ${Object.keys(dsuWorkers).length} thread workers`);
         for (let seed in dsuWorkers) {
             let worker = dsuWorkers[seed];
             if (worker && worker.terminate) {
@@ -217,7 +217,7 @@ function handleCloudWalletRequest(request, response) {
             forwardRequestToWorker(dsuWorker, request, response);
         })
         .catch((error) => {
-            console.log("[CloudWallet] worker resolver error", error);
+            logger.error("worker resolver error", error);
             response.setHeader("Content-Type", "text/html");
             response.statusCode = 400;
             response.end(INVALID_DSU_HTML_RESPONSE);

@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 function secrets(server) {
+    const logger = $$.getLogger("secrets", "apihub/secrets");
     const secretsFolderPath = path.join(server.rootFolder, "external-volume", "secrets");
     server.get("/getSSOSecret/:appName", function (request, response) {
         let userId = request.headers["user-id"];
@@ -42,22 +43,20 @@ function secrets(server) {
     function writeSecret(filePath, secret, request, response) {
         fs.access(filePath, (err)=>{
             if (!err) {
-                console.log("File Already exists");
+                logger.error("File Already exists");
                 response.statusCode = 403;
                 response.end(Error(`File ${filePath} already exists`));
                 return;
             }
 
-            console.log("Writing file to ", filePath);
             fs.writeFile(filePath, secret, (err)=>{
                 if (err) {
-                    console.log("Error at writing file", err);
+                    logger.error("Error at writing file", err);
                     response.statusCode = 500;
                     response.end(err);
                     return;
                 }
 
-                console.log("file written success")
                 response.statusCode = 200;
                 response.end();
             });
@@ -87,7 +86,7 @@ function secrets(server) {
                 body = Buffer.concat(data).toString();
                 msgToPersist = JSON.parse(body).secret;
             } catch (e) {
-                console.log("Failed to parse body", data);
+                logger.error("Failed to parse body", data);
                 response.statusCode = 500;
                 response.end(e);
             }

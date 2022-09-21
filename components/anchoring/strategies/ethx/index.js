@@ -3,7 +3,7 @@ const {ALIAS_SYNC_ERR_CODE} = require("../../utils");
 function Ethx(server, domainConfig, anchorId, newAnchorValue, jsonData) {
     const openDSU = require("opendsu");
     const http = openDSU.loadAPI("http");
-
+    const logger = $$.getLogger("Eth", "apihub/anchoring");
     const createEndpoint = (action) => {
         let endpoint = domainConfig.option.endpoint;
 
@@ -46,7 +46,7 @@ function Ethx(server, domainConfig, anchorId, newAnchorValue, jsonData) {
                     error.code = ALIAS_SYNC_ERR_CODE;
                     return callback(error);
                 }
-                console.log(err);
+                logger.error(err);
                 callback(err);
                 return;
             }

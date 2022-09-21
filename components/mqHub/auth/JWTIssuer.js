@@ -10,7 +10,7 @@ const defaultSettings = {
 }
 
 function JWTIssuer(workingDir) {
-
+	const logger = $$.getLogger("JWTIssuer", "apihub/mqHub");
 	let seeder;
 	const config = require("./../../../config");
 
@@ -33,17 +33,17 @@ function JWTIssuer(workingDir) {
 			seeder = await $$.promisify(fs.readFile)(getSeederFilePath());
 		} catch (err) {
 			if (err.code !== "ENOENT") {
-				console.log("Not able to read the Issuer persistence file needed by JWT Auth Support layer!", err);
+				logger.error("Not able to read the Issuer persistence file needed by JWT Auth Support layer!", err);
 			}
 		}
 
 		if (seeder) {
 			try {
 				seeder = keyssiApi.parse(seeder.toString());
-				console.log("MQ JWT AUTH Issuer loaded.");
+				logger.info("MQ JWT AUTH Issuer loaded.");
 				return;
 			} catch (err) {
-				console.log("Failed to load MQ JWT AUTH Issuer info. Creating a new Issuer!",
+				logger.error("Failed to load MQ JWT AUTH Issuer info. Creating a new Issuer!",
 					"\nPrevious tokens will not be valid anymore!!!");
 			}
 		}
@@ -52,7 +52,7 @@ function JWTIssuer(workingDir) {
 
 		seeder = await $$.promisify(keyssiApi.createSeedSSI)(DOMAIN_NAME);
 		await $$.promisify(fs.writeFile)(getSeederFilePath(), seeder.getIdentifier());
-		console.log("New MQ JWT AUTH Issuer created and saved for later use.");
+		logger.info("New MQ JWT AUTH Issuer created and saved for later use.");
 	}
 
 	this.createToken = function (domain, options, callback) {

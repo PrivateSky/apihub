@@ -19,7 +19,6 @@ assert.callback("Acquire lock after previous expired", (callback) => {
             assert.true(typeof err === "undefined");
             setTimeout(()=>{
                 newFsLock.acquireLock((err)=>{
-                    console.log(err);
                     assert.true(typeof err === "undefined");
                     callback();
                 })

@@ -4,7 +4,7 @@ function StaticServer(server) {
     const utils = require("../../utils");
     const config = require("../../config");
     let componentsConfig = config.getConfig("componentsConfig");
-
+    const logger = $$.getLogger("StaticServer", "apihub/staticServer");
     let excludedFilesRegex;
     if (componentsConfig && componentsConfig.staticServer && componentsConfig.staticServer.excludedFiles) {
         excludedFilesRegex = componentsConfig.staticServer.excludedFiles.map(str => new RegExp(str));
@@ -20,7 +20,7 @@ function StaticServer(server) {
         });
 
         function serverTarget(targetPath) {
-            console.log("Serving summary for dir:", targetPath);
+            logger.info("Serving summary for dir:", targetPath);
             fs.stat(targetPath, function (err, stats) {
                 if (err) {
                     res.statusCode = 404;
@@ -116,13 +116,13 @@ function StaticServer(server) {
         try{
             adminService = require("./../admin").getAdminService();
         }catch(err){
-            //console.log("Caught an error durring admin service initialization", err);
+            //logger.error("Caught an error durring admin service initialization", err);
             return callback(err);
         }
 
         adminService.checkForTemplate(req.url, (err, template)=>{
             if(err){
-                //console.log("Not able to find template for", req.url);
+                //logger.error("Not able to find template for", req.url);
                 //console.trace(err);
                 return callback(err);
             }
@@ -130,15 +130,11 @@ function StaticServer(server) {
                 let fileContent = template.content;
                 const urlObject = new URL(req.url, `http://${req.headers.host}`);
                 let hostname = urlObject.hostname;
-                console.log("Preparing to read vars for ", hostname);
                 return adminService.getDomainSpecificVariables(hostname, (err, variables)=>{
                     if(err || !variables){
-                        console.log("Not able to get any variable for ", hostname);
-                        //console.log(err);
                         return callback(err);
                     }
                     let domainVariables = Object.keys(variables);
-                    console.log("Domain variables found:", JSON.stringify(domainVariables));
                     for(let i=0; i<domainVariables.length; i++){
                         let variableName = domainVariables[i];
                         let variableValue = variables[variableName];
@@ -162,7 +158,7 @@ function StaticServer(server) {
                 //if any error... we fallback to normal sendFile method
                 return sendFile(res, file);
             }
-            console.log("Responding with template instead of file.");
+            logger.info("Responding with template instead of file.");
             res.statusCode = 200;
 
             setMimeTypeOnResponse(req.url, res);

@@ -192,10 +192,12 @@ function parametersPreProcessing(params) {
     return res;
 }
 
+const logger = $$.getLogger("Client", "apihub/http-wrapper");
+
 const handler = {
     get(target, propName) {
         if (!target[propName]) {
-            console.log(propName, "Not implemented!");
+            logger.error(propName, "Not implemented!");
         } else {
             return function () {
                 const args = parametersPreProcessing(arguments);

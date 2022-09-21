@@ -10,12 +10,13 @@ function AutoSavePendingTransactions (flow, timeout, server) {
 
 
 function BricksFabric(server) {
+    const logger = $$.getLogger("BricksFabric", "apihub/bricksFabric");
 
     require('./strategies/BrickStorage.js');
 
     const bricksFabricStrategy = require('./utils').getBricksFabricStrategy();
     if (!bricksFabricStrategy) {
-        console.log("Unable to initialized 'bricksFabrick' component. Strategy not found!");
+        logger.error("Unable to initialized 'bricksFabrick' component. Strategy not found!");
         return;
     }
     const rootFolder = require('./utils').getRootFolder();

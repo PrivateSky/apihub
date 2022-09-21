@@ -1,5 +1,6 @@
 function Logger(server) {
-    console.log(`Registering Logger middleware`);
+    const logger = $$.getLogger("Logger", "apihub/logger");
+    logger.info(`Registering Logger middleware`);
     
     const getRequestDuration = (start) => {
         const diff = process.hrtime(start);
@@ -24,20 +25,20 @@ function Logger(server) {
       const { statusCode } = res;
       durationInMilliseconds = getRequestDuration(start);
       let log = `${remoteAddress}:${port} - [${datetime}] ${method}:${url} ${statusCode} ${durationInMilliseconds.toLocaleString()}ms`;
-      console.log(log);
+      logger.info(log);
       if(req.getLogs){
           const visualIndex = "\t";
           const requestLogs = req.getLogs();
           if(requestLogs.length > 0){
-              console.log("Request logs:");
+              logger.info("Request logs:");
               for(let i=0; i<requestLogs.length; i++){
                   if(Array.isArray(requestLogs)){
-                      console.log(visualIndex, ...requestLogs[i]);
+                      logger.info(visualIndex, ...requestLogs[i]);
                   }else{
-                      console.log(visualIndex, requestLogs[i]);
+                      logger.info(visualIndex, requestLogs[i]);
                   }
               }
-              console.log("\n");
+              logger.info("\n");
           }
       }
     });

@@ -1,4 +1,6 @@
 function setupRequestEnhancements(server) {
+    const logger = $$.getLogger("setupRequestEnhancements", "apihub/requestEnhancements");
+
     const constants = require("./../../moduleConstants");
 
 	server.use(function (req, res, next) {
@@ -14,7 +16,7 @@ function setupRequestEnhancements(server) {
 		next();
 	});
 
-    console.log(`${constants.LOG_IDENTIFIER}`, "Request API enhancements were set up.");
+    logger.info(`${constants.LOG_IDENTIFIER}`, "Request API enhancements were set up.");
 }
 
 module.exports = setupRequestEnhancements;

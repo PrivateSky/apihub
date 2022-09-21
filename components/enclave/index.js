@@ -5,7 +5,7 @@ const w3cDID = openDSU.loadAPI("w3cdid");
 const path = require("path");
 
 function LokiEnclaveFacade(server) {
-
+    const logger = $$.getLogger("LokiEnclaveFacade", "apihub/enclave");
     let didDocument;
 
     w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, (err, didDoc) => {
@@ -13,7 +13,7 @@ function LokiEnclaveFacade(server) {
         
         didDocument.waitForMessages(async (err, res) => {
             if (err) {
-                console.log(err);
+                logger.error(err);
                 return
             }
 
@@ -21,7 +21,7 @@ function LokiEnclaveFacade(server) {
                 processCommand(JSON.parse(res));
             }
             catch (err) {
-                console.log(err);
+                logger.error(err);
             }
         });
     });
@@ -42,7 +42,7 @@ function LokiEnclaveFacade(server) {
             return JSON.stringify({ "commandResult": dbResult, "commandID": resObj.commandID })
         }
         catch (err) {
-            console.log(err);
+            logger.error(err);
             return err;
         }
     }
@@ -50,7 +50,7 @@ function LokiEnclaveFacade(server) {
     function sendResult(didDocument, result, clientDID) {
         didDocument.sendMessage(result, clientDID, (err, res) => {
             if (err) {
-                console.log(err);
+                logger.error(err);
             }
         })
     }

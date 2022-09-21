@@ -116,7 +116,7 @@ function FileOperations() {
     const path = require('path');
     let anchoringFolder;
     const endOfLine = require("os").EOL;
-
+    const logger = $$.getLogger("FileOperations", "apihub/anchoring");
     self.InitializeFolderStructure = function (rootFolder, configuredPath) {
         let storageFolder = path.join(rootFolder, configuredPath);
         anchoringFolder = path.resolve(storageFolder);
@@ -125,7 +125,7 @@ function FileOperations() {
                 fs.mkdirSync(anchoringFolder, {recursive: true});
             }
         } catch (e) {
-            console.log("error creating anchoring folder", e);
+            logger.error("error creating anchoring folder", e);
             throw new Error(`Failed to create folder ${anchoringFolder}`);
         }
     }
@@ -137,7 +137,7 @@ function FileOperations() {
 
         let forbiddenCharacters = new RegExp(/[~`!#$%\^&*+=\-\[\]\\';,/{}|\\":<>\?]/g);
         if (forbiddenCharacters.test(anchorId)) {
-            console.log(`Found forbidden characters in anchorId ${anchorId}`);
+            logger.error(`Found forbidden characters in anchorId ${anchorId}`);
             return callback(new Error(`anchorId ${anchorId} contains forbidden characters`));
         }
         return callback(undefined);

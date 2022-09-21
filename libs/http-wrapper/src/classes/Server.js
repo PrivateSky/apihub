@@ -85,7 +85,6 @@ function Server(sslOptions) {
         });
 
         req.on('error', err => {
-            console.log("reject will be called. err :", err);
             return callback(err);
         });
 

@@ -4,6 +4,8 @@ const BRICKSFABRIC_ERROR_CODE = 'bricks fabric error';
 
 
 function BrickStorage() {
+    const logger = $$.getLogger("BrickStorage", "apihub/bricksFabric");
+
     this.init = function (brickFabricRootFolder,noOfTransactionsPerBlock) {
         this.rootFolder = brickFabricRootFolder;
         this.transactionsPerBlock = noOfTransactionsPerBlock;
@@ -70,7 +72,7 @@ function BrickStorage() {
         try {
             server.makeLocalRequest(blockMethod, blockPath, data, blockHeaders, (err, result) => {
                 if (err) {
-                    console.log(err);
+                    logger.error(err);
                     __pushBuffer();
                     this.isCommitingBlock = false;
                     callback(err, undefined);
@@ -82,8 +84,6 @@ function BrickStorage() {
                     this.pendingTransactions.splice(0, this.pendingTransactions.length);
                     __pushBuffer();
                     this.isCommitingBlock = false;
-                    //console.log(result);
-                    console.log('block finished');
 
                     callback(undefined, result);
                 }
@@ -92,13 +92,12 @@ function BrickStorage() {
             });
         } catch (err)
         {
-            console.log("bricks fabric", err);
+            logger.error("bricks fabric", err);
         }
     }
     function __pushBuffer(){
         if (this.pendingBuffer.length > 0)
         {
-            console.log("push buffer to pending block", this.pendingBuffer);
             for (let i = 0; i < this.pendingBuffer.length; i++) {
                 this.pendingTransactions.push(this.pendingBuffer[i]);
             }
@@ -108,19 +107,19 @@ function BrickStorage() {
     this.storeData = function(anchorData, server, callback) {
         if (this.isCommitingBlock === true)
         {
-            console.log("transaction cached");
+            logger.info("transaction cached");
             this.pendingBuffer.push(anchorData);
             callback(undefined,"Transaction was added to the block.");
             return;
         }
-        console.log("transaction pushed to pending block");
+        logger.info("transaction pushed to pending block");
         this.pendingTransactions.push(anchorData);
         if (this.pendingTransactions.length >= this.transactionsPerBlock)
         {
-           // console.log("commit block callback");
+           // logger.info("commit block callback");
            this.completeBlock(server, callback);
         }else {
-            //console.log("pending callback");
+            //logger.info("pending callback");
             callback(undefined,"Transaction was added to the block.");
         }
     }

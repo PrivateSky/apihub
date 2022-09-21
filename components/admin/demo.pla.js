@@ -1,5 +1,7 @@
 require("../../../../psknode/bundles/openDSU");
 openDSURequire('overwrite-require');
+const logger = $$.getLogger("demo.pla.js", "apihub/admin");
+
 const opendsu = openDSURequire("opendsu");
 const http = opendsu.loadApi("http");
 
@@ -55,7 +57,7 @@ async function storeVariable(dns, prop, value) {
             "variableName": prop,
             "variableContent": value
         }));
-        console.log(`Finished storing variable ${prop}=${value} for ${dns}`);
+        logger.info(`Finished storing variable ${prop}=${value} for ${dns}`);
     } catch (e) {
         console.trace(e);
         process.exit(1);
@@ -69,7 +71,7 @@ async function createDomain(domainName, cloneFrom) {
             "domainName": domainName,
             "cloneFromDomain": cloneFrom
         }));
-        console.log(`Finished createDomain ${domainName} based on ${cloneFrom}`);
+        logger.info(`Finished createDomain ${domainName} based on ${cloneFrom}`);
     } catch (e) {
         console.trace(e);
         process.exit(1);
@@ -83,7 +85,7 @@ async function registerTemplate(path, content) {
             path,
             content
         }));
-        console.log(`Finished registering template for path ${path}`);
+        logger.info(`Finished registering template for path ${path}`);
     } catch (e) {
         console.trace(e);
         process.exit(1);

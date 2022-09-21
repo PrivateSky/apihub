@@ -21,6 +21,7 @@ const defaultSettings = {
 }
 
 async function MQHub(server, signalAsyncLoading, doneLoading) {
+	const logger = $$.getLogger("MQHub", "apihub/mqHub");
 
 	signalAsyncLoading();
 
@@ -35,7 +36,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 		const domain = request.params.domain;
 		issuer.createToken(domain, {credentials: request.params.hashDID}, (err, tokenObj) => {
 			if (err) {
-				console.log("Not able to create a new token.", err);
+				logger.error("Not able to create a new token.", err);
 				response.statusCode = 500;
 				return response.end();
 			}
@@ -66,7 +67,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 	async function putMessageHandler(request, response, next) {
 		const domainName = request.params.domain;
 		if (domains.indexOf(domainName) === -1) {
-			console.log(`Caught an request to the MQs for domain ${domainName}. Looks like the domain doesn't have mq component enabled.`);
+			logger.error(`Caught an request to the MQs for domain ${domainName}. Looks like the domain doesn't have mq component enabled.`);
 			response.statusCode = 405;
 			response.end();
 			return;
@@ -75,7 +76,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 		let token = request.headers['authorization'];
 
 		if(! await allowUnregisteredDID(domainName) && !token){
-			console.log(`No token was available on the request and the domain ${domainName} configuration prohibits unregisteredDIDs to use the MQ api.`);
+			logger.error(`No token was available on the request and the domain ${domainName} configuration prohibits unregisteredDIDs to use the MQ api.`);
 			response.statusCode = 403;
 			response.end();
 			return;
@@ -87,7 +88,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 				errorMsg = "Token not valid: ";
 			}
 			if (err || !valid) {
-				console.log(`${errorMsg} < ${token} >`, err ? err : "");
+				logger.error(`${errorMsg} < ${token} >`, err ? err : "");
 				response.statusCode = 403;
 				response.end();
 				return;
@@ -101,7 +102,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 	async function getMessageHandler(request, response, next) {
 		const domainName = request.params.domain;
 		if (domains.indexOf(domainName) === -1) {
-			console.log(`Caught an request to the MQs for domain ${domainName}. Looks like the domain doesn't have mq component enabled.`);
+			logger.error(`Caught an request to the MQs for domain ${domainName}. Looks like the domain doesn't have mq component enabled.`);
 			response.statusCode = 405;
 			response.end();
 			return;
@@ -110,7 +111,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 		let token = request.headers['authorization'];
 
 		if(! await allowUnregisteredDID(domainName) && !token){
-			console.log(`No token was available on the request and the domain ${domainName} configuration prohibits unregisteredDIDs to use the MQ api.`);
+			logger.error(`No token was available on the request and the domain ${domainName} configuration prohibits unregisteredDIDs to use the MQ api.`);
 			response.statusCode = 403;
 			response.end();
 			return;
@@ -122,7 +123,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 				errorMsg = "Ownership not confirmed based on token: ";
 			}
 			if (err || !isOwner) {
-				console.log(`${errorMsg} < ${token} >`, err ? err : "");
+				logger.error(`${errorMsg} < ${token} >`, err ? err : "");
 				response.statusCode = 403;
 				response.end();
 				return;
@@ -157,15 +158,15 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 			const adapterTypeName = domainConfig["mq_type"] || "local";
 			const adapter = adapterImpls[adapterTypeName];
 			if (!adapter) {
-				console.log(`Not able to recognize the mq_type < ${adapterTypeName} > from the domain < ${domain} > config.`);
+				logger.error(`Not able to recognize the mq_type < ${adapterTypeName} > from the domain < ${domain} > config.`);
 				return;
 			}
 
 			try {
-				console.log(`Preparing to register mq endpoints for domain < ${domain} > ... `);
+				logger.info(`Preparing to register mq endpoints for domain < ${domain} > ... `);
 				adapter(server, URL_PREFIX, domainToBeUsedByAdapter || domain, domainConfig);
 			} catch (err) {
-				console.log(`Caught an error during initialization process of the mq for domain < ${domain} >`, err);
+				logger.error(`Caught an error during initialization process of the mq for domain < ${domain} >`, err);
 				return;
 			}
 
@@ -179,13 +180,11 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 			let adminService = require("./../../components/admin").getAdminService();
 			let getDomains = $$.promisify(adminService.getDomains);
 			let virtualDomains = await getDomains();
-			//console.log("virtualDomains", virtualDomains);
 			for(let i=0; i<virtualDomains.length; i++){
 				let domainInfo = virtualDomains[i];
-				//console.log("domain info", domainInfo);
 				if(domainInfo && domainInfo.active && domainInfo.cloneFromDomain){
 					if(testIfMQEnabled(domainInfo.cloneFromDomain, domainInfo.pk)){
-						console.log(`Successfully register mq endpoints for virtual domain < ${domainInfo.pk} >.`);
+						logger.info(`Successfully register mq endpoints for virtual domain < ${domainInfo.pk} >.`);
 						domains.push(domainInfo.pk);
 					}
 				}
@@ -197,7 +196,7 @@ async function MQHub(server, signalAsyncLoading, doneLoading) {
 		for (let i = 0; i < confDomains.length; i++) {
 			let domain = confDomains[i];
 			if(testIfMQEnabled(domain)){
-				console.log(`Successfully register mq endpoints for domain < ${domain} >.`);
+				logger.info(`Successfully register mq endpoints for domain < ${domain} >.`);
 				domains.push(domain);
 			}
 		}

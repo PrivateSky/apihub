@@ -3,7 +3,9 @@ const util = require("./util");
 const urlModule = require("url");
 
 function OAuthMiddleware(server) {
-  console.log(`Registering OAuthMiddleware`);
+  const logger = $$.getLogger("OAuthMiddleware", "apihub/oauth");
+
+  logger.info(`Registering OAuthMiddleware`);
   const fs = require("fs");
   const config = require("../../../config");
   const oauthConfig = config.getConfig("oauthConfig");
@@ -112,7 +114,7 @@ function OAuthMiddleware(server) {
 
   function debugMessage(...args) {
     if (oauthConfig.debugLogEnabled) {
-      console.log(...args);
+      logger.info(...args);
     }
   }
 
