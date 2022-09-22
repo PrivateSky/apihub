@@ -1,7 +1,7 @@
 
 const openDSU = require("opendsu");
 
-class FSX{
+class FS{
     constructor(server, domainConfig, anchorId, anchorValue, jsonData) {
         this.commandData = {};
         this.commandData.option = domainConfig.option;
@@ -49,4 +49,4 @@ class FSX{
     }
 }
 
-module.exports = FSX;
+module.exports = FS;

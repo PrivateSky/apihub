@@ -1,6 +1,6 @@
 const {ALIAS_SYNC_ERR_CODE} = require("../../utils");
 
-function Ethx(server, domainConfig, anchorId, newAnchorValue, jsonData) {
+function ETH(server, domainConfig, anchorId, newAnchorValue, jsonData) {
     const openDSU = require("opendsu");
     const http = openDSU.loadAPI("http");
     const logger = $$.getLogger("Eth", "apihub/anchoring");
@@ -116,4 +116,4 @@ function Ethx(server, domainConfig, anchorId, newAnchorValue, jsonData) {
     }
 }
 
-module.exports = Ethx;
+module.exports = ETH;
