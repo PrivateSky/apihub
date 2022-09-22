@@ -20,6 +20,8 @@ const getStrategy = async (request) => {
         if (!domainConfig) {
             throw Error(`[Anchoring] Domain '${receivedDomain}' not found`);
         }
+    } else {
+        throw Error(`[Anchoring] AnchorId or domain is missing from request.params`);
     }
 
     const StrategyClass = anchoringStrategies[domainConfig.type];
