@@ -8,7 +8,7 @@ function secrets(server) {
         let userId = request.headers["user-id"];
         let appName = request.params.appName;
         const fileDir = path.join(secretsFolderPath, appName);
-        const filePath = path.join(fileDir, `${userId}.json`);
+        const filePath = path.join(fileDir, `${userId}.secret`);
         fs.access(filePath, (err) => {
             if (err) {
                 response.statusCode = 204;
@@ -79,7 +79,7 @@ function secrets(server) {
 
         request.on('end', async () => {
             const fileDir = path.join(secretsFolderPath, appName);
-            const filePath = path.join(fileDir, `${userId}.json`);
+            const filePath = path.join(fileDir, `${userId}.secret`);
             let body;
             let msgToPersist;
             try {
@@ -117,7 +117,7 @@ function secrets(server) {
         let appName = request.params.appName;
         const fileDir = path.join(secretsFolderPath, appName);
         let userId = getUserIdFromDID(did, appName);
-        const filePath = path.join(fileDir, `${userId}.json`);
+        const filePath = path.join(fileDir, `${userId}.secret`);
         fs.access(filePath, (err) => {
             if (err) {
                 response.statusCode = 204;
