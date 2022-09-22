@@ -29,7 +29,7 @@ async function handleDefaultMainDSURequest(request, response) {
     try {
         const fileContent = await $$.promisify(fs.readFile)(mainDSUSeedSSIFilePath, { encoding: "utf-8" });
         mainDSUSeedSSI = keySSISpace.parse(fileContent);
-        logger.info(`[MainDSU] Read existing mainDSU from ${mainDSUSeedSSIFilePath}: ${mainDSUSeedSSI.getAnchorId().getIdentifier()}`);
+        logger.info(`[MainDSU] Read existing mainDSU from ${mainDSUSeedSSIFilePath}: ${mainDSUSeedSSI.getAnchorId()}`);
         return sendMainDSUSeedSSI(response);
     } catch (error) {
         logger.error(`[MainDSU] Failed to read/parse keySSI from ${mainDSUSeedSSIFilePath}. Generating new keySSI...`, error);
@@ -44,13 +44,13 @@ async function handleDefaultMainDSURequest(request, response) {
         const seedSSI = await $$.promisify(keySSISpace.createSeedSSI)(environmentConfig.vaultDomain);
         const mainDSU = await $$.promisify(resolver.createDSUForExistingSSI)(seedSSI);
 
-        logger.info(`[MainDSU] Settings config for seed ${seedSSI.getAnchorId().getIdentifier()}`, environmentConfig);
+        logger.info(`[MainDSU] Settings config for seed ${seedSSI.getAnchorId()}`, environmentConfig);
         await $$.promisify(mainDSU.writeFile)("/environment.json", JSON.stringify(environmentConfig));
 
         mainDSUSeedSSI = seedSSI;
-        logger.info("[MainDSU] Generated mainDSUSeedSSI: ", mainDSUSeedSSI.getAnchorId().getIdentifier(), mainDSUSeedSSI);
+        logger.info("[MainDSU] Generated mainDSUSeedSSI: ", mainDSUSeedSSI.getAnchorId(), mainDSUSeedSSI);
 
-        logger.info(`[MainDSU] Writing generated mainDSU to ${mainDSUSeedSSIFilePath}: ${mainDSUSeedSSI.getAnchorId().getIdentifier()}`);
+        logger.info(`[MainDSU] Writing generated mainDSU to ${mainDSUSeedSSIFilePath}: ${mainDSUSeedSSI.getAnchorId()}`);
         await $$.promisify(fs.writeFile)(mainDSUSeedSSIFilePath, mainDSUSeedSSI.getIdentifier(), "utf-8");
 
         sendMainDSUSeedSSI(response);
