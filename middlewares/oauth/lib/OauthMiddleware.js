@@ -219,7 +219,6 @@ function OAuthMiddleware(server) {
         if (url.includes("/mq/")) {
           return next();
         }
-        res.setHeader("Set-Cookie", `sessionExpiryTime=${sessionExpiryTime}; Path=/`)
         util.updateAccessTokenExpiration(CURRENT_ENCRYPTION_KEY_PATH, PREVIOUS_ENCRYPTION_KEY_PATH, accessTokenCookie, (err, encryptedAccessToken)=>{
           if (err) {
             debugMessage("Logout because accessTokenCookie decryption failed.")
