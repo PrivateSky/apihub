@@ -78,13 +78,16 @@ function OAuthMiddleware(server) {
           return sendUnauthorizedResponse(req, res, "Unable to get token set", err);
         }
 
+        debugMessage("Access token", tokenSet.access_token);
         util.encryptTokenSet(CURRENT_ENCRYPTION_KEY_PATH, tokenSet, (err, encryptedTokenSet) => {
           if (err) {
             return sendUnauthorizedResponse(req, res, "Unable to encrypt access token", err);
           }
 
           const {payload} = util.parseAccessToken(tokenSet.access_token);
+          debugMessage("Access token payload", payload);
           const SSODetectedId = util.getSSODetectedIdFromDecryptedToken(tokenSet.access_token);
+          debugMessage("SSODetectedId", SSODetectedId);
           res.writeHead(301, {
             Location: "/",
             "Set-Cookie": [`accessTokenCookie=${encryptedTokenSet.encryptedAccessToken}`, "isActiveSession=true", `refreshTokenCookie=${encryptedTokenSet.encryptedRefreshToken}`, `SSOUserId = ${payload.sub}`, `SSODetectedId = ${SSODetectedId}`, `loginContextCookie=; Max-Age=0`],
@@ -210,6 +213,7 @@ function OAuthMiddleware(server) {
             return startLogoutPhase(res);
         }
 
+        debugMessage("SSODetectedId", SSODetectedId);
         req.headers["user-id"] = SSODetectedId;
         if (url.includes("/mq/")) {
           return next();
