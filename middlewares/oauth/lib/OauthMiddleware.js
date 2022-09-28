@@ -117,7 +117,7 @@ function OAuthMiddleware(server) {
 
   function debugMessage(...args) {
     if (oauthConfig.debugLogEnabled) {
-      logger.info(...args);
+      logger.debug(...args);
     }
   }
 
