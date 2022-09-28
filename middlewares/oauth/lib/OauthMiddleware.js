@@ -151,6 +151,7 @@ function OAuthMiddleware(server) {
 
     const canSkipOAuth = urlsToSkip.some((urlToSkip) => url.indexOf(urlToSkip) === 0);
     if (canSkipOAuth) {
+      debugMessage("Skipping OAuth authentication for url", url);
       next();
       return;
     }
