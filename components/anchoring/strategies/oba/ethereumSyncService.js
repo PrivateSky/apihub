@@ -1,21 +1,20 @@
 const {ALIAS_SYNC_ERR_CODE, ANCHOR_ALREADY_EXISTS_ERR_CODE} = require("../../utils");
 const {getLokiEnclaveFacade} = require("./lokiEnclaveFacadeSingleton");
-const path = require("path");
+const {getLogFilePath} = require("./getLogFilePath");
+const {getDBFilePath} = require("./getDBFilePath");
 
 function EthereumSyncService(server, config) {
     const defaultConfig = {
         scheduleInterval: 10000,
         sendInterval: 17000,
         burstSize: 100,
-        maxNumberOfRetries: 100
+        maxNumberOfRetries: 10
     }
     Object.assign(defaultConfig, config);
     config = defaultConfig;
 
-    const BASE_FOLDER = path.join(server.rootFolder, "external-volume", "oba");
-    const DB_STORAGE_FILE = path.join(BASE_FOLDER, "pendingAnchors");
-    const CRITICAL_LOG_FILE = path.join(BASE_FOLDER, "failedAnchors");
-    const logger = $$.getLogger("EthereumSyncService", "OBA", CRITICAL_LOG_FILE);
+    const DB_STORAGE_FILE = getDBFilePath(server);
+    const logger = $$.getLogger("OBA", "EthereumSyncService", getLogFilePath(server));
 
     const openDSU = require("opendsu");
     const utils = openDSU.loadAPI("utils");
@@ -61,27 +60,19 @@ function EthereumSyncService(server, config) {
         ethHandler[anchor.anchorUpdateOperation]((err, transactionHash) => {
             if (err) {
                 if (err.code === ANCHOR_ALREADY_EXISTS_ERR_CODE || err.code === ALIAS_SYNC_ERR_CODE) {
-                    logger.critical(`Failed to anchor value ${anchor.anchorValue} for ${anchor.anchorId}: Anchoring conflict.`, err => {
-                        if (err) {
-                            logger.error(`Failed to write log to file ${CRITICAL_LOG_FILE}`, err);
-                        }
+                    logger.critical(1, `Anchoring for ${anchor.anchorId} failed to sync with blockchain`)
 
-                        lokiEnclaveFacade.deleteRecord(undefined, ANCHORS_TABLE_NAME, anchor.pk, err => {
-                            if (err) {
-                                logger.error(`Failed to delete anchor ${anchor.anchorId} from db: ${err}`);
-                            }
-                        });
+                    lokiEnclaveFacade.deleteRecord(undefined, ANCHORS_TABLE_NAME, anchor.pk, err => {
+                        if (err) {
+                            logger.error(`Failed to delete anchor ${anchor.anchorId} from db: ${err}`);
+                        }
                     });
                     return;
                 }
                 anchor.scheduled = null;
                 anchor.tc++;
                 if (anchor.tc === config.maxNumberOfRetries) {
-                    logger.critical(`Failed to anchor value ${anchor.anchorValue} for ${anchor.anchorId}. Too many retries`, err => {
-                        if (err) {
-                            logger.error(`Failed to write log to file ${CRITICAL_LOG_FILE}`, err);
-                        }
-                    });
+                    logger.warn(1, `Anchoring Synchronization for ${anchor.anchorId} retried ${config.maxNumberOfRetries} without success`);
                 }
                 lokiEnclaveFacade.updateRecord(undefined, ANCHORS_TABLE_NAME, anchor.pk, anchor, err => {
                     if (err) {
@@ -91,8 +82,7 @@ function EthereumSyncService(server, config) {
                 return;
             }
 
-
-            logger.info(`Version anchor ${anchor.anchorValue} for anchor ${anchor.anchorId} has been successfully stored in blockchain: transaction ${transactionHash}`);
+            logger.info(2, `Anchoring for anchor ${anchor.anchorId} committed in blockchain: ${transactionHash}`);
             lokiEnclaveFacade.deleteRecord(undefined, ANCHORS_TABLE_NAME, anchor.pk, err => {
                 if (err) {
                     logger.log(`Failed to delete anchor ${anchor.anchorId} from db: ${err}`);

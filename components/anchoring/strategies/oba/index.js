@@ -1,18 +1,20 @@
 const {getEthereumSyncServiceSingleton} = require("./ethereumSyncService");
+const {getLogFilePath} = require("./getLogFilePath");
 
 function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
     let {FS, ETH} = require("../index");
     const fsHandler = new FS(server, domainConfig, anchorId, anchorValue, ...args);
     const ethHandler = new ETH(server, domainConfig, anchorId, anchorValue, ...args);
     const ethSyncService = getEthereumSyncServiceSingleton(server);
-    const logger = $$.getLogger("OBA", "apihub/anchoring");
+    const logger = $$.getLogger("OBA", "apihub/anchoring", getLogFilePath(server));
 
     this.createAnchor = function (callback) {
+        logger.info(1, `Anchoring for ${anchorId} started`);
         fsHandler.createAnchor((err, res) => {
             if (err) {
                 return callback(err);
             }
-            logger.info(`optimistic create anchor ended with success.`);
+            logger.info(`Optimistic create anchor ended with success.`);
 
             ethSyncService.storeAnchor("createAnchor", anchorId, anchorValue, domainConfig,(err) => {
                 if (err) {
@@ -27,6 +29,7 @@ function OBA(server, domainConfig, anchorId, anchorValue, ...args) {
     }
 
     this.appendAnchor = function (callback) {
+        logger.info(1, `Anchoring for ${anchorId} started`);
         fsHandler.appendAnchor((err, res) => {
             if (err) {
                 return callback(err);
