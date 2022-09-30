@@ -8,7 +8,7 @@ function EthereumSyncService(server, config) {
         scheduleInterval: 10000,
         sendInterval: 17000,
         burstSize: 100,
-        maxNumberOfRetries: 10
+        maxNumberOfRetries: 100
     }
     Object.assign(defaultConfig, config);
     config = defaultConfig;
