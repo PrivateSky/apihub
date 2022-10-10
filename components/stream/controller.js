@@ -44,7 +44,7 @@ async function handleCreateWallet(request, response) {
             sharedEnclaveKeySSI,
         };
 
-        logger.info(`[Stream] Settings config for wallet ${walletSSI.getAnchorId()}`, environmentConfig);
+        logger.info(`[Stream] Settings config for wallet ${await $$.promisify(walletSSI.getAnchorId)()}`, environmentConfig);
         await $$.promisify(writableDSU.writeFile)("/environment.json", JSON.stringify(environmentConfig));
 
         await $$.promisify(writableDSU.writeFile)("/metadata.json", JSON.stringify({ userId }));

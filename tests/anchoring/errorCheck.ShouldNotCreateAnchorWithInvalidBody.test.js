@@ -21,7 +21,7 @@ assert.callback('Should not be able to create anchor with invalid body test', as
         const domain = 'default';
         const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({domains: [{name: "default", config: vaultDomainConfig}]});
         const seedSSI = utils.generateSeedSSI();
-        const anchorId = utils.getAnchorId(seedSSI);
+        const anchorId = await utils.getAnchorId(seedSSI);
 
         const mainNodeUrl =  apiHub.url;
 

@@ -16,7 +16,7 @@ assert.callback(
     "Anchoring/bricking retrieved when two nodes point to each other for anchoring/bricking external providers avoiding circular loops using initial BDNS settings",
     async (testFinished) => {
         const seedSSI = keySSIApi.createSeedSSI(domain);
-        const anchorId = seedSSI.getAnchorId();
+        const anchorId = await $$.promisify(seedSSI.getAnchorId)();
         const brickData = "BRICK_DATA";
 
         const timestamp = Date.now();

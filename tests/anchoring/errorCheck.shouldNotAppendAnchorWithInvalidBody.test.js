@@ -22,7 +22,7 @@ assert.callback('Should not append anchor with invalid body test', async (callba
         const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({domains: [{name: "default", config: vaultDomainConfig}]});
         console.log(apiHub);
         const seedSSI = utils.generateSeedSSI();
-        const anchorId = utils.getAnchorId(seedSSI);
+        const anchorId = await utils.getAnchorId(seedSSI);
         const hashlink = await utils.getSignedHashLink(seedSSI,null);
 
 

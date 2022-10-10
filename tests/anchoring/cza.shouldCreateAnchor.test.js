@@ -21,7 +21,7 @@ assert.callback('Should create new anchor of type CZA', async (callback) => {
                 const domain = 'default';
                 const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({domains: [{name: "default", config: vaultDomainConfig}]});
                 const constSSI = utils.generateConstSSI();
-                const anchorId = utils.getAnchorId(constSSI);
+                const anchorId = await utils.getAnchorId(constSSI);
                 const hashlink = await utils.getHashLink(constSSI);
 
                 const mainNodeUrl =  apiHub.url;

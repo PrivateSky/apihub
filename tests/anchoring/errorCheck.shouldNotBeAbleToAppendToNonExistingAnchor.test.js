@@ -22,7 +22,7 @@ assert.callback('Should not be able to append to non existing anchor', async (ca
                 const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({domains: [{name: "default", config: vaultDomainConfig}]});
                 console.log(apiHub);
                 const seedSSI = utils.generateSeedSSI();
-                const anchorId = utils.getAnchorId(seedSSI);
+                const anchorId = await utils.getAnchorId(seedSSI);
                 const hashlink = await utils.getSignedHashLink(seedSSI,null);
 
                 const mainNodeUrl =  apiHub.url;

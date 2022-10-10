@@ -20,7 +20,7 @@ assert.callback('Should not be able to create the same anchor multiple times', a
                 const domain = 'default';
                 const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({domains: [{name: "default", config: vaultDomainConfig}]});
                 const seedSSI = utils.generateSeedSSI();
-                const anchorId = utils.getAnchorId(seedSSI);
+                const anchorId = await utils.getAnchorId(seedSSI);
                 const hashlink = await utils.getSignedHashLink(seedSSI,null);
 
                 const mainNodeUrl =  apiHub.url;

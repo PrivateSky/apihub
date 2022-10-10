@@ -22,7 +22,7 @@ assert.callback(
     "Anchors and bricks resolved from other anchoring/bricking providers than self",
     async (testFinished) => {
         const seedSSI = keySSIApi.createSeedSSI(domain);
-        const anchorId = seedSSI.getAnchorId();
+        const anchorId = await $$.promisify(seedSSI.getAnchorId)();
 
         const timestamp = Date.now();
         let dataToSign = `${timestamp}${anchorId}`;

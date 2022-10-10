@@ -22,7 +22,7 @@ assert.callback('Should not append anchor with non sequence SSI test', async (ca
         const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({domains: [{name: "default", config: vaultDomainConfig}]});
         console.log(apiHub);
         const seedSSI = utils.generateSeedSSI();
-        const anchorId = utils.getAnchorId(seedSSI);
+        const anchorId = await utils.getAnchorId(seedSSI);
         const hashlink = await utils.getSignedHashLink(seedSSI,null);
         const hashlink2 = await utils.getSignedHashLink(seedSSI,hashlink);
         const hashlink3 = await utils.getSignedHashLink(seedSSI,hashlink2);

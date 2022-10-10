@@ -21,7 +21,7 @@ assert.callback('Should Create anchor and read all versions back test', async (c
         const domain = 'default';
         const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({domains: [{name: "default", config: vaultDomainConfig}]});
         const seedSSI = utils.generateSeedSSI();
-        const anchorId = utils.getAnchorId(seedSSI);
+        const anchorId = await utils.getAnchorId(seedSSI);
         const hashlink = await utils.getSignedHashLink(seedSSI,null);
 
         const mainNodeUrl =  apiHub.url;

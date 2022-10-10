@@ -21,7 +21,7 @@ assert.callback('Should not be able to create anchor with non SSI hashlink test'
         const domain = 'default';
         const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({domains: [{name: "default", config: vaultDomainConfig}]});
         const seedSSI = utils.generateSeedSSI();
-        const anchorId = utils.getAnchorId(seedSSI);
+        const anchorId = await utils.getAnchorId(seedSSI);
         const hashlink = "ASDFG4k";
 
         const mainNodeUrl =  apiHub.url;

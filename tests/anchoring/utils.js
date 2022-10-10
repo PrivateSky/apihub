@@ -10,13 +10,13 @@ function generateConstSSI(){
     return keySSIApis.createConstSSI(domain);
 }
 
-function getAnchorId(seedSSI){
-    return seedSSI.getAnchorId();
+async function getAnchorId(seedSSI){
+    return await $$.promisify(seedSSI.getAnchorId)();
 }
 
 async function getSignedHashLink(seedSSI, previousSignHashLinkId){
     const domain = 'default';
-    let anchorSSI = keySSIApis.parse(getAnchorId(seedSSI));
+    let anchorSSI = keySSIApis.parse(await getAnchorId(seedSSI));
     let previousSignHashLinkSSI = null;
     if (previousSignHashLinkId){
         previousSignHashLinkSSI = keySSIApis.parse(previousSignHashLinkId);
