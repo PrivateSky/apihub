@@ -27,9 +27,9 @@ async function handleDefaultMainDSURequest(request, response) {
     const resolver = require("opendsu").loadApi("resolver");
     let mainDSUAnchorId;
     try {
-        mainDSUAnchorId = await $$.promisify(mainDSUSeedSSI.getAnchorId)();
         const fileContent = await $$.promisify(fs.readFile)(mainDSUSeedSSIFilePath, { encoding: "utf-8" });
         mainDSUSeedSSI = keySSISpace.parse(fileContent);
+        mainDSUAnchorId = await $$.promisify(mainDSUSeedSSI.getAnchorId)();
         logger.info(`[MainDSU] Read existing mainDSU from ${mainDSUSeedSSIFilePath}: ${mainDSUAnchorId}`);
         return sendMainDSUSeedSSI(response);
     } catch (error) {
@@ -37,19 +37,19 @@ async function handleDefaultMainDSURequest(request, response) {
     }
 
     try {
-        mainDSUAnchorId = await $$.promisify(mainDSUSeedSSI.getAnchorId)();
         const environmentJsPath = require("path").join(rootFolderPath, "environment.js");
         logger.info(`[MainDSU] Loading environment.js config file from: ${environmentJsPath}`);
-
+        
         const environmentConfig = require(environmentJsPath);
-
+        
         const seedSSI = await $$.promisify(keySSISpace.createSeedSSI)(environmentConfig.vaultDomain);
         const mainDSU = await $$.promisify(resolver.createDSUForExistingSSI)(seedSSI);
-
+        
         logger.info(`[MainDSU] Settings config for seed ${await $$.promisify(seedSSI.getAnchorId)()}`, environmentConfig);
         await $$.promisify(mainDSU.writeFile)("/environment.json", JSON.stringify(environmentConfig));
-
+        
         mainDSUSeedSSI = seedSSI;
+        mainDSUAnchorId = await $$.promisify(mainDSUSeedSSI.getAnchorId)();
         logger.info("[MainDSU] Generated mainDSUSeedSSI: ", mainDSUAnchorId, mainDSUSeedSSI);
 
         logger.info(`[MainDSU] Writing generated mainDSU to ${mainDSUSeedSSIFilePath}: ${mainDSUAnchorId}`);
