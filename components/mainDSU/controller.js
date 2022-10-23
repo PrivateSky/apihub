@@ -44,6 +44,10 @@ async function handleDefaultMainDSURequest(request, response) {
         
         const seedSSI = await $$.promisify(keySSISpace.createSeedSSI)(environmentConfig.vaultDomain);
         const mainDSU = await $$.promisify(resolver.createDSUForExistingSSI)(seedSSI);
+
+        const sharedEnclaveKeySSIObject = await $$.promisify(resolver.createSeedDSU)(environmentConfig.vaultDomain);
+        const sharedEnclaveKeySSI = await $$.promisify(sharedEnclaveKeySSIObject.getKeySSIAsString)();
+        environmentConfig.sharedEnclaveKeySSI = sharedEnclaveKeySSI;
         
         logger.info(`[MainDSU] Settings config for seed ${await $$.promisify(seedSSI.getAnchorId)()}`, environmentConfig);
         await $$.promisify(mainDSU.writeFile)("/environment.json", JSON.stringify(environmentConfig));
