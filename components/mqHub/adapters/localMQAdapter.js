@@ -253,7 +253,12 @@ function LocalMQAdapter(server, prefix, domain, configuration) {
 
 		if (headers) {
 			for (let prop in headers) {
-				to.setHeader(prop, headers[prop]);
+				try {
+                    to.setHeader(prop, headers[prop]);
+				} catch (e) {
+                    logger.error(`Failed to set headers after end() was called.`, e);
+                    return;
+				}
 			}
 		}
 
