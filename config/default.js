@@ -18,7 +18,8 @@ const defaultConfig = {
         "enclave":{
             "module": "./components/enclave",
             "function": "LokiEnclaveFacade",
-            "storageFolder": './external-volume/config/enclave'
+            "storageFolder": './external-volume/config/enclave',
+            "dsuBootPath": "./psknode/bundles/nodeBoot.js"
         },
         "secrets":{
             "module": "./components/secrets"
